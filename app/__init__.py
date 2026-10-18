@@ -21,6 +21,7 @@ def create_app(config_class: type = Config) -> Flask:
     csrf.init_app(app)
 
     from . import models  # noqa: F401  (register models for migrations)
+    from .admin.routes import bp as admin_bp
     from .auth.routes import bp as auth_bp
     from .export.routes import bp as export_bp
     from .flow.routes import bp as flow_bp
@@ -29,6 +30,7 @@ def create_app(config_class: type = Config) -> Flask:
 
     app.jinja_env.globals["type_labels"] = NODE_TYPE_LABELS
     app.register_blueprint(auth_bp)
+    app.register_blueprint(admin_bp)
     app.register_blueprint(projects_bp)
     app.register_blueprint(flow_bp)
     app.register_blueprint(export_bp)
@@ -61,21 +63,36 @@ def create_app(config_class: type = Config) -> Flask:
     @app.cli.command("create-user")
     @click.argument("email")
     @click.password_option()
-    def create_user(email, password):
+    @click.option("--admin", is_flag=True, help="Nadaj uprawnienia administratora.")
+    def create_user(email, password, admin):
         """Create a user account (works even when ALLOW_SIGNUP is off)."""
         from .models import User
 
         email = email.strip().lower()
         if User.query.filter_by(email=email).first():
             raise click.ClickException("Użytkownik o tym adresie już istnieje.")
-        user = User(email=email)
+        user = User(email=email, is_admin=admin)
         try:
             user.set_password(password)
         except ValueError as exc:
             raise click.ClickException(str(exc)) from exc
         db.session.add(user)
         db.session.commit()
-        click.echo(f"Utworzono konto {email}")
+        click.echo(f"Utworzono konto {email}" + (" (administrator)" if admin else ""))
+
+    @app.cli.command("set-admin")
+    @click.argument("email")
+    @click.option("--revoke", is_flag=True, help="Odbierz uprawnienia zamiast nadawać.")
+    def set_admin(email, revoke):
+        """Grant (or revoke) administrator rights for an existing account."""
+        from .models import User
+
+        user = User.query.filter_by(email=email.strip().lower()).first()
+        if user is None:
+            raise click.ClickException("Nie ma konta o tym adresie.")
+        user.is_admin = not revoke
+        db.session.commit()
+        click.echo(f"{user.email}: administrator = {'tak' if user.is_admin else 'nie'}")
 
     @app.cli.command("set-password")
     @click.argument("email")

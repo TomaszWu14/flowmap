@@ -74,3 +74,14 @@ def test_set_password_cli(app, user):
     assert runner.invoke(args=["set-password", user.email, "--password", "krotkie"]).exit_code != 0
     assert user.check_password("nowe-haslo-123456")
     assert runner.invoke(args=["set-password", "brak@example.com", "--password", "x" * 12]).exit_code != 0
+
+
+def test_set_admin_cli_and_create_admin(app, user):
+    runner = app.test_cli_runner()
+    assert runner.invoke(args=["set-admin", user.email]).exit_code == 0
+    assert user.is_admin
+    assert runner.invoke(args=["set-admin", user.email, "--revoke"]).exit_code == 0
+    assert not user.is_admin
+    assert runner.invoke(args=["set-admin", "brak@example.com"]).exit_code != 0
+    result = runner.invoke(args=["create-user", "boss@example.com", "--admin", "--password", "x" * 12])
+    assert result.exit_code == 0 and User.query.filter_by(email="boss@example.com").one().is_admin

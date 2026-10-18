@@ -36,6 +36,9 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
     ai_usage_date = db.Column(db.Date)
     ai_usage_count = db.Column(db.Integer, default=0, nullable=False)
+    is_admin = db.Column(db.Boolean, default=False, nullable=False, server_default=db.false())
+    is_blocked = db.Column(db.Boolean, default=False, nullable=False, server_default=db.false())
+    last_login_at = db.Column(db.DateTime)
 
     projects = db.relationship("Project", back_populates="owner", cascade="all, delete-orphan")
 
@@ -61,7 +64,8 @@ class User(UserMixin, db.Model):
 
 @login_manager.user_loader
 def load_user(user_id: str):
-    return db.session.get(User, int(user_id))
+    user = db.session.get(User, int(user_id))
+    return None if user is None or user.is_blocked else user  # blocking ends existing sessions too
 
 
 class Project(db.Model):

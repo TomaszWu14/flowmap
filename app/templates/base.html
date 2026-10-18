@@ -28,6 +28,7 @@
       {% if current_user.is_authenticated %}
         <a href="{{ url_for('projects.index') }}">Projekty</a>
         <a class="hide-sm" href="{{ url_for('export.example') }}">Przykład</a>
+        {% if current_user.is_admin %}<a href="{{ url_for('admin.index') }}">Admin</a>{% endif %}
         <form method="post" action="{{ url_for('auth.logout') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="linkish" type="submit">Wyloguj</button>
