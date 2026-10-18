@@ -28,6 +28,7 @@ def create_app(config_class: type = Config) -> Flask:
     from .models import NODE_TYPE_LABELS
     from .projects.routes import bp as projects_bp
     from .settings import signup_open
+    from .share.routes import bp as share_bp
 
     app.jinja_env.globals["type_labels"] = NODE_TYPE_LABELS
     app.jinja_env.globals["signup_open"] = signup_open
@@ -36,6 +37,7 @@ def create_app(config_class: type = Config) -> Flask:
     app.register_blueprint(projects_bp)
     app.register_blueprint(flow_bp)
     app.register_blueprint(export_bp)
+    app.register_blueprint(share_bp)
 
     @app.get("/healthz")
     def healthz():

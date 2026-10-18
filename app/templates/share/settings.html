@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Udostępnianie — {{ project.name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Udostępnianie</h1><p class="muted">{{ project.name }}</p></div>
+  <a class="btn" href="{{ url_for('flow.view', project_id=project.id) }}">← Wróć do mapy</a>
+</div>
+<section class="card">
+  <h2>Link tylko do podglądu</h2>
+  <p class="muted">Każdy, kto ma link, zobaczy mapę, specyfikację i symulację — bez logowania i bez możliwości zmian.</p>
+  {% if project.share_token %}
+    {% set link = url_for('share.view', token=project.share_token, _external=True) %}
+    <div class="row" style="margin:.6rem 0">
+      <code class="code-inline" id="share-link">{{ link }}</code>
+      <button class="btn small primary" type="button" data-copy="share-link">Kopiuj</button>
+      <a class="btn small" href="{{ link }}" target="_blank" rel="noopener">Otwórz</a>
+    </div>
+    <div class="row">
+      <form method="post" action="{{ url_for('share.regenerate_link', project_id=project.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn small" type="submit">Nowy link (stary przestanie działać)</button>
+      </form>
+      <form method="post" action="{{ url_for('share.toggle_link', project_id=project.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn small danger" type="submit">Wyłącz link</button>
+      </form>
+    </div>
+  {% else %}
+    <form method="post" action="{{ url_for('share.toggle_link', project_id=project.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn primary" type="submit">Włącz link publiczny</button>
+    </form>
+  {% endif %}
+</section>
+{% block extra %}{% endblock %}
+{% endblock %}
