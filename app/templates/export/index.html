@@ -7,6 +7,17 @@
 </div>
 <div class="export-grid">
   <section class="card">
+    <h2>Paczka dla Claude Code</h2>
+    {% if ready %}<p>Gotowość specyfikacji: <strong>{{ ready.score }}/100</strong>
+      {% if ready.score < 80 %}<span class="field-error"> — braki trafią do OPEN_QUESTIONS.md.</span>{% endif %}
+      <a href="{{ url_for('spec.view', project_id=project.id) }}">Otwórz specyfikację</a></p>{% endif %}
+    <div class="row"><a class="btn primary" href="{{ url_for('spec.package', project_id=project.id) }}">Pobierz paczkę (ZIP)</a></div>
+    <p class="muted" style="margin-top:.6rem">Rozpakuj w repozytorium i wklej Claude Code:</p>
+    <pre class="code" id="paste-prompt">{{ paste_prompt }}</pre>
+    <button class="btn small" type="button" data-copy="paste-prompt">Kopiuj polecenie</button>
+  </section>
+
+  <section class="card">
     <div class="page-head" style="margin-bottom:.6rem">
       <h2>Polecenie dla generatora kodu</h2>
       <div class="row">

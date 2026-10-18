@@ -8,6 +8,8 @@ from ..ai import templates
 from ..flow import graph as g
 from ..flow.routes import graph_payload
 from ..projects.service import project_from_graph
+from ..spec.package import PASTE_PROMPT
+from ..spec.readiness import readiness
 from ..spec.schema import load_spec
 from . import builders, tasks
 
@@ -31,10 +33,12 @@ def index(project_id):
     graph = project.graph()
     spec = builders.to_markdown(_meta(project), graph)
     target = request.args.get("target", "claude_code")
+    project_spec = g.project_spec(project)
     return render_template(
         "export/index.html", project=project, spec=spec, mermaid=builders.to_mermaid(graph),
         prompt=builders.to_prompt(_meta(project), spec, target), target=target, targets=builders.TARGETS,
         task_count=len(tasks.build_tasks(_meta(project), graph)), github_command=tasks.GITHUB_COMMAND,
+        ready=readiness(project_spec) if project_spec else None, paste_prompt=PASTE_PROMPT,
     )
 
 
