@@ -4,6 +4,8 @@ import zipfile
 from app.ai.templates import full_graph
 from app.spec.derive import derive
 from app.spec.package import PASTE_PROMPT, build_files, build_zip
+from app.spec.schema import Spec
+from tests.test_collaborators import team  # noqa: F401
 from tests.test_flow import play_to_end
 from tests.test_projects import new_project
 
@@ -55,3 +57,33 @@ def test_download_endpoint(auth_client):
     assert r.status_code == 200 and r.mimetype == "application/zip"
     html = auth_client.get(f"/p/{p.id}/eksport").get_data(as_text=True)
     assert "Paczka dla Claude Code" in html and PASTE_PROMPT[:40] in html
+
+
+def test_broken_stored_spec_returns_409(auth_client, db):
+    """Broken spec with missing required field should return 409 on download."""
+    p = new_project(auth_client)
+    p.spec = {"entities": [{"name": "bez klucza"}]}
+    db.session.commit()
+    r = auth_client.get(f"/p/{p.id}/eksport/claude-code.zip")
+    assert r.status_code == 409
+
+
+def test_outsider_cannot_download_zip(team):  # noqa: F811
+    """Outsider should get 404; viewer should get 200."""
+    p = team["project"]
+    r = team["outsider"].get(f"/p/{p.id}/eksport/claude-code.zip")
+    assert r.status_code == 404
+    r = team["viewer"].get(f"/p/{p.id}/eksport/claude-code.zip")
+    assert r.status_code == 200 and r.mimetype == "application/zip"
+
+
+def test_empty_spec_builds_package():
+    """Empty spec should still produce all 6 files with ER diagram."""
+    from app.export.builders import FORMAT
+    meta = {"name": "Test", "start_sentence": "Start"}
+    graph = {"nodes": [{"key": "s", "type": "start", "title": "Start", "actor": "", "inputs": [], "outputs": [],
+                       "data": {}, "description": ""}], "edges": []}
+    f = build_files(meta, graph, Spec(), [])
+    assert set(f) == FILES
+    assert "erDiagram" in f["DATA_MODEL.md"]
+    assert f'"{FORMAT}"' in f["flowmap.json"]

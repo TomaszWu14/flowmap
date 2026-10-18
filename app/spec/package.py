@@ -4,7 +4,7 @@ import io
 import json
 import zipfile
 
-from ..export.builders import _md, _mm, _test_paths, to_mermaid
+from ..export.builders import FORMAT, _md, _mm, _test_paths, to_mermaid
 from ..flow.guard import report
 from .readiness import readiness
 from .schema import CHANNEL_LABELS, DIRECTION_LABELS, FIELD_TYPE_LABELS, NFR_LABELS, PERM_LABELS, Spec
@@ -126,7 +126,7 @@ def open_questions_md(graph, spec: Spec, open_comments: list[str]) -> str:
 
 
 def build_files(meta: dict, graph: dict, spec: Spec, open_comments: list[str]) -> dict[str, str]:
-    data = {"format": "flowmap/2", "project": meta, "nodes": graph["nodes"], "edges": graph["edges"],
+    data = {"format": FORMAT, "project": meta, "nodes": graph["nodes"], "edges": graph["edges"],
             "spec": spec.model_dump(mode="json")}
     return {"CLAUDE.md": claude_md(meta, spec), "SPEC.md": spec_md(meta, graph, spec),
             "DATA_MODEL.md": data_model_md(spec), "ACCEPTANCE.md": acceptance_md(graph, spec),
