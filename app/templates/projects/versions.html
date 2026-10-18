@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Wersje — {{ project.name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Historia wersji</h1><p class="muted">{{ project.name }}</p></div>
+  <a class="btn" href="{{ url_for('flow.view', project_id=project.id) }}">← Wróć do mapy</a>
+</div>
+<div class="card">
+  <table class="versions">
+    <thead><tr><th>Zmiana</th><th>Kroki</th><th>Data</th><th></th></tr></thead>
+    <tbody>
+    {% for v in versions %}
+      <tr class="{{ 'current-row' if v.id == project.version_cursor_id }}">
+        <td>{{ v.description }}{% if v.id == project.version_cursor_id %} <span class="badge ok">bieżąca</span>{% endif %}</td>
+        <td>{{ v.snapshot.nodes|length }}</td>
+        <td class="muted">{{ v.created_at.strftime('%d.%m %H:%M:%S') }}</td>
+        <td>
+          {% if v.id != project.version_cursor_id %}
+          <form method="post" action="{{ url_for('projects.restore', project_id=project.id, version_id=v.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn small" type="submit">Przywróć</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

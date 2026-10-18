@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Przykładowy projekt{% endblock %}
+{% block head %}
+<script src="{{ url_for('static', filename='vendor/cytoscape.min.js') }}" defer></script>
+<script src="{{ url_for('static', filename='vendor/dagre.min.js') }}" defer></script>
+<script src="{{ url_for('static', filename='vendor/cytoscape-dagre.js') }}" defer></script>
+<script src="{{ url_for('static', filename='map.js') }}" defer></script>
+{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ meta.name }}</h1>
+    <p class="muted">Gotowa mapa procesu „{{ meta.start_sentence }}” — tylko do podglądu, bez logowania.</p>
+  </div>
+  {% if not current_user.is_authenticated and config.ALLOW_SIGNUP %}
+    <a class="btn primary" href="{{ url_for('auth.register') }}">Zbuduj własną mapę</a>
+  {% endif %}
+</div>
+<section class="card" style="padding:0;overflow:hidden">
+  <div class="map-wrap" style="height:70vh;border-right:0">
+    <div class="map-toolbar">
+      <span class="score"><span class="score-ring" id="score-ring"><span id="score-value">–</span></span><span id="score-label">kompletność</span></span>
+    </div>
+    <div id="map" data-readonly="1" data-graph-url="{{ url_for('export.example_graph') }}"></div>
+  </div>
+</section>
+<section class="card" style="margin-top:1rem">
+  <h2>Specyfikacja wygenerowana z mapy</h2>
+  <pre class="code">{{ spec }}</pre>
+</section>
+<section class="card" style="margin-top:1rem">
+  <h2>Mermaid</h2>
+  <pre class="code">{{ mermaid }}</pre>
+</section>
+{% endblock %}

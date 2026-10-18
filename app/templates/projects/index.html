@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Projekty{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Twoje projekty</h1><p class="muted">Każdy projekt to jedna mapa procesu.</p></div>
+  <div class="row">
+    <a class="btn" href="{{ url_for('export.import_project') }}">Importuj JSON</a>
+    <a class="btn primary" href="{{ url_for('projects.new') }}">+ Nowy projekt</a>
+  </div>
+</div>
+{% if projects %}
+<div class="grid-cards">
+  {% for p in projects %}
+  <article class="card project-card">
+    <h2><a href="{{ url_for('flow.view', project_id=p.id) }}">{{ p.name }}</a></h2>
+    <p class="muted">„{{ p.start_sentence }}”</p>
+    <div class="row">
+      <span class="badge">{{ 'szybki' if p.mode == 'quick' else 'dokładny' }}</span>
+      {% if p.status == 'complete' %}<span class="badge ok">✓ gotowa mapa</span>{% else %}<span class="badge">w toku</span>{% endif %}
+      <span class="badge">{{ p.nodes|length }} kroków</span>
+    </div>
+    <p class="muted" style="font-size:.8rem;margin:.6rem 0 0">Zmieniono {{ p.updated_at.strftime('%d.%m.%Y %H:%M') }}</p>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:2.5rem">
+  <h2>Nie masz jeszcze projektów</h2>
+  <p class="muted">Zacznij od jednego zdania, np. „Klient chce umówić wizytę w salonie”.</p>
+  <a class="btn primary" href="{{ url_for('projects.new') }}">Utwórz pierwszy projekt</a>
+</div>
+{% endif %}
+{% endblock %}

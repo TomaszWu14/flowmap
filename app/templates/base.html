@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="htmx-config" content='{"includeIndicatorStyles": false}'>
+  <title>{% block title %}FlowMap{% endblock %} · FlowMap</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  <script src="{{ url_for('static', filename='vendor/htmx.min.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  {% block head %}{% endblock %}
+</head>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'>
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('projects.home') }}">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <rect x="2" y="3" width="12" height="8" rx="3" fill="var(--t-start)"/>
+        <path d="M8 11v6h10" stroke="var(--ink)" stroke-width="2" fill="none"/>
+        <rect x="18" y="13" width="12" height="8" rx="2" fill="var(--accent)"/>
+        <path d="M24 21v5" stroke="var(--ink)" stroke-width="2"/>
+        <circle cx="24" cy="28" r="2.5" fill="var(--t-end)"/>
+      </svg>
+      FlowMap
+    </a>
+    <nav aria-label="Główna nawigacja">
+      {% if current_user.is_authenticated %}
+        <a href="{{ url_for('projects.index') }}">Projekty</a>
+        <a class="hide-sm" href="{{ url_for('export.example') }}">Przykład</a>
+        <form method="post" action="{{ url_for('auth.logout') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="linkish" type="submit">Wyloguj</button>
+        </form>
+      {% else %}
+        <a href="{{ url_for('export.example') }}">Przykład</a>
+        <a href="{{ url_for('auth.login') }}">Zaloguj</a>
+      {% endif %}
+      <button class="linkish" type="button" data-theme-toggle aria-label="Przełącz tryb jasny/ciemny">◐</button>
+    </nav>
+  </header>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flashes" role="status">
+        {% for category, message in messages %}<div class="alert {{ category }}">{{ message }}</div>{% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+  {% block body %}<main class="page">{% block content %}{% endblock %}</main>{% endblock %}
+  {% block scripts %}{% endblock %}
+</body>
+</html>

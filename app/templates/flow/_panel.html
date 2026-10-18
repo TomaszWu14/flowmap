@@ -1,0 +1,145 @@
+{% set answer_url = url_for('flow.answer', project_id=project.id) %}
+{% if error %}<div class="alert error" role="alert">{{ error }}</div>{% endif %}
+
+{% if node is none %}
+  <div class="done">
+    <div class="big" aria-hidden="true">✓</div>
+    <h2>Mapa procesu jest gotowa</h2>
+    <p class="muted">Wszystkie gałęzie mają dalszy ciąg. Sprawdź kompletność, przejdź proces i wyeksportuj specyfikację.</p>
+    <div class="row" style="justify-content:center">
+      <button class="btn" type="button" hx-get="{{ url_for('flow.guard_panel', project_id=project.id) }}" hx-target="#panel-body">Strażnik</button>
+      <a class="btn" href="{{ url_for('flow.simulate', project_id=project.id) }}">Przejdź proces</a>
+      <a class="btn primary" href="{{ url_for('export.index', project_id=project.id) }}">Eksport</a>
+    </div>
+    <p class="muted" style="margin-top:1rem;font-size:.85rem">Kliknij dowolny krok na mapie, aby go zmienić albo dodać coś po nim.</p>
+  </div>
+{% else %}
+  <header class="panel-head">
+    <span class="type-chip t-{{ node.type }}">{{ type_labels[node.type] }}</span>
+    <h2>{{ node.title }}</h2>
+    <p class="muted" style="margin:0">{{ node.actor or 'bez aktora' }}{% if remaining %} · pytań otwartych: {{ remaining }}{% endif %}</p>
+  </header>
+
+  {% if question %}
+  <section class="question" aria-labelledby="q-text">
+    {% if question.notice %}<div class="alert info">{{ question.notice }}</div>{% endif %}
+    <h3 id="q-text">{{ question.text }}</h3>
+    {% if question.hint %}<p class="hint">{{ question.hint }}</p>{% endif %}
+    <form class="tiles" hx-post="{{ answer_url }}" hx-target="#panel-body">
+      <input type="hidden" name="log_id" value="{{ log.id }}">
+      {% for opt in question.options %}
+        {% set first = opt.steps[0] if opt.steps else none %}
+        <button class="tile {{ 't-' ~ first.type if first }}" type="submit" name="option" value="{{ loop.index0 }}">
+          {% if first %}<span class="type-chip">{{ type_labels[first.type] }}</span>
+          {% elif opt.kind == 'connect' %}<span class="type-chip">Pętla</span>{% endif %}
+          <strong>{{ opt.label }}</strong>
+          {% if first and first.actor %}<span class="meta">{{ first.actor }}</span>{% endif %}
+          {% if opt.steps|length > 1 %}<span class="meta">{{ opt.steps|map(attribute='title')|join(' → ') }}</span>{% endif %}
+          {% set last = opt.steps[-1] if opt.steps else none %}
+          {% if last and last.branches %}<span class="meta">gałęzie: {{ last.branches|join(' / ') }}</span>{% endif %}
+          {% if opt.edge_label %}<span class="meta">strzałka: „{{ opt.edge_label }}”</span>{% endif %}
+          {% if opt.connect_to and opt.kind != 'connect' %}<span class="meta">potem powrót do wcześniejszego kroku</span>{% endif %}
+        </button>
+      {% endfor %}
+    </form>
+    <details class="other" {{ 'open' if error }}>
+      <summary>Inne — wpiszę sam</summary>
+      <form hx-post="{{ answer_url }}" hx-target="#panel-body">
+        <input type="hidden" name="log_id" value="{{ log.id }}">
+        <input type="hidden" name="other" value="1">
+        {% if question.kind in ('next', 'error') %}
+          <label>Nazwa kroku <input name="text" required maxlength="200" placeholder="np. Pracownik akceptuje wniosek"></label>
+          <label>Typ kroku
+            <select name="type">
+              {% for t in node_types if t != 'start' %}<option value="{{ t }}">{{ type_labels[t] }}</option>{% endfor %}
+            </select>
+          </label>
+          <label>Kto wykonuje (rola) <input name="actor" maxlength="100" placeholder="np. Klient, Pracownik, System"></label>
+          <label>Gałęzie decyzji (po przecinku) <input name="branches" maxlength="200" placeholder="tak, nie"></label>
+          {% if question.kind == 'error' %}<label>Etykieta strzałki <input name="edge_label" maxlength="100" value="błąd"></label>{% endif %}
+        {% elif question.kind == 'actor' %}
+          <label>Rola <input name="text" required maxlength="100" placeholder="np. Recepcjonistka"></label>
+        {% elif question.kind == 'branches' %}
+          <label>Wyjścia (po przecinku) <input name="text" required maxlength="200" placeholder="zaakceptowano, odrzucono"></label>
+        {% else %}
+          <label>Pola (po przecinku) <input name="text" required maxlength="300" placeholder="Imię, E-mail, Telefon"></label>
+        {% endif %}
+        <button class="btn primary" type="submit">Zapisz odpowiedź</button>
+      </form>
+    </details>
+  </section>
+  {% else %}
+    <p class="muted">Ten krok jest kompletny. Możesz go zmienić albo rozbudować:</p>
+  {% endif %}
+
+  <section aria-label="Akcje kroku" style="margin-top:1rem">
+    {% if node.type != 'end' %}
+    <details>
+      <summary>Dodaj krok po tym</summary>
+      <form hx-get="{{ url_for('flow.panel', project_id=project.id) }}" hx-target="#panel-body">
+        <input type="hidden" name="node" value="{{ node.key }}">
+        <input type="hidden" name="ask" value="next">
+        <label>Etykieta strzałki (opcjonalnie) <input name="slot" maxlength="100" placeholder="{{ 'np. tak / nie' if node.type == 'decision' else 'np. anulowanie' }}"></label>
+        <button class="btn" type="submit">Pokaż propozycje</button>
+      </form>
+    </details>
+    {% if others %}
+    <details>
+      <summary>Połącz z istniejącym krokiem (pętla)</summary>
+      <form hx-post="{{ url_for('flow.connect_node', project_id=project.id, key=node.key) }}" hx-target="#panel-body">
+        <label>Dokąd
+          <select name="target">{% for o in others %}<option value="{{ o.key }}">{{ o.title }}</option>{% endfor %}</select>
+        </label>
+        <label>Etykieta strzałki <input name="label" maxlength="100" placeholder="np. nie / ponów"></label>
+        <button class="btn" type="submit">Połącz</button>
+      </form>
+    </details>
+    {% endif %}
+    {% endif %}
+    <details>
+      <summary>Edytuj krok</summary>
+      <form hx-post="{{ url_for('flow.edit_node', project_id=project.id, key=node.key) }}" hx-target="#panel-body">
+        <label>Tytuł <input name="title" required maxlength="200" value="{{ node.title }}"></label>
+        {% if node.type != 'start' %}
+        <label>Typ
+          <select name="type">
+            {% for t in node_types if t != 'start' %}<option value="{{ t }}" {{ 'selected' if t == node.type }}>{{ type_labels[t] }}</option>{% endfor %}
+          </select>
+        </label>
+        {% endif %}
+        <label>Aktor (rola) <input name="actor" maxlength="100" value="{{ node.actor or '' }}"></label>
+        <label>Opis <textarea name="description" maxlength="2000">{{ node.description or '' }}</textarea></label>
+        <label>Dane wejściowe (po przecinku) <input name="inputs" value="{{ (node.inputs or [])|join(', ') }}"></label>
+        <label>Dane wyjściowe / co widać (po przecinku) <input name="outputs" value="{{ (node.outputs or [])|join(', ') }}"></label>
+        {% if node.type == 'decision' %}
+        <label>Gałęzie (po przecinku) <input name="branches" value="{{ (node.data.branches or [])|join(', ') }}"></label>
+        {% endif %}
+        <button class="btn primary" type="submit">Zapisz zmiany</button>
+      </form>
+    </details>
+    {% set ns = namespace(any=false) %}
+    {% for e in project.edges if e.source_id == node.id %}{% set ns.any = true %}{% endfor %}
+    {% if ns.any %}
+    <details>
+      <summary>Połączenia wychodzące</summary>
+      <ul class="edge-list">
+        {% for e in project.edges %}{% if e.source_id == node.id %}
+        <li>
+          <span>→ {{ e.target.title }}{% if e.label %} <span class="muted">„{{ e.label }}”</span>{% endif %}</span>
+          <button class="btn small danger" type="button" hx-post="{{ url_for('flow.delete_edge', project_id=project.id, index=loop.index0) }}"
+                  hx-target="#panel-body" aria-label="Usuń połączenie do {{ e.target.title }}">Usuń</button>
+        </li>
+        {% endif %}{% endfor %}
+      </ul>
+    </details>
+    {% endif %}
+    <div class="row" style="margin-top:.8rem">
+      {% if node.type not in ('start', 'end') and not ns.any %}
+      <button class="btn small" type="button" hx-post="{{ url_for('flow.mark_end', project_id=project.id, key=node.key) }}" hx-target="#panel-body">Oznacz jako koniec</button>
+      {% endif %}
+      {% if node.type != 'start' %}
+      <button class="btn small danger" type="button" hx-post="{{ url_for('flow.delete_node', project_id=project.id, key=node.key) }}" hx-target="#panel-body">Usuń krok</button>
+      {% endif %}
+    </div>
+  </section>
+{% endif %}

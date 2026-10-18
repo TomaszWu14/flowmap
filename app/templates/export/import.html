@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Import projektu{% endblock %}
+{% block content %}
+<div class="card" style="max-width:520px;margin:0 auto">
+  <h1>Import projektu</h1>
+  <p class="muted">Wybierz plik <span class="mono">.flowmap.json</span> wyeksportowany z FlowMap. Powstanie nowy projekt.</p>
+  <form method="post" enctype="multipart/form-data" class="stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Plik JSON <input type="file" name="file" accept="application/json,.json" required></label>
+    <button class="btn primary" type="submit">Importuj</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Projektuj aplikacje mapą procesu{% endblock %}
+{% block content %}
+<section class="hero">
+  <div>
+    <h1>Opisz jedno zdanie.<br>Dostań mapę procesu i specyfikację.</h1>
+    <p class="lead">FlowMap pyta „co dzieje się dalej?”, podsuwa gotowe odpowiedzi i rysuje proces na żywo —
+      aż do końca. Z gotowej mapy powstaje specyfikacja, diagram BPMN i polecenie dla generatora kodu.</p>
+    <div class="row">
+      {% if config.ALLOW_SIGNUP %}<a class="btn primary" href="{{ url_for('auth.register') }}">Załóż konto</a>{% endif %}
+      <a class="btn" href="{{ url_for('auth.login') }}">Zaloguj się</a>
+      <a class="btn" href="{{ url_for('export.example') }}">Zobacz przykład</a>
+    </div>
+  </div>
+  <div class="hero-art" aria-hidden="true">
+    <div class="steps-demo">
+      <div class="s" style="--c: var(--t-start)">Klient chce umówić wizytę<small>Start</small></div>
+      <div class="s" style="--c: var(--t-screen)">Wybór usługi i terminu<small>Ekran · Klient</small></div>
+      <div class="s" style="--c: var(--t-decision)">Czy termin jest wolny?<small>Decyzja · tak / nie</small></div>
+      <div class="s" style="--c: var(--t-automation)">Wysłanie potwierdzenia SMS<small>Automatyzacja · System</small></div>
+      <div class="s" style="--c: var(--t-end)">Wizyta odbyta<small>Koniec</small></div>
+    </div>
+  </div>
+</section>
+<section class="features">
+  <div class="card"><h3>Pytania zamiast pustej kartki</h3><p class="muted">3–5 kafelków z gotowymi krokami i opcja „inne”. Tryb szybki (~5 pytań) albo dokładny (~20 pytań z wyjątkami).</p></div>
+  <div class="card"><h3>Strażnik kompletności</h3><p class="muted">Wynik 0–100 i podświetlone problemy: ślepe zaułki, decyzje bez wyjść, brak ścieżki błędu płatności.</p></div>
+  <div class="card"><h3>Przejdź proces</h3><p class="muted">Symulacja krok po kroku z perspektywy wybranej roli — jak klikalna makieta.</p></div>
+  <div class="card"><h3>Eksport</h3><p class="muted">Specyfikacja Markdown, Mermaid, BPMN 2.0, JSON i gotowy prompt do Claude Code, Lovable lub Bolt.</p></div>
+</section>
+{% endblock %}
