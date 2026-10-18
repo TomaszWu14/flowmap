@@ -1,5 +1,14 @@
+{% if error %}<div class="alert error" role="alert">{{ error }}</div>{% endif %}
+{% if can_edit and editing is none %}
+  <button class="btn small primary" hx-get="{{ url_for('spec.edit_form', project_id=project.id, section=section, key='nowy') }}"
+          hx-target="#spec-section">+ Dodaj</button>
+{% endif %}
+{% if editing == 'nowy' %}{% set item = none %}{% set key = 'nowy' %}{% include "spec/_edit.html" %}{% endif %}
 {% set items = spec[section] %}
 {% for item in items %}
+{% if editing == item.key %}
+  {% set key = item.key %}{% include "spec/_edit.html" %}
+{% else %}
 {% if section == 'nfr' %}{% set title = item.text %}
 {% elif section == 'notifications' %}{% set title = item.summary or item.trigger %}
 {% elif section == 'states' %}{% set title = names.get(item.entity, item.entity) %}
@@ -31,7 +40,14 @@
     <p class="muted">{{ nfr_labels[item.category] }}</p>
   {% endif %}
   {% if item.node_key %}<a class="btn small" href="{{ url_for('flow.view', project_id=project.id) }}">Pokaż na mapie</a>{% endif %}
+  {% for m in issues_by_key.get(item.key, []) %}<p class="field-error">⚠ {{ m }}</p>{% endfor %}
+  {% if can_edit %}<div class="row">
+    <button class="btn small" hx-get="{{ url_for('spec.edit_form', project_id=project.id, section=section, key=item.key) }}" hx-target="#spec-section">Edytuj</button>
+    {% if item.stale %}<button class="btn small" hx-post="{{ url_for('spec.keep_item', project_id=project.id, section=section, key=item.key) }}" hx-target="#spec-section">Zachowaj jako ręczny</button>{% endif %}
+    <button class="btn small danger" hx-post="{{ url_for('spec.delete_item', project_id=project.id, section=section, key=item.key) }}" hx-target="#spec-section">Usuń</button>
+  </div>{% endif %}
 </article>
+{% endif %}
 {% else %}
 <p class="muted">Brak elementów w tej sekcji.</p>
 {% endfor %}
