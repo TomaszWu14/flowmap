@@ -5,7 +5,7 @@ import pytest
 from app.ai import client as ai
 from app.models import Project
 from app.spec.review import apply_proposal
-from app.spec.schema import Entity, Field, Proposal, Spec, load_spec
+from app.spec.schema import Entity, Field, Proposal, Role, Spec, StateMachine, Status, load_spec
 from tests.test_projects import new_project
 
 OK = {"proposals": [
@@ -71,3 +71,59 @@ def test_stale_proposal_cannot_be_applied():
     with pytest.raises(ValueError, match="nieaktualna"):
         apply_proposal(spec, Proposal(id="1", kind="set_field_type", target_key="entity:brak", summary="s",
                                       patch={"field": "x", "type": "money"}))
+
+
+def test_invalid_patch_flashes_polish_not_raw_schema_text(auth_client, app, db):
+    p = new_project(auth_client)
+    spec = spec_of(p)
+    entity = spec.entities[0]
+    field_name = entity.fields[0].name
+    spec.proposals = [Proposal(id="bad1", kind="set_field_type", target_key=entity.key, summary="s",
+                               patch={"field": field_name, "type": "varchar"})]
+    project = Project.query.get(p.id)
+    project.spec = spec.model_dump(mode="json")
+    db.session.commit()
+    r = auth_client.post(f"/p/{p.id}/specyfikacja/propozycje/bad1/accept", follow_redirects=True)
+    assert r.status_code == 200
+    assert "niepoprawne dane" in r.get_data(as_text=True)
+    after = spec_of(p)
+    assert len(after.proposals) == 1
+    assert after.entities[0].fields[0].type != "varchar"
+
+
+def test_accept_all_skips_invalid_patch(auth_client, app, db):
+    p = new_project(auth_client)
+    spec = spec_of(p)
+    entity = spec.entities[0]
+    field_name = entity.fields[0].name
+    spec.proposals = [Proposal(id="bad1", kind="set_field_type", target_key=entity.key, summary="s",
+                               patch={"field": field_name, "type": "varchar"})]
+    project = Project.query.get(p.id)
+    project.spec = spec.model_dump(mode="json")
+    db.session.commit()
+    r = auth_client.post(f"/p/{p.id}/specyfikacja/propozycje/wszystkie", follow_redirects=True)
+    assert r.status_code == 200
+    assert "Pominięto 1" in r.get_data(as_text=True)
+    assert len(spec_of(p).proposals) == 1
+
+
+def test_set_permission_rejects_unknown_entity():
+    spec = Spec(roles=[Role(key="role:a", name="A")])
+    with pytest.raises(ValueError, match="nieaktualna"):
+        apply_proposal(spec, Proposal(id="1", kind="set_permission", target_key="role:a", summary="s",
+                                      patch={"entity": "entity:brak", "read": "all"}))
+
+
+def test_set_permission_rejects_invalid_value():
+    spec = Spec(entities=[Entity(key="entity:a", name="A")], roles=[Role(key="role:a", name="A")])
+    with pytest.raises(ValueError, match="nieaktualna"):
+        apply_proposal(spec, Proposal(id="1", kind="set_permission", target_key="role:a", summary="s",
+                                      patch={"entity": "entity:a", "read": "write"}))
+
+
+def test_add_transition_rejects_unknown_status():
+    spec = Spec(states=[StateMachine(key="state:a", entity="entity:a",
+                                     statuses=[Status(name="nowa"), Status(name="zamkniete")])])
+    with pytest.raises(ValueError, match="nieaktualna"):
+        apply_proposal(spec, Proposal(id="1", kind="add_transition", target_key="state:a", summary="s",
+                                      patch={"from": "nowa", "to": "brak"}))

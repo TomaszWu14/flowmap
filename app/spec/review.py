@@ -75,10 +75,18 @@ def apply_proposal(spec: Spec, proposal: Proposal) -> Spec:
         elif kind == "add_status":
             item.statuses.append(Status(name=p.get("name", "nowy status"), final=bool(p.get("final"))))
         elif kind == "add_transition":
-            item.transitions.append(Transition(from_status=p.get("from", ""), to_status=p.get("to", "")))
+            from_name, to_name = p.get("from", ""), p.get("to", "")
+            if from_name not in {s.name for s in item.statuses} or to_name not in {s.name for s in item.statuses}:
+                raise ValueError("Propozycja jest nieaktualna — nie ma takiego statusu.")
+            item.transitions.append(Transition(from_status=from_name, to_status=to_name))
         elif kind == "set_permission":
-            item.permissions[p.get("entity", "")] = {k: p.get(k, "none")
-                                                      for k in ("read", "create", "update", "delete")}
+            entity_key = p.get("entity", "")
+            if not any(e.key == entity_key for e in spec.entities):
+                raise ValueError("Propozycja jest nieaktualna — nie ma takiej encji.")
+            perms = {k: p.get(k, "none") for k in ("read", "create", "update", "delete")}
+            if any(v not in ("all", "own", "none") for v in perms.values()):
+                raise ValueError("Propozycja jest nieaktualna — niepoprawna wartość uprawnienia.")
+            item.permissions[entity_key] = perms
         item.source = "ai"
     spec.proposals = [x for x in spec.proposals if x.id != proposal.id]
     return Spec.model_validate(spec.model_dump(mode="json"))  # re-validate after the patch

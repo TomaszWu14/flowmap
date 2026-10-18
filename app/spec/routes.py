@@ -2,6 +2,7 @@
 
 from flask import Blueprint, Response, abort, flash, make_response, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
+from pydantic import ValidationError
 
 from .. import settings
 from ..ai.client import AIError, ai_enabled
@@ -217,6 +218,9 @@ def proposal_action(project_id, pid, action):
     else:
         try:
             spec = apply_proposal(spec, proposal)
+        except ValidationError:
+            flash("Propozycja AI ma niepoprawne dane — odrzuć ją albo popraw element ręcznie.", "error")
+            return redirect(url_for("spec.view", project_id=project.id))
         except ValueError as exc:
             flash(str(exc), "error")
             return redirect(url_for("spec.view", project_id=project.id))
