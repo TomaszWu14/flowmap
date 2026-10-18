@@ -12,7 +12,8 @@ from ..flow.guard import report
 from ..flow.simulate import dead_ends
 from ..models import NODE_TYPE_LABELS, NODE_TYPES
 
-FORMAT = "flowmap/1"
+FORMAT = "flowmap/2"
+ACCEPTED_FORMATS = ("flowmap/1", "flowmap/2")
 
 
 def _ordered(graph: dict) -> list[dict]:
@@ -369,10 +370,14 @@ class ProjectFile(BaseModel):
     project: _ProjectIn
     nodes: list[_NodeIn] = Field(max_length=500)
     edges: list[_EdgeIn] = Field(max_length=2000)
+    spec: dict | None = None
 
 
-def to_json(meta: dict, graph: dict) -> dict:
-    return {"format": FORMAT, "project": meta, "nodes": graph["nodes"], "edges": graph["edges"]}
+def to_json(meta: dict, graph: dict, spec: dict | None = None) -> dict:
+    data = {"format": FORMAT, "project": meta, "nodes": graph["nodes"], "edges": graph["edges"]}
+    if spec:
+        data["spec"] = spec
+    return data
 
 
 def parse_project_file(data) -> ProjectFile:
@@ -381,8 +386,8 @@ def parse_project_file(data) -> ProjectFile:
         parsed = ProjectFile.model_validate(data)
     except ValidationError as exc:
         raise ValueError(f"Niepoprawny plik projektu ({exc.error_count()} błędów).") from exc
-    if parsed.format != FORMAT:
-        raise ValueError("Nieobsługiwany format pliku (oczekiwano flowmap/1).")
+    if parsed.format not in ACCEPTED_FORMATS:
+        raise ValueError("Nieobsługiwany format pliku (oczekiwano flowmap/1 lub flowmap/2).")
     keys = [n.key for n in parsed.nodes]
     if len(keys) != len(set(keys)):
         raise ValueError("Powtórzone klucze kroków w pliku.")

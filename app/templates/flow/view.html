@@ -12,6 +12,7 @@
     <section class="map-wrap" aria-label="Mapa procesu">
       <div class="map-toolbar">
         <span class="map-title" title="{{ project.name }}">{{ project.name }}</span>
+        <a class="btn small" href="{{ url_for('spec.view', project_id=project.id) }}">Specyfikacja</a>
         <button class="score" type="button" hx-get="{{ url_for('flow.guard_panel', project_id=project.id) }}"
                 hx-target="#panel-body" aria-label="Strażnik kompletności">
           <span class="score-ring" id="score-ring"><span id="score-value">–</span></span>

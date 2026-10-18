@@ -1,0 +1,37 @@
+{% set items = spec[section] %}
+{% for item in items %}
+{% if section == 'nfr' %}{% set title = item.text %}
+{% elif section == 'notifications' %}{% set title = item.summary or item.trigger %}
+{% elif section == 'states' %}{% set title = names.get(item.entity, item.entity) %}
+{% else %}{% set title = item.name %}
+{% endif %}
+<article class="card spec-card {{ 'stale' if item.stale }}" id="item-{{ item.key }}">
+  <div class="row" style="justify-content:space-between">
+    <h3>{{ title }}</h3>
+    <span class="badge">{{ {'rules': 'z mapy', 'ai': 'AI', 'manual': 'ręcznie'}[item.source] }}{% if item.stale %} · nieaktualne{% endif %}</span>
+  </div>
+  {% if section == 'entities' %}
+    <div class="table-wrap"><table class="versions"><tr><th>Pole</th><th>Typ</th><th>Wymagane</th><th>Walidacja</th></tr>
+      {% for f in item.fields %}<tr><td>{{ f.name }}{% if f.is_identifier %} 🔑{% endif %}</td><td>{{ type_labels_f[f.type] }}{% if f.enum_values %}: {{ f.enum_values|join(', ') }}{% endif %}</td>
+        <td>{{ 'tak' if f.required else '' }}</td><td>{{ f.validation }}</td></tr>{% endfor %}</table></div>
+    {% for r in item.relations %}<p class="muted">Relacja {{ r.kind }} → {{ names.get(r.to_entity, r.to_entity) }} {{ r.label }}</p>{% endfor %}
+  {% elif section == 'screens' %}
+    <p class="muted">Rola: {{ names.get(item.role, item.role) if item.role else '—' }}</p><p>{% for f in item.fields %}<span class="badge">{{ f.name }} · {{ type_labels_f[f.type] }}</span> {% endfor %}</p>
+  {% elif section == 'roles' %}
+    <div class="table-wrap"><table class="versions"><tr><th>Encja</th><th>Odczyt</th><th>Tworzenie</th><th>Edycja</th><th>Usuwanie</th></tr>
+      {% for ent, p in item.permissions.items() %}<tr><td>{{ names.get(ent, ent) }}</td><td>{{ perm_labels[p.read] }}</td><td>{{ perm_labels[p.create] }}</td><td>{{ perm_labels[p.update] }}</td><td>{{ perm_labels[p.delete] }}</td></tr>{% endfor %}</table></div>
+  {% elif section == 'states' %}
+    <p>{% for s in item.statuses %}<span class="badge {{ 'ok' if s.initial }}">{{ s.name }}{% if s.final %} ■{% endif %}</span> {% endfor %}</p>
+    <ul>{% for t in item.transitions %}<li>{{ t.from_status }} → {{ t.to_status }}</li>{% endfor %}</ul>
+  {% elif section == 'notifications' %}
+    <p>{{ channel_labels[item.channel] }} → {{ names.get(item.recipient_role, item.recipient_role) if item.recipient_role else '—' }}</p>
+  {% elif section == 'integrations' %}
+    <p>Kierunek: {{ direction_labels[item.direction] }} · Dane: {{ item.data|join(', ') or '—' }} · Błąd: {{ item.on_error or '—' }}</p>
+  {% elif section == 'nfr' %}
+    <p class="muted">{{ nfr_labels[item.category] }}</p>
+  {% endif %}
+  {% if item.node_key %}<a class="btn small" href="{{ url_for('flow.view', project_id=project.id) }}">Pokaż na mapie</a>{% endif %}
+</article>
+{% else %}
+<p class="muted">Brak elementów w tej sekcji.</p>
+{% endfor %}

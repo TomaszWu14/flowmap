@@ -2,11 +2,13 @@ import json
 
 from flask import Blueprint, Response, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
+from pydantic import ValidationError
 
 from ..ai import templates
 from ..flow import graph as g
 from ..flow.routes import graph_payload
 from ..projects.service import project_from_graph
+from ..spec.schema import load_spec
 from . import builders, tasks
 
 bp = Blueprint("export", __name__)
@@ -53,7 +55,7 @@ def download(project_id, kind):
         return _download(builders.to_prompt(meta, spec, request.args.get("target", "claude_code")),
                          "polecenie.md", "text/markdown")
     if kind == "projekt.json":
-        body = json.dumps(builders.to_json(meta, graph), ensure_ascii=False, indent=2)
+        body = json.dumps(builders.to_json(meta, graph, project.spec), ensure_ascii=False, indent=2)
         return _download(body, "projekt.flowmap.json", "application/json")
     if kind == "zadania-jira.csv":
         return _download(tasks.to_jira_csv(tasks.build_tasks(meta, graph)), kind, "text/csv")
@@ -93,6 +95,11 @@ def import_project():
                                         "outputs": [str(v)[:100] for v in n.outputs][:30]} for n in parsed.nodes],
             "edges": [e.model_dump() for e in parsed.edges],
         }
+        if parsed.spec is not None:
+            try:
+                graph["spec"] = load_spec(parsed.spec).model_dump(mode="json")
+            except ValidationError:
+                flash("Specyfikacja w pliku była niepoprawna — odbudowano ją z mapy.", "info")
         p = parsed.project
         project = project_from_graph(current_user, p.name, p.start_sentence, p.mode, p.template, graph,
                                      "Zaimportowano z pliku")
