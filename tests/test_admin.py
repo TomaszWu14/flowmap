@@ -114,3 +114,40 @@ def test_ai_kill_switch(client, db, app):
     assert settings.get("ai_enabled") is False
     with app.test_request_context():
         assert not ai_enabled()
+
+
+def test_audit_log_records_events(client, db):
+    from app.models import AuditEvent
+
+    admin = make_admin(client, db)
+    other = make_user("ola@example.com")
+    client.post(f"/admin/users/{other.id}/block")
+    client.post("/admin/settings", data={"ai_daily_limit": "9", "allow_signup": "on"})
+    anon = client.application.test_client()
+    anon.post("/login", data={"email": "ola@example.com", "password": PASSWORD})  # blocked
+    anon.post("/login", data={"email": "nikt@example.com", "password": "zle-haslo-123456"})
+    actions = [e.action for e in AuditEvent.query.order_by(AuditEvent.id)]
+    assert actions == ["login", "user_blocked", "settings_changed", "login_blocked", "login_failed"]
+    failed = AuditEvent.query.filter_by(action="login_failed").one()
+    assert failed.actor_id is None and failed.actor_email == "nikt@example.com"
+    assert AuditEvent.query.filter_by(action="user_blocked").one().actor_id == admin.id
+
+    html = client.get("/admin/zdarzenia?action=login_failed").get_data(as_text=True)
+    assert "nikt@example.com" in html and "Zablokowanie konta" not in html.split("<tbody>")[1]
+    html = client.get("/admin/zdarzenia?q=ola@").get_data(as_text=True)
+    assert "ola@example.com" in html
+
+
+def test_audit_register_and_projects(client, db):
+    from app.models import AuditEvent
+
+    client.post("/register", data={"email": "n@example.com", "password": "x" * 12, "password2": "x" * 12})
+    new_project(client)
+    from app.models import Project
+
+    pid = Project.query.one().id
+    client.post(f"/p/{pid}/usun")
+    client.post("/logout")
+    actions = [e.action for e in AuditEvent.query.order_by(AuditEvent.id)]
+    assert actions == ["register", "project_created", "project_deleted", "logout"]
+    assert client.get("/admin/zdarzenia").status_code == 302

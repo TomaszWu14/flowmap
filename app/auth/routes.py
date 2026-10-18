@@ -6,7 +6,7 @@ from flask_wtf import FlaskForm
 from wtforms import EmailField, PasswordField
 from wtforms.validators import DataRequired, EqualTo, Length, Regexp
 
-from .. import settings
+from .. import audit, settings
 from ..extensions import db
 from ..models import MIN_PASSWORD_LENGTH, User, utcnow
 
@@ -51,12 +51,17 @@ def login():
         user = User.query.filter_by(email=form.email.data.strip().lower()).first()
         if user and user.check_password(form.password.data):
             if user.is_blocked:
+                audit.log("login_blocked", actor=user)
+                db.session.commit()
                 flash("Konto jest zablokowane. Skontaktuj się z administratorem.", "error")
                 return render_template("auth/login.html", form=form)
             user.last_login_at = utcnow()
+            audit.log("login", actor=user)
             db.session.commit()
             login_user(user, remember=True)
             return redirect(_safe_next(request.args.get("next")))
+        audit.log("login_failed", email=form.email.data.strip().lower())
+        db.session.commit()
         flash("Nieprawidłowy e-mail lub hasło.", "error")
     return render_template("auth/login.html", form=form)
 
@@ -76,6 +81,8 @@ def register():
             user = User(email=email)
             user.set_password(form.password.data)
             db.session.add(user)
+            db.session.flush()
+            audit.log("register", actor=user)
             db.session.commit()
             login_user(user, remember=True)
             flash("Konto utworzone. Witaj w FlowMap!", "success")
@@ -86,5 +93,7 @@ def register():
 @bp.post("/logout")
 @login_required
 def logout():
+    audit.log("logout")
+    db.session.commit()
     logout_user()
     return redirect(url_for("auth.login"))

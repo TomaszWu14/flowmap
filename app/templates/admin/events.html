@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Dziennik zdarzeń{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Dziennik zdarzeń</h1><p class="muted">Ostatnie 300 zdarzeń, najnowsze na górze.</p></div>
+  <a class="btn" href="{{ url_for('admin.index') }}">← Panel</a>
+</div>
+<form method="get" class="row card" style="margin-bottom:1rem">
+  <label style="flex:1;min-width:180px">Rodzaj
+    <select name="action">
+      <option value="">wszystkie</option>
+      {% for k, v in actions.items() %}<option value="{{ k }}" {{ 'selected' if k == action }}>{{ v }}</option>{% endfor %}
+    </select>
+  </label>
+  <label style="flex:2;min-width:200px">Szukaj (e-mail lub obiekt) <input name="q" value="{{ q }}" maxlength="100"></label>
+  <button class="btn primary" type="submit" style="align-self:end">Filtruj</button>
+</form>
+<div class="card table-wrap">
+  <table class="versions">
+    <thead><tr><th>Kiedy</th><th>Zdarzenie</th><th>Kto</th><th>Obiekt</th><th>IP</th></tr></thead>
+    <tbody>
+    {% for e in rows %}
+      <tr>
+        <td class="muted">{{ e.created_at.strftime('%d.%m %H:%M:%S') }}</td>
+        <td><span class="badge {{ 'ok' if e.action in ('login', 'register') }}" {% if e.action in ('login_failed', 'login_blocked', 'user_blocked') %}style="color:var(--danger)"{% endif %}>{{ actions.get(e.action, e.action) }}</span></td>
+        <td>{{ e.actor_email or '—' }}</td>
+        <td>{{ e.target }}</td>
+        <td class="muted mono">{{ e.ip }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" class="muted">Brak zdarzeń.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

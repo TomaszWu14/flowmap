@@ -4,6 +4,7 @@ from flask_wtf import FlaskForm
 from wtforms import RadioField, SelectField, StringField
 from wtforms.validators import DataRequired, Length
 
+from .. import audit
 from ..ai.templates import TEMPLATE_CHOICES
 from ..extensions import db
 from ..flow import graph as g
@@ -46,6 +47,8 @@ def new():
     if form.validate_on_submit():
         project = create_project(current_user, form.name.data, form.start_sentence.data, form.mode.data,
                                  form.template.data)
+        audit.log("project_created", project.name)
+        db.session.commit()
         return redirect(url_for("flow.view", project_id=project.id))
     return render_template("projects/new.html", form=form)
 
@@ -54,6 +57,7 @@ def new():
 @login_required
 def delete(project_id):
     project = g.owned_project(project_id)
+    audit.log("project_deleted", project.name)
     db.session.delete(project)
     db.session.commit()
     flash("Projekt usunięty.", "success")
