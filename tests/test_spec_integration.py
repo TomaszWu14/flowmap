@@ -43,6 +43,29 @@ def test_undo_restores_spec_and_old_snapshots_still_load(auth_client, db):
     assert spec_of(p).entities  # recomputed from the map
 
 
+def test_copy_project_keeps_manual_spec(auth_client, db):
+    p = new_project(auth_client)
+    spec = spec_of(p)
+    spec.entities[0] = spec.entities[0].model_copy(update={"name": "Wizyta", "source": "manual"})
+    pp = Project.query.get(p.id)
+    pp.spec = spec.model_dump(mode="json")
+    g.save_version(pp, "ręczna zmiana")
+    db.session.commit()
+    r = auth_client.post(f"/p/{p.id}/kopia")
+    assert r.status_code == 302
+    newest = Project.query.order_by(Project.id.desc()).first()
+    entity = spec_of(newest).entities[0]
+    assert entity.name == "Wizyta" and entity.source == "manual"
+
+
+def test_load_graph_with_corrupt_spec_rebuilds_from_map(auth_client):
+    p = new_project(auth_client)
+    project = Project.query.get(p.id)
+    g.load_graph(project, project.graph() | {"spec": {"entities": [{"name": "bez klucza"}]}})
+    entity = spec_of(p).entities[0]
+    assert entity.key.startswith("entity:")
+
+
 def test_json_export_v2_and_import_v1(auth_client):
     p = new_project(auth_client)
     data = json.loads(auth_client.get(f"/p/{p.id}/eksport/projekt.json").data)

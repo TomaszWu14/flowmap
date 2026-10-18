@@ -117,7 +117,11 @@ def project_spec(project: Project) -> Spec | None:
 
 
 def refresh_spec(project: Project) -> None:
-    """Re-derive the spec from the map, keeping manual and AI items (cheap, no AI)."""
+    """Re-derive the spec from the map, keeping manual and AI items (cheap, no AI).
+
+    If `project.spec` is corrupt, `project_spec` returns None and we rebuild from the map alone —
+    any manual/AI items recorded only in that corrupt document are lost by design.
+    """
     meta = {"name": project.name, "start_sentence": project.start_sentence}
     current = project_spec(project) if project.spec else None
     project.spec = merge(current, derive(project.graph(), meta)).model_dump(mode="json")
@@ -162,7 +166,11 @@ def load_graph(project: Project, graph: dict) -> None:
         if e["source"] in by_key and e["target"] in by_key:
             add_edge(project, by_key[e["source"]], by_key[e["target"]], e.get("label", ""), e.get("condition", ""))
     if "spec" in graph:
-        project.spec = graph["spec"]
+        try:
+            project.spec = load_spec(graph["spec"]).model_dump(mode="json")
+        except ValidationError:  # corrupt stored spec -> rebuild from the map
+            project.spec = None
+            refresh_spec(project)
     else:  # snapshots from before the spec layer
         project.spec = None
         refresh_spec(project)

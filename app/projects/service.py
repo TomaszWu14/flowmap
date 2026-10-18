@@ -45,5 +45,8 @@ def project_from_graph(owner, name: str, start_sentence: str, mode: str, templat
 
 
 def copy_project(project: Project, owner) -> Project:
+    graph = project.graph()
+    if project.spec is not None:
+        graph = graph | {"spec": project.spec}
     return project_from_graph(owner, f"{project.name} (kopia)", project.start_sentence, project.mode,
-                              project.template, project.graph(), "Kopia projektu")
+                              project.template, graph, "Kopia projektu")
