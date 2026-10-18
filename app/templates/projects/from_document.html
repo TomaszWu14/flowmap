@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "_form.html" import field %}
+{% block title %}Mapa z dokumentu{% endblock %}
+{% block content %}
+<div class="card" style="max-width:760px;margin:0 auto">
+  <h1>Mapa z dokumentu</h1>
+  <p class="muted">Wklej opis procesu. Powstanie szkic mapy, a pytania dopytają o brakujące gałęzie i wyjątki.
+    Zdanie lub linia ze znakiem zapytania („Czy…?”) staje się decyzją, „System…” automatyzacją, „ekran/formularz” ekranem, „płatność/SMS/API” integracją.</p>
+  <form method="post" class="stack" style="max-width:none" novalidate>
+    {{ form.hidden_tag() }}
+    {{ field(form.name, placeholder="Obsługa reklamacji") }}
+    {{ field(form.text, rows=14, placeholder="Klient zgłasza reklamację przez formularz.
+System nadaje numer zgłoszenia i wysyła e-mail.
+Czy produkt jest na gwarancji?
+Serwisant naprawia produkt.
+Kurier odsyła produkt do klienta.
+Koniec.") }}
+    <fieldset>
+      <legend>{{ form.mode.label.text }}</legend>
+      {% for sub in form.mode %}<label class="radio">{{ sub() }} {{ sub.label.text }}</label>{% endfor %}
+    </fieldset>
+    <button class="btn primary" type="submit">Zbuduj szkic mapy</button>
+  </form>
+</div>
+{% endblock %}

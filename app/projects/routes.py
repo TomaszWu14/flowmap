@@ -1,17 +1,19 @@
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
-from wtforms import RadioField, SelectField, StringField
+from wtforms import RadioField, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Length
 
-from .. import audit
+from .. import audit, settings
+from ..ai.client import AIError, ai_enabled, draft_map
+from ..ai.draft import draft_from_text
 from ..ai.templates import TEMPLATE_CHOICES, USER_PREFIX
 from ..extensions import db
 from ..flow import graph as g
 from ..flow.diff import diff_graphs, node_status
 from ..flow.routes import graph_payload
 from ..models import Project, ProjectMember, UserTemplate, Version
-from .service import copy_project, create_project
+from .service import copy_project, create_project, project_from_graph
 
 bp = Blueprint("projects", __name__)
 
@@ -26,6 +28,13 @@ class ProjectForm(FlaskForm):
                                        ("thorough", "Dokładny — ok. 20 pytań i wyjątki")],
                       default="quick")
     template = SelectField("Szablon procesu (tryb bez AI)", choices=TEMPLATE_CHOICES, default="auto")
+
+
+class DraftForm(FlaskForm):
+    name = StringField("Nazwa projektu", validators=[DataRequired(), Length(max=200)])
+    text = TextAreaField("Opis procesu", validators=[DataRequired(), Length(min=20, max=20000)],
+                         description="Notatki, opis słowny albo lista kroków — najlepiej jeden krok na linię.")
+    mode = RadioField("Tryb dopytywania", choices=[("quick", "Szybki"), ("thorough", "Dokładny")], default="quick")
 
 
 @bp.get("/")
@@ -57,6 +66,33 @@ def new():
         db.session.commit()
         return redirect(url_for("flow.view", project_id=project.id))
     return render_template("projects/new.html", form=form)
+
+
+@bp.route("/projekty/z-dokumentu", methods=["GET", "POST"])
+@login_required
+def from_document():
+    form = DraftForm()
+    if form.validate_on_submit():
+        text = form.text.data.strip()
+        graph, note = None, "Mapa z dokumentu (reguły)"
+        if ai_enabled():
+            if current_user.consume_ai_request(settings.ai_daily_limit()):
+                db.session.commit()
+                try:
+                    graph, note = draft_map(text), "Mapa z dokumentu (AI)"
+                except AIError as exc:
+                    flash(f"AI niedostępne ({exc}) — mapa z reguł.", "info")
+            else:
+                flash("Dzienny limit zapytań do AI wyczerpany — mapa z reguł.", "info")
+        if graph is None:
+            graph = draft_from_text(text)
+        start = next(n for n in graph["nodes"] if n["type"] == "start")
+        project = project_from_graph(current_user, form.name.data, start["title"], form.mode.data, None, graph, note)
+        audit.log("project_created", f"{project.name} (z dokumentu)")
+        db.session.commit()
+        flash(f"Szkic mapy gotowy: {len(graph['nodes'])} kroków. Uzupełnij brakujące gałęzie w pytaniach.", "success")
+        return redirect(url_for("flow.view", project_id=project.id))
+    return render_template("projects/from_document.html", form=form)
 
 
 @bp.post("/p/<int:project_id>/zapisz-szablon")
