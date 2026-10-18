@@ -1,6 +1,6 @@
 import json
 
-from flask import Blueprint, abort, jsonify, make_response, render_template, request
+from flask import Blueprint, abort, jsonify, make_response, render_template, request, url_for
 from flask_login import login_required
 
 from ..ai.client import AIError, ai_enabled, review_map
@@ -315,9 +315,16 @@ def guard_apply(project_id):
 @login_required
 def simulate(project_id):
     project = g.owned_project(project_id)
+    return render_simulation(project, url_for("flow.view", project_id=project.id),
+                             lambda **kw: url_for("flow.simulate", project_id=project.id, **kw))
+
+
+def render_simulation(project, back_url, sim_url):
+    """Shared by the owner view and the public share link."""
     graph = project.graph()
     role = request.args.get("role")
     path = [k for k in (request.args.get("path") or "").split(",") if k]
     state = simulation_state(graph, role, path) if role else None
     actors = sorted({n["actor"] for n in graph["nodes"] if n["actor"]})
-    return render_template("flow/simulate.html", project=project, actors=actors, role=role, state=state)
+    return render_template("flow/simulate.html", project=project, actors=actors, role=role, state=state,
+                           back_url=back_url, sim_url=sim_url)

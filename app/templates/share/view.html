@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ project.name }} (podgląd){% endblock %}
+{% block head %}
+<meta name="robots" content="noindex">
+<script src="{{ url_for('static', filename='vendor/cytoscape.min.js') }}" defer></script>
+<script src="{{ url_for('static', filename='vendor/dagre.min.js') }}" defer></script>
+<script src="{{ url_for('static', filename='vendor/cytoscape-dagre.js') }}" defer></script>
+<script src="{{ url_for('static', filename='map.js') }}" defer></script>
+{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ project.name }}</h1>
+    <p class="muted">Podgląd mapy procesu „{{ project.start_sentence }}” — tylko do odczytu.</p>
+  </div>
+  <a class="btn primary" href="{{ url_for('share.simulate', token=token) }}">▶ Przejdź proces</a>
+</div>
+<section class="card" style="padding:0;overflow:hidden">
+  <div class="map-wrap" style="height:70vh;border-right:0">
+    <div class="map-toolbar">
+      <span class="score"><span class="score-ring" id="score-ring"><span id="score-value">–</span></span><span id="score-label">kompletność</span></span>
+    </div>
+    <div id="map" data-readonly="1" data-graph-url="{{ url_for('share.graph_json', token=token) }}"></div>
+  </div>
+</section>
+<section class="card" style="margin-top:1rem">
+  <h2>Specyfikacja</h2>
+  <pre class="code">{{ spec }}</pre>
+</section>
+<section class="card" style="margin-top:1rem">
+  <h2>Mermaid</h2>
+  <pre class="code">{{ mermaid }}</pre>
+</section>
+{% endblock %}

@@ -77,6 +77,7 @@ class Project(db.Model):
     template = db.Column(db.String(40))
     status = db.Column(db.String(20), nullable=False, default="draft")  # draft | complete
     version_cursor_id = db.Column(db.Integer)
+    share_token = db.Column(db.String(40), unique=True, index=True)  # public read-only link; None = off
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow, nullable=False)
 

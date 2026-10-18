@@ -182,6 +182,8 @@ details > form, details > div { margin-top: .6rem; display: grid; gap: .6rem; }
 .stat small { color: var(--muted); }
 .table-wrap { overflow-x: auto; }
 .settings-form { display: grid; gap: .7rem; }
+.code-inline { font: .85rem var(--mono); background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px;
+  padding: .4rem .6rem; overflow-wrap: anywhere; max-width: 100%; }
 
 /* simulation */
 .sim { display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 1fr) 280px; align-items: start; }
