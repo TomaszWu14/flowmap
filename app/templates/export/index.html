@@ -55,5 +55,16 @@
     </div>
     <p class="muted" style="margin-top:.6rem">BPMN otworzysz w Camunda Modeler lub bpmn.io. JSON zaimportujesz z powrotem w FlowMap.</p>
   </section>
+
+  <section class="card">
+    <h2>Zapisz jako mój szablon</h2>
+    <p class="muted">Tryb bez AI zacznie podpowiadać kroki z tej mapy w nowych projektach. Słowa kluczowe dobierają szablon automatycznie po zdaniu startowym.</p>
+    <form method="post" action="{{ url_for('projects.save_template', project_id=project.id) }}" class="row" style="align-items:end">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label style="flex:1;min-width:180px">Nazwa <input name="name" required maxlength="120" value="{{ project.name }}"></label>
+      <label style="flex:2;min-width:220px">Słowa kluczowe (po przecinku) <input name="keywords" maxlength="300" placeholder="urlop, wniosek, delegacja"></label>
+      <button class="btn primary" type="submit">Zapisz szablon</button>
+    </form>
+  </section>
 </div>
 {% endblock %}

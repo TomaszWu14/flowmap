@@ -20,6 +20,7 @@
 <div class="page-head">
   <div><h1>Twoje projekty</h1><p class="muted">Każdy projekt to jedna mapa procesu.</p></div>
   <div class="row">
+    <a class="btn" href="{{ url_for('projects.templates') }}">Moje szablony</a>
     <a class="btn" href="{{ url_for('export.import_project') }}">Importuj JSON</a>
     <a class="btn primary" href="{{ url_for('projects.new') }}">+ Nowy projekt</a>
   </div>

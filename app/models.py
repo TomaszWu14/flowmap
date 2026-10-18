@@ -193,6 +193,15 @@ class QuestionLog(db.Model):
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
 
 
+class UserTemplate(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    owner_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = db.Column(db.String(120), nullable=False)
+    keywords = db.Column(db.JSON, default=list)  # words in a start sentence that pick this template
+    graph = db.Column(db.JSON, nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+
+
 class AuditEvent(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False, index=True)

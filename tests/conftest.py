@@ -28,6 +28,7 @@ def app():
         # The fixture keeps one app context open, so `g` would leak the logged-in user between
         # requests of different test clients. In production every request gets a fresh `g`.
         g.pop("_login_user", None)
+        g.pop("_user_templates", None)
 
     with app.app_context():
         _db.create_all()
