@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Moje szablony{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Moje szablony</h1><p class="muted">Szablon podpowiada kroki w trybie bez AI. Zapiszesz go z dowolnej mapy na stronie Eksport.</p></div>
+  <a class="btn" href="{{ url_for('projects.index') }}">← Projekty</a>
+</div>
+{% if templates %}
+<div class="grid-cards">
+  {% for t in templates %}
+  <article class="card project-card">
+    <h2>{{ t.name }}</h2>
+    <p class="muted">{{ t.graph.nodes|length }} kroków · {{ t.created_at.strftime('%d.%m.%Y') }}</p>
+    <p>{% if t.keywords %}{% for k in t.keywords %}<span class="badge">{{ k }}</span> {% endfor %}{% else %}<span class="muted">bez słów kluczowych — wybierasz ręcznie</span>{% endif %}</p>
+    <form method="post" action="{{ url_for('projects.delete_template', template_id=t.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn small danger" type="submit">Usuń</button>
+    </form>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:2rem">
+  <p class="muted">Nie masz jeszcze szablonów. Otwórz gotową mapę → Eksport → „Zapisz jako mój szablon”.</p>
+</div>
+{% endif %}
+{% endblock %}

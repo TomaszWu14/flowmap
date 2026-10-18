@@ -120,8 +120,60 @@ TEMPLATE_CHOICES = [("auto", "Dobierz automatycznie"), ("none", "Bez szablonu")]
 ]
 
 
-def match_template(sentence: str) -> str | None:
+USER_PREFIX = "user:"
+
+
+def from_graph(graph: dict, name: str, keywords: list[str]) -> dict:
+    """Turn a saved map into the same shape as a built-in template."""
+    steps = {}
+    for n in graph["nodes"]:
+        steps[n["key"]] = {
+            "type": n["type"], "title": n["title"], "actor": n.get("actor", ""),
+            "description": n.get("description", ""), "inputs": list(n.get("inputs", [])),
+            "outputs": list(n.get("outputs", [])), "branches": list((n.get("data") or {}).get("branches", [])),
+        }
+    start = next((n for n in graph["nodes"] if n["type"] == "start"), None)
+    return {
+        "name": name,
+        "keywords": "|".join(re.escape(k.lower()) for k in keywords if k) or r"(?!x)x",  # no keywords: never auto-match
+        "start_actor": (start or {}).get("actor") or "Użytkownik",
+        "start_key": start["key"] if start else None,
+        "steps": steps,
+        "edges": [(e["source"], e["target"], e.get("label", "")) for e in graph["edges"]],
+    }
+
+
+def get(template_key: str | None) -> dict | None:
+    """Built-in template or a user's saved one ("user:<id>")."""
+    if not template_key:
+        return None
+    if template_key in TEMPLATES:
+        return TEMPLATES[template_key]
+    if not template_key.startswith(USER_PREFIX) or not template_key[len(USER_PREFIX):].isdigit():
+        return None
+    from flask import g as request_cache
+
+    from ..extensions import db
+    from ..models import UserTemplate
+
+    cache = request_cache.setdefault("_user_templates", {})
+    if template_key not in cache:
+        ut = db.session.get(UserTemplate, int(template_key[len(USER_PREFIX):]))
+        cache[template_key] = from_graph(ut.graph, ut.name, ut.keywords or []) if ut else None
+    return cache[template_key]
+
+
+def start_key(template_key: str | None) -> str | None:
+    tpl = get(template_key)
+    return (tpl.get("start_key") or "start") if tpl else None
+
+
+def match_template(sentence: str, user_templates=()) -> str | None:
+    """User's own templates first (more specific), then built-ins."""
     text = sentence.lower()
+    for ut in user_templates:
+        if any(k and k.lower() in text for k in (ut.keywords or [])):
+            return f"{USER_PREFIX}{ut.id}"
     for key, tpl in TEMPLATES.items():
         if re.search(tpl["keywords"], text):
             return key
@@ -130,17 +182,17 @@ def match_template(sentence: str) -> str | None:
 
 def successors(template_key: str | None, step_key: str | None, label: str | None) -> list[tuple[str, str]]:
     """(target_step, edge_label) pairs leaving a template step on the given branch label."""
-    tpl = TEMPLATES.get(template_key or "")
-    if not tpl or not step_key:
+    tpl = get(template_key)
+    if not tpl or not step_key or step_key not in tpl["steps"]:
         return []
-    out = [(dst, lab) for src, dst, lab in tpl["edges"] if src == step_key]
+    out = [(dst, lab) for src, dst, lab in tpl["edges"] if src == step_key and dst in tpl["steps"]]
     if tpl["steps"][step_key]["type"] == "decision":
         return [(dst, lab) for dst, lab in out if lab == (label or "")]
     return out
 
 
 def step(template_key: str, step_key: str) -> dict:
-    return TEMPLATES[template_key]["steps"][step_key]
+    return get(template_key)["steps"][step_key]
 
 
 def full_graph(template_key: str, start_sentence: str | None = None) -> dict:
