@@ -79,6 +79,7 @@ def generic_next(node: dict, label: str | None, mode: str) -> list[Option]:
         ]
     options = [Option(label=s.title, steps=[s]) for s in specs]
     if mode == "quick":
+        options = options[:3]
         options.append(Option(
             label="Domknij proces: potwierdzenie i powiadomienie",
             steps=[_s("screen", "Ekran potwierdzenia", actor if actor != "System" else "Użytkownik"),
@@ -127,7 +128,10 @@ def next_question(graph: dict, node: dict, label: str | None, mode: str, templat
                               edge_label=edge_label if is_error else "",
                               edge_condition="error" if is_error else ""))
     seen = {o.label for o in options}
-    for opt in generic_next(node, label, mode):
+    generic = generic_next(node, label, mode)
+    if options and mode == "quick":
+        generic = generic[:-1]  # template already gives a multi-step chunk; skip the generic closer
+    for opt in generic:
         if len(options) >= 4:
             break
         if opt.label not in seen:
@@ -193,7 +197,7 @@ def error_question(node: dict, template: str | None) -> Question:
                                   edge_label=lab, edge_condition="error"))
     options += [
         Option(label="Komunikat o błędzie i ponowienie", connect_to="source", edge_label=label,
-               edge_condition="error", steps=[_s("screen", f"Błąd: {node['title']} — spróbuj ponownie", actor)]),
+               edge_condition="error", steps=[_s("screen", f"Błąd: {node['title'][:120]} — spróbuj ponownie", actor)]),
         Option(label="Anulowanie i powiadomienie", edge_label=label, edge_condition="error",
                steps=[_s("automation", "Anulowanie i powiadomienie o błędzie", "System"),
                       _end("Proces przerwany", actor)]),
@@ -214,7 +218,10 @@ def branches_question(node: dict) -> Question:
 
 
 def needs_error_path(node: dict) -> bool:
-    return node["type"] == "integration" or bool(ERROR_HINT.search(node["title"]))
+    """Integrations and payment-like actions need a failure branch (screens showing errors do not)."""
+    if node["type"] == "integration":
+        return True
+    return node["type"] in ("user_action", "automation") and bool(ERROR_HINT.search(node["title"]))
 
 
 def helper_kinds(node: dict, mode: str) -> list[str]:
@@ -226,9 +233,9 @@ def helper_kinds(node: dict, mode: str) -> list[str]:
     if not node.get("actor"):
         kinds.append("actor")
     if mode == "thorough":
-        if node["type"] == "screen" and not node.get("outputs"):
+        if node["type"] == "screen":
             kinds.append("screen")
-        if node["type"] in ("user_action", "integration") and not node.get("inputs"):
+        if node["type"] in ("user_action", "integration"):
             kinds.append("data")
         if needs_error_path(node):
             kinds.append("error")

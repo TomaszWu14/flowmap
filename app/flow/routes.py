@@ -104,6 +104,9 @@ def answer(project_id):
     question = Question.model_validate(log.options)
     if log.answer:
         return render_panel(project, None, error="To pytanie ma już odpowiedź — pokazuję kolejne.")
+    if question.version != project.version_cursor_id:
+        return render_panel(project, node, question.kind, question.slot or None, focus_changed=False,
+                            error="Mapa zmieniła się od zadania pytania — oto aktualne propozycje.")
     try:
         if request.form.get("other"):
             option = q.option_from_other(question.kind, request.form)

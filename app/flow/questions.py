@@ -68,7 +68,7 @@ def build_question(project: Project, node: Node, kind: str, slot: str | None) ->
     except AIError as exc:
         fallback.notice = f"AI niedostępne ({exc}) — podpowiedzi z reguł."
         return fallback
-    question.options.append(fallback.options[-1])  # always offer "Koniec procesu"
+    question.options = question.options[:4] + [fallback.options[-1]]  # always offer "Koniec procesu"
     return question
 
 
@@ -81,9 +81,11 @@ def current_question(project: Project, node: Node, kind: str | None = None, slot
         kind, slot = pk
     log = (QuestionLog.query.filter_by(project_id=project.id, node_key=node.key, kind=kind, answer="")
            .order_by(QuestionLog.id.desc()).first())
-    if log and log.options and log.options.get("slot", "") == (slot or ""):
+    if (log and log.options and log.options.get("slot", "") == (slot or "")
+            and log.options.get("version") == project.version_cursor_id):
         return log, Question.model_validate(log.options)
     question = build_question(project, node, kind, slot)
+    question.version = project.version_cursor_id
     log = QuestionLog(project_id=project.id, node_key=node.key, kind=kind, question=question.text,
                       options=question.model_dump(), answer="", source=question.source)
     db.session.add(log)

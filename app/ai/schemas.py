@@ -44,6 +44,7 @@ class Question(BaseModel):
     options: list[Option]
     source: Literal["rules", "ai"] = "rules"
     notice: str = ""
+    version: int | None = None  # map version the options were computed for
 
 
 # --- AI tool payloads -------------------------------------------------------
