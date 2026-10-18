@@ -3,7 +3,8 @@
 import secrets
 from typing import Literal
 
-from pydantic import BaseModel, Field as PField
+from pydantic import BaseModel
+from pydantic import Field as PField
 
 FIELD_TYPES = ("text", "long_text", "integer", "decimal", "money", "boolean", "date", "datetime", "email",
                "phone", "enum", "file", "reference")

@@ -4,8 +4,21 @@ import re
 import unicodedata
 
 from ..ai.rules import NEGATIVE_LABEL
-from .schema import (Entity, Field, Integration, Notification, Nfr, Relation, Role, Screen, ScreenField, Spec,
-                     StateMachine, Status, Transition)
+from .schema import (
+    Entity,
+    Field,
+    Integration,
+    Nfr,
+    Notification,
+    Relation,
+    Role,
+    Screen,
+    ScreenField,
+    Spec,
+    StateMachine,
+    Status,
+    Transition,
+)
 
 TYPE_RULES = [  # (regex on lower-cased field name, type) - first match wins
     (r"e-?mail", "email"), (r"telefon|tel\.|komórk", "phone"), (r"godzin|termin.*godz", "datetime"),
