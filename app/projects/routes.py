@@ -8,6 +8,8 @@ from .. import audit
 from ..ai.templates import TEMPLATE_CHOICES, USER_PREFIX
 from ..extensions import db
 from ..flow import graph as g
+from ..flow.diff import diff_graphs, node_status
+from ..flow.routes import graph_payload
 from ..models import Project, ProjectMember, UserTemplate, Version
 from .service import copy_project, create_project
 
@@ -123,6 +125,46 @@ def versions(project_id):
     project = g.project_for(project_id, "view")
     return render_template("projects/versions.html", project=project,
                            versions=sorted(project.versions, key=lambda v: v.id, reverse=True))
+
+
+def _version(project, version_id) -> Version:
+    version = db.session.get(Version, version_id)
+    if version is None or version.project_id != project.id:
+        abort(404)
+    return version
+
+
+@bp.get("/p/<int:project_id>/wersje/porownaj")
+@login_required
+def compare(project_id):
+    project = g.project_for(project_id, "view")
+    versions = sorted(project.versions, key=lambda v: v.id, reverse=True)
+    if len(versions) < 2:
+        flash("Do porównania potrzebne są co najmniej dwie wersje.", "info")
+        return redirect(url_for("projects.versions", project_id=project.id))
+    new = _version(project, request.args.get("do", type=int) or versions[0].id)
+    older = [v for v in versions if v.id < new.id]
+    old = _version(project, request.args.get("od", type=int) or (older[0].id if older else versions[-1].id))
+    if old.id > new.id:
+        old, new = new, old
+    return render_template("projects/diff.html", project=project, versions=versions, old=old, new=new,
+                           diff=diff_graphs(old.snapshot, new.snapshot))
+
+
+@bp.get("/p/<int:project_id>/wersje/<int:version_id>/graph.json")
+@login_required
+def version_graph(project_id, version_id):
+    """A version's map with diff status per node (against ?od=<older version>)."""
+    project = g.project_for(project_id, "view")
+    version = _version(project, version_id)
+    graph = version.snapshot
+    status = {}
+    if request.args.get("od", type=int):
+        status = node_status(diff_graphs(_version(project, request.args.get("od", type=int)).snapshot, graph))
+    payload = graph_payload(graph)
+    for n in payload["nodes"]:
+        n["diff"] = status.get(n["key"], "")
+    return payload
 
 
 @bp.post("/p/<int:project_id>/wersje/<int:version_id>/przywroc")

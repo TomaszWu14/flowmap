@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Porównanie wersji — {{ project.name }}{% endblock %}
+{% block head %}
+<script src="{{ url_for('static', filename='vendor/cytoscape.min.js') }}" defer></script>
+<script src="{{ url_for('static', filename='vendor/dagre.min.js') }}" defer></script>
+<script src="{{ url_for('static', filename='vendor/cytoscape-dagre.js') }}" defer></script>
+<script src="{{ url_for('static', filename='map.js') }}" defer></script>
+{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Porównanie wersji</h1><p class="muted">{{ project.name }}</p></div>
+  <a class="btn" href="{{ url_for('projects.versions', project_id=project.id) }}">← Historia wersji</a>
+</div>
+
+<form method="get" class="card row" style="align-items:end;margin-bottom:1rem">
+  {% for field, current, label in [('od', old, 'Starsza'), ('do', new, 'Nowsza')] %}
+  <label style="flex:1;min-width:220px">{{ label }}
+    <select name="{{ field }}">
+      {% for v in versions %}<option value="{{ v.id }}" {{ 'selected' if v.id == current.id }}>#{{ v.id }} · {{ v.created_at.strftime('%d.%m %H:%M') }} · {{ v.description|truncate(60) }}</option>{% endfor %}
+    </select>
+  </label>
+  {% endfor %}
+  <button class="btn primary" type="submit">Porównaj</button>
+</form>
+
+{% set total = diff.added|length + diff.removed|length + diff.changed|length + diff.edges_added|length + diff.edges_removed|length %}
+<div class="stat-grid" style="margin-bottom:1rem">
+  <div class="card stat"><span class="muted">Dodane kroki</span><strong style="color:var(--ok)">{{ diff.added|length }}</strong></div>
+  <div class="card stat"><span class="muted">Usunięte kroki</span><strong style="color:var(--danger)">{{ diff.removed|length }}</strong></div>
+  <div class="card stat"><span class="muted">Zmienione kroki</span><strong style="color:var(--warn)">{{ diff.changed|length }}</strong></div>
+  <div class="card stat"><span class="muted">Połączenia</span><strong>+{{ diff.edges_added|length }} / −{{ diff.edges_removed|length }}</strong></div>
+</div>
+
+<section class="card" style="padding:0;overflow:hidden">
+  <div class="map-wrap" style="height:55vh;border-right:0">
+    <div class="map-toolbar"><span class="map-title">Nowsza wersja: zielone = dodane, żółte = zmienione</span></div>
+    <div id="map" data-readonly="1" data-graph-url="{{ url_for('projects.version_graph', project_id=project.id, version_id=new.id, od=old.id) }}"></div>
+  </div>
+</section>
+
+<section class="card" style="margin-top:1rem">
+  {% if not total %}<p class="muted">Te wersje niczym się nie różnią.</p>{% endif %}
+  {% if diff.added %}<h3>Dodane kroki</h3><ul>{% for n in diff.added %}<li><span class="type-chip t-{{ n.type }}">{{ type_labels[n.type] }}</span> {{ n.title }}{% if n.actor %} <span class="muted">· {{ n.actor }}</span>{% endif %}</li>{% endfor %}</ul>{% endif %}
+  {% if diff.removed %}<h3>Usunięte kroki</h3><ul>{% for n in diff.removed %}<li><s>{{ n.title }}</s>{% if n.actor %} <span class="muted">· {{ n.actor }}</span>{% endif %}</li>{% endfor %}</ul>{% endif %}
+  {% if diff.changed %}<h3>Zmienione kroki</h3><ul>
+    {% for c in diff.changed %}<li><strong>{{ c.node.title }}</strong>
+      <ul>{% for label, a, b in c.fields %}
+        <li>{{ label }}: <s class="muted">{{ (a|join(', ')) if a is iterable and a is not string else (a or '—') }}</s> → {{ (b|join(', ')) if b is iterable and b is not string else (b or '—') }}</li>
+      {% endfor %}</ul></li>
+    {% endfor %}</ul>{% endif %}
+  {% if diff.edges_added %}<h3>Nowe połączenia</h3><ul>{% for e in diff.edges_added %}<li>{{ e.source }} → {{ e.target }}{% if e.label %} <span class="muted">„{{ e.label }}”</span>{% endif %}</li>{% endfor %}</ul>{% endif %}
+  {% if diff.edges_removed %}<h3>Usunięte połączenia</h3><ul>{% for e in diff.edges_removed %}<li><s>{{ e.source }} → {{ e.target }}{% if e.label %} „{{ e.label }}”{% endif %}</s></li>{% endfor %}</ul>{% endif %}
+</section>
+{% endblock %}
