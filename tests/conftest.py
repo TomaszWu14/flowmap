@@ -9,6 +9,16 @@ from app.models import User
 PASSWORD = "bardzo-dlugie-haslo"
 
 
+@pytest.fixture(autouse=True)
+def fast_password_hashing(monkeypatch):
+    """scrypt is deliberately slow; tests only need a correct hash, not a strong one."""
+    from functools import partial
+
+    from werkzeug.security import generate_password_hash
+
+    monkeypatch.setattr("app.models.generate_password_hash", partial(generate_password_hash, method="pbkdf2:sha256:1"))
+
+
 @pytest.fixture
 def app():
     app = create_app(TestConfig)

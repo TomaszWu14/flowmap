@@ -1,0 +1,30 @@
+{% set open_count = comments|rejectattr('resolved')|list|length %}
+<h3>Komentarze{% if open_count %} <span class="badge">{{ open_count }} otwarte</span>{% endif %}</h3>
+{% if error %}<div class="alert error" role="alert">{{ error }}</div>{% endif %}
+<ul class="comment-list">
+  {% for c in comments %}
+  <li class="{{ 'resolved' if c.resolved }}">
+    <div class="comment-meta"><strong>{{ c.author.email if c.author else 'konto usunięte' }}</strong>
+      <span class="muted">{{ c.created_at.strftime('%d.%m %H:%M') }}</span>
+      {% if c.resolved %}<span class="badge ok">rozwiązany</span>{% endif %}</div>
+    <p>{{ c.body }}</p>
+    <div class="row">
+      {% if can_resolve or c.author_id == current_user.id %}
+      <button class="btn small" type="button" hx-post="{{ url_for('comments.toggle_resolved', project_id=project.id, comment_id=c.id) }}"
+              hx-target="#comments">{{ 'Otwórz ponownie' if c.resolved else 'Rozwiązane' }}</button>
+      {% endif %}
+      {% if c.author_id == current_user.id or project.current_role == 'owner' %}
+      <button class="btn small danger" type="button" hx-post="{{ url_for('comments.delete_comment', project_id=project.id, comment_id=c.id) }}"
+              hx-target="#comments">Usuń</button>
+      {% endif %}
+    </div>
+  </li>
+  {% else %}
+  <li class="muted">Brak komentarzy przy tym kroku.</li>
+  {% endfor %}
+</ul>
+<form hx-post="{{ url_for('comments.add_comment', project_id=project.id, key=node_key) }}" hx-target="#comments" class="comment-form">
+  <label class="sr-only" for="comment-body">Nowy komentarz</label>
+  <textarea id="comment-body" name="body" maxlength="2000" required placeholder="Uwaga, pytanie, pomysł…"></textarea>
+  <button class="btn small primary" type="submit">Dodaj komentarz</button>
+</form>

@@ -185,6 +185,16 @@ details > form, details > div { margin-top: .6rem; display: grid; gap: .6rem; }
 .code-inline { font: .85rem var(--mono); background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px;
   padding: .4rem .6rem; overflow-wrap: anywhere; max-width: 100%; }
 
+/* comments */
+.comments { border-top: 1px solid var(--line); margin-top: 1rem; padding-top: .8rem; }
+.comment-list { list-style: none; padding: 0; margin: .4rem 0 .8rem; display: grid; gap: .5rem; }
+.comment-list li { border: 1px solid var(--line); border-radius: 10px; padding: .5rem .65rem; }
+.comment-list li.resolved { opacity: .6; }
+.comment-list p { margin: .2rem 0 .4rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.comment-meta { display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; font-size: .85rem; }
+.comment-form { display: grid; gap: .4rem; }
+.comment-form textarea { min-height: 60px; }
+
 /* simulation */
 .sim { display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 1fr) 280px; align-items: start; }
 .phone { max-width: 420px; margin: 0 auto; width: 100%; border: 10px solid var(--ink); border-radius: 34px; background: var(--surface);

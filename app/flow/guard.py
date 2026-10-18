@@ -4,7 +4,7 @@ from ..ai.rules import needs_error_path
 
 WEIGHTS = {
     "no_start": 25, "no_end": 25, "dead_end": 10, "open_branch": 8, "decision_exits": 10,
-    "missing_actor": 3, "missing_error_path": 8, "unreachable": 10,
+    "missing_actor": 3, "missing_error_path": 8, "unreachable": 10, "open_comment": 2,
 }
 
 
@@ -64,6 +64,10 @@ def score(issues: list[dict]) -> int:
     return max(0, 100 - sum(WEIGHTS.get(i["code"], 5) for i in issues))
 
 
-def report(graph: dict) -> dict:
+def report(graph: dict, open_comments: dict[str, int] | None = None) -> dict:
     issues = check(graph)
+    titles = {n["key"]: n["title"] for n in graph["nodes"]}
+    for key, count in (open_comments or {}).items():
+        if key in titles:
+            issues.append(_issue("open_comment", f"Nierozwiązane komentarze przy „{titles[key]}”: {count}.", key))
     return {"score": score(issues), "issues": issues}

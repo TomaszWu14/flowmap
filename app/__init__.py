@@ -23,6 +23,7 @@ def create_app(config_class: type = Config) -> Flask:
     from . import models  # noqa: F401  (register models for migrations)
     from .admin.routes import bp as admin_bp
     from .auth.routes import bp as auth_bp
+    from .comments.routes import bp as comments_bp
     from .export.routes import bp as export_bp
     from .flow.routes import bp as flow_bp
     from .models import NODE_TYPE_LABELS
@@ -38,6 +39,7 @@ def create_app(config_class: type = Config) -> Flask:
     app.register_blueprint(flow_bp)
     app.register_blueprint(export_bp)
     app.register_blueprint(share_bp)
+    app.register_blueprint(comments_bp)
 
     @app.get("/healthz")
     def healthz():
