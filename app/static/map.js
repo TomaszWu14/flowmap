@@ -33,6 +33,8 @@
       } },
       { selector: "node.pending", style: { "border-style": "double", "border-width": 5, "border-color": css("--accent") } },
       { selector: "node.issue", style: { "underlay-color": css("--danger"), "underlay-opacity": 0.18, "underlay-padding": 7 } },
+      { selector: "node.diff-added", style: { "background-color": css("--ok"), "background-opacity": 0.22, "border-width": 3 } },
+      { selector: "node.diff-changed", style: { "background-color": css("--warn"), "background-opacity": 0.28, "border-width": 3 } },
       { selector: "node.focus", style: { "overlay-color": css("--accent"), "overlay-opacity": 0.16, "overlay-padding": 6 } },
       { selector: "edge", style: {
         "width": 1.6, "line-color": css("--muted"), "target-arrow-color": css("--muted"), "target-arrow-shape": "triangle",
@@ -53,7 +55,8 @@
 
   function elements(data) {
     const nodes = data.nodes.map((n) => {
-      const classes = [n.pending ? "pending" : "", n.issues.length ? "issue" : ""].join(" ").trim();
+      const classes = [n.pending ? "pending" : "", n.issues.length ? "issue" : "",
+        n.diff ? "diff-" + n.diff : ""].join(" ").trim();
       const label = n.title + (n.actor ? "\n— " + n.actor : "") + (n.issues.length ? "\n⚠ " + n.issues.length : "") + (n.comments ? "  💬 " + n.comments : "");
       const item = { group: "nodes", data: { id: n.key, type: n.type, label: label }, classes: classes };
       if (n.x !== null && n.y !== null) item.position = { x: n.x, y: n.y };
