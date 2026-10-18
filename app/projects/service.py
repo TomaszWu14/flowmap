@@ -33,6 +33,6 @@ def project_from_graph(owner, name: str, start_sentence: str, mode: str, templat
     return project
 
 
-def copy_project(project: Project) -> Project:
-    return project_from_graph(project.owner, f"{project.name} (kopia)", project.start_sentence, project.mode,
+def copy_project(project: Project, owner) -> Project:
+    return project_from_graph(owner, f"{project.name} (kopia)", project.start_sentence, project.mode,
                               project.template, project.graph(), "Kopia projektu")

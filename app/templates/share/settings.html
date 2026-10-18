@@ -32,5 +32,40 @@
     </form>
   {% endif %}
 </section>
-{% block extra %}{% endblock %}
+<section class="card" style="margin-top:1rem">
+  <h2>Współpracownicy</h2>
+  <p class="muted">Edytor odpowiada na pytania i zmienia mapę. Podgląd tylko ogląda, symuluje i eksportuje.
+    Zaproszona osoba musi mieć konto w FlowMap.</p>
+  {% if project.members %}
+  <ul class="edge-list" style="margin:.6rem 0">
+    {% for m in project.members %}
+    <li>
+      <span>{{ m.user.email }}</span>
+      <span class="row">
+        <form method="post" action="{{ url_for('share.member_role', project_id=project.id, member_id=m.id) }}" class="row">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <select name="role" aria-label="Rola {{ m.user.email }}" style="width:auto;min-height:32px">
+            <option value="editor" {{ 'selected' if m.role == 'editor' }}>edytor</option>
+            <option value="viewer" {{ 'selected' if m.role == 'viewer' }}>podgląd</option>
+          </select>
+          <button class="btn small" type="submit">Zmień</button>
+        </form>
+        <form method="post" action="{{ url_for('share.member_remove', project_id=project.id, member_id=m.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn small danger" type="submit">Usuń</button>
+        </form>
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  <form method="post" action="{{ url_for('share.member_add', project_id=project.id) }}" class="row" style="align-items:end">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label style="flex:2;min-width:200px">E-mail <input type="email" name="email" required maxlength="255"></label>
+    <label style="flex:1;min-width:120px">Rola
+      <select name="role"><option value="editor">edytor</option><option value="viewer">podgląd</option></select>
+    </label>
+    <button class="btn primary" type="submit">Dodaj</button>
+  </form>
+</section>
 {% endblock %}

@@ -25,7 +25,7 @@ def _download(body: str, filename: str, mimetype: str) -> Response:
 @bp.get("/p/<int:project_id>/eksport")
 @login_required
 def index(project_id):
-    project = g.owned_project(project_id)
+    project = g.project_for(project_id, "view")
     graph = project.graph()
     spec = builders.to_markdown(_meta(project), graph)
     target = request.args.get("target", "claude_code")
@@ -38,7 +38,7 @@ def index(project_id):
 @bp.get("/p/<int:project_id>/eksport/<kind>")
 @login_required
 def download(project_id, kind):
-    project = g.owned_project(project_id)
+    project = g.project_for(project_id, "view")
     graph = project.graph()
     meta = _meta(project)
     if kind == "spec.md":

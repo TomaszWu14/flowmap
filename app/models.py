@@ -86,6 +86,8 @@ class Project(db.Model):
     edges = db.relationship("Edge", back_populates="project", cascade="all, delete-orphan", order_by="Edge.id")
     questions = db.relationship("QuestionLog", cascade="all, delete-orphan", order_by="QuestionLog.id")
     versions = db.relationship("Version", cascade="all, delete-orphan", order_by="Version.id")
+    members = db.relationship("ProjectMember", back_populates="project", cascade="all, delete-orphan",
+                              order_by="ProjectMember.id")
 
     def node_by_key(self, key: str):
         return next((n for n in self.nodes if n.key == key), None)
@@ -151,6 +153,19 @@ class Edge(db.Model):
     project = db.relationship("Project", back_populates="edges")
     source = db.relationship("Node", foreign_keys=[source_id])
     target = db.relationship("Node", foreign_keys=[target_id])
+
+
+class ProjectMember(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="CASCADE"), nullable=False, index=True)
+    role = db.Column(db.String(10), nullable=False, default="viewer")  # viewer | editor
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+
+    user = db.relationship("User")
+    project = db.relationship("Project", back_populates="members")
+
+    __table_args__ = (db.UniqueConstraint("project_id", "user_id"),)
 
 
 class QuestionLog(db.Model):

@@ -63,14 +63,14 @@ def _changed(project, description: str, node=None, **kw):
 @bp.get("/p/<int:project_id>")
 @login_required
 def view(project_id):
-    project = g.owned_project(project_id)
+    project = g.project_for(project_id, "view")
     return render_template("flow/view.html", project=project, ai=ai_enabled())
 
 
 @bp.get("/p/<int:project_id>/graph.json")
 @login_required
 def graph_json(project_id):
-    project = g.owned_project(project_id)
+    project = g.project_for(project_id, "view")
     pending = {n.key for n in q.pending_nodes(project)}
     payload = graph_payload(project.graph(), pending)
     payload.update(can_undo=g.can_undo(project), can_redo=g.can_redo(project), status=project.status)
@@ -80,12 +80,15 @@ def graph_json(project_id):
 @bp.get("/p/<int:project_id>/panel")
 @login_required
 def panel(project_id):
-    project = g.owned_project(project_id)
+    project = g.project_for(project_id, "view")
     key = request.args.get("node")
     node = g.owned_node(project, key) if key else None
     kind = request.args.get("ask") or None
     if kind and kind not in ("next", "actor", "screen", "data", "error", "branches"):
         abort(400)
+    if project.current_role == "viewer":
+        return render_template("flow/_panel_readonly.html", project=project,
+                               node=node or (project.nodes[0] if project.nodes else None))
     slot = (request.args.get("slot") or "").strip()[:100] or None
     if kind == "next" and slot is None and node is not None:
         labels = g.open_labels(project, node)
@@ -96,7 +99,7 @@ def panel(project_id):
 @bp.post("/p/<int:project_id>/answer")
 @login_required
 def answer(project_id):
-    project = g.owned_project(project_id)
+    project = g.project_for(project_id, "edit")
     log = db.session.get(QuestionLog, request.form.get("log_id", type=int) or 0)
     if log is None or log.project_id != project.id:
         abort(404)
@@ -130,7 +133,7 @@ def answer(project_id):
 @bp.post("/p/<int:project_id>/node/<key>/edit")
 @login_required
 def edit_node(project_id, key):
-    project = g.owned_project(project_id)
+    project = g.project_for(project_id, "edit")
     node = g.owned_node(project, key)
     f = request.form
     title = (f.get("title") or "").strip()
@@ -153,7 +156,7 @@ def edit_node(project_id, key):
 @bp.post("/p/<int:project_id>/node/<key>/delete")
 @login_required
 def delete_node(project_id, key):
-    project = g.owned_project(project_id)
+    project = g.project_for(project_id, "edit")
     node = g.owned_node(project, key)
     if node.type == "start":
         return render_panel(project, node, error="Nie można usunąć kroku startowego.", focus_changed=False)
@@ -165,7 +168,7 @@ def delete_node(project_id, key):
 @bp.post("/p/<int:project_id>/node/<key>/connect")
 @login_required
 def connect_node(project_id, key):
-    project = g.owned_project(project_id)
+    project = g.project_for(project_id, "edit")
     node = g.owned_node(project, key)
     target = g.owned_node(project, request.form.get("target", ""))
     label = (request.form.get("label") or "").strip()
@@ -181,7 +184,7 @@ def connect_node(project_id, key):
 @bp.post("/p/<int:project_id>/node/<key>/end")
 @login_required
 def mark_end(project_id, key):
-    project = g.owned_project(project_id)
+    project = g.project_for(project_id, "edit")
     node = g.owned_node(project, key)
     if node.type == "start":
         return render_panel(project, node, error="Start nie może być końcem.", focus_changed=False)
@@ -195,7 +198,7 @@ def mark_end(project_id, key):
 @bp.post("/p/<int:project_id>/edge/<int:index>/delete")
 @login_required
 def delete_edge(project_id, index):
-    project = g.owned_project(project_id)
+    project = g.project_for(project_id, "edit")
     if not 0 <= index < len(project.edges):
         abort(404)
     edge = project.edges[index]
@@ -208,7 +211,7 @@ def delete_edge(project_id, index):
 @bp.post("/p/<int:project_id>/undo")
 @login_required
 def undo(project_id):
-    project = g.owned_project(project_id)
+    project = g.project_for(project_id, "edit")
     g.step_history(project, older=True)
     db.session.commit()
     return render_panel(project)
@@ -217,7 +220,7 @@ def undo(project_id):
 @bp.post("/p/<int:project_id>/redo")
 @login_required
 def redo(project_id):
-    project = g.owned_project(project_id)
+    project = g.project_for(project_id, "edit")
     g.step_history(project, older=False)
     db.session.commit()
     return render_panel(project)
@@ -226,7 +229,7 @@ def redo(project_id):
 @bp.post("/p/<int:project_id>/positions")
 @login_required
 def positions(project_id):
-    project = g.owned_project(project_id)
+    project = g.project_for(project_id, "edit")
     data = request.get_json(silent=True) or {}
     for node in project.nodes:
         pos = data.get(node.key)
@@ -239,7 +242,7 @@ def positions(project_id):
 @bp.post("/p/<int:project_id>/layout")
 @login_required
 def reset_layout(project_id):
-    project = g.owned_project(project_id)
+    project = g.project_for(project_id, "edit")
     for node in project.nodes:
         node.pos_x = node.pos_y = None
     db.session.commit()
@@ -253,7 +256,7 @@ def reset_layout(project_id):
 @bp.get("/p/<int:project_id>/guard")
 @login_required
 def guard_panel(project_id):
-    project = g.owned_project(project_id)
+    project = g.project_for(project_id, "view")
     report = guard.report(project.graph())
     return render_template("flow/_guard.html", project=project, report=report, ai=ai_enabled(),
                            suggestions=None, log=None, titles={n.key: n.title for n in project.nodes})
@@ -266,7 +269,7 @@ def guard_review(project_id):
 
     from .. import settings
 
-    project = g.owned_project(project_id)
+    project = g.project_for(project_id, "edit")
     graph = project.graph()
     report = guard.report(graph)
     error, log, suggestions = None, None, None
@@ -291,7 +294,7 @@ def guard_review(project_id):
 @bp.post("/p/<int:project_id>/guard/apply")
 @login_required
 def guard_apply(project_id):
-    project = g.owned_project(project_id)
+    project = g.project_for(project_id, "edit")
     log = db.session.get(QuestionLog, request.form.get("log_id", type=int) or 0)
     idx = request.form.get("index", type=int)
     if log is None or log.project_id != project.id or log.kind != "review" or idx is None:
@@ -314,7 +317,7 @@ def guard_apply(project_id):
 @bp.get("/p/<int:project_id>/symulacja")
 @login_required
 def simulate(project_id):
-    project = g.owned_project(project_id)
+    project = g.project_for(project_id, "view")
     return render_simulation(project, url_for("flow.view", project_id=project.id),
                              lambda **kw: url_for("flow.simulate", project_id=project.id, **kw))
 
