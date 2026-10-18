@@ -10,6 +10,10 @@ def create_app(config_class: type = Config) -> Flask:
     app.config.from_object(config_class)
     if app.config["APP_ENV"] == "production" and app.config["SECRET_KEY"] == "dev-only-insecure-key":
         raise RuntimeError("SECRET_KEY must be set in production")
+    if app.config["APP_ENV"] == "production":
+        from werkzeug.middleware.proxy_fix import ProxyFix
+
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)  # behind Coolify/Traefik
 
     db.init_app(app)
     migrate.init_app(app, db)

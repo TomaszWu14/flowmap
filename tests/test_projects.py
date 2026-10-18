@@ -53,3 +53,32 @@ def test_delete_and_copy(auth_client, db):
     assert copy.id != p.id and copy.name.endswith("(kopia)") and len(copy.nodes) == 1
     auth_client.post(f"/p/{p.id}/usun")
     assert db.session.get(Project, p.id) is None
+
+
+def test_versions_page_and_restore(auth_client):
+    from tests.test_flow import answer_first_tile
+
+    p = new_project(auth_client)
+    answer_first_tile(auth_client, p)
+    first = min(p.versions, key=lambda v: v.id)
+    html = auth_client.get(f"/p/{p.id}/wersje").get_data(as_text=True)
+    assert "Utworzono projekt" in html and "bieżąca" in html
+    auth_client.post(f"/p/{p.id}/wersje/{first.id}/przywroc")
+    p = Project.query.get(p.id)
+    assert len(p.nodes) == 1
+    assert len(p.versions) == 3  # history kept, restore added as a new version
+    assert p.versions[-1].description.startswith("Przywrócono")
+
+
+def test_production_requires_secret_key():
+    import pytest
+
+    from app import create_app
+    from app.config import Config
+
+    class Prod(Config):
+        APP_ENV = "production"
+        SECRET_KEY = "dev-only-insecure-key"
+
+    with pytest.raises(RuntimeError):
+        create_app(Prod)

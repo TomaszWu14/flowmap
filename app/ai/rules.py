@@ -21,9 +21,11 @@ def _end(title="Koniec procesu", actor="") -> StepSpec:
     return _s("end", title, actor)
 
 
-def generic_next(node: dict, label: str | None, mode: str) -> list[Option]:
+def generic_next(node: dict, label: str | None, mode: str, main_actor: str = "Użytkownik") -> list[Option]:
     """Fallback tiles by step type when no template step applies."""
-    actor = node.get("actor") or "Użytkownik"
+    actor = node.get("actor") or main_actor
+    if actor == "System":
+        actor = main_actor
     t = node["type"]
     if t == "decision":
         if label and NEGATIVE_LABEL.match(label):
@@ -61,7 +63,7 @@ def generic_next(node: dict, label: str | None, mode: str) -> list[Option]:
     elif t == "automation":
         specs = [
             _s("automation", "Wysłanie powiadomienia e-mail", "System", outputs=["E-mail"]),
-            _s("screen", "Ekran z wynikiem", actor if actor != "System" else "Użytkownik"),
+            _s("screen", "Ekran z wynikiem", actor),
             _s("wait", "Oczekiwanie na odpowiedź", "System"),
             _s("decision", "Czy operacja się powiodła?", "System", branches=["tak", "nie"]),
         ]
@@ -69,12 +71,12 @@ def generic_next(node: dict, label: str | None, mode: str) -> list[Option]:
         specs = [
             _s("decision", "Czy odpowiedź systemu jest poprawna?", "System", branches=["tak", "nie"]),
             _s("automation", "Zapis wyniku integracji", "System"),
-            _s("screen", "Ekran z wynikiem", "Użytkownik"),
+            _s("screen", "Ekran z wynikiem", actor),
         ]
     else:  # wait
         specs = [
             _s("automation", "Automatyczne przypomnienie", "System"),
-            _s("user_action", "Użytkownik wraca do procesu", "Użytkownik"),
+            _s("user_action", "Powrót do procesu", actor),
             _s("decision", "Czy minął termin?", "System", branches=["tak", "nie"]),
         ]
     options = [Option(label=s.title, steps=[s]) for s in specs]
@@ -82,7 +84,7 @@ def generic_next(node: dict, label: str | None, mode: str) -> list[Option]:
         options = options[:3]
         options.append(Option(
             label="Domknij proces: potwierdzenie i powiadomienie",
-            steps=[_s("screen", "Ekran potwierdzenia", actor if actor != "System" else "Użytkownik"),
+            steps=[_s("screen", "Ekran potwierdzenia", actor),
                    _s("automation", "Powiadomienie e-mail", "System"), _end()],
         ))
     return options
@@ -128,7 +130,9 @@ def next_question(graph: dict, node: dict, label: str | None, mode: str, templat
                               edge_label=edge_label if is_error else "",
                               edge_condition="error" if is_error else ""))
     seen = {o.label for o in options}
-    generic = generic_next(node, label, mode)
+    start = next((n for n in graph["nodes"] if n["type"] == "start"), None)
+    main_actor = (start or {}).get("actor") or "Użytkownik"
+    generic = generic_next(node, label, mode, main_actor)
     if options and mode == "quick":
         generic = generic[:-1]  # template already gives a multi-step chunk; skip the generic closer
     for opt in generic:
@@ -193,7 +197,7 @@ def error_question(node: dict, template: str | None) -> Question:
         if lab:
             s = templates.step(template, target)
             spec = StepSpec(tpl=target, **{k: v for k, v in s.items() if k in StepSpec.model_fields})
-            options.append(Option(label=f"{s['title']} i ponowienie", steps=[spec], connect_to="source",
+            options.append(Option(label=s["title"], steps=[spec], connect_to="source",
                                   edge_label=lab, edge_condition="error"))
     options += [
         Option(label="Komunikat o błędzie i ponowienie", connect_to="source", edge_label=label,

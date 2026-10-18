@@ -175,3 +175,12 @@ def test_view_page_renders(auth_client):
     p = new_project(auth_client)
     html = auth_client.get(f"/p/{p.id}").get_data(as_text=True)
     assert 'id="map"' in html and re.search(r'hx-headers=.*X-CSRFToken', html)
+
+
+def test_generic_tiles_after_decision_use_human_actor(auth_client):
+    p = new_project(auth_client, sentence="Pracownik składa wniosek urlopowy")
+    answer_first_tile(auth_client, p, prefer="Czy użytkownik ma konto")
+    auth_client.get(f"/p/{p.id}/panel")
+    log = QuestionLog.query.filter_by(project_id=p.id, answer="").order_by(QuestionLog.id.desc()).first()
+    screens = [o["steps"][0] for o in log.options["options"] if o["steps"] and o["steps"][0]["type"] == "screen"]
+    assert screens and all(s["actor"] == "Użytkownik" for s in screens)
