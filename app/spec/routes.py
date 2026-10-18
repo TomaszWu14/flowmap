@@ -98,6 +98,8 @@ def edit_form(project_id, section, key):
     _sec, item = spec.find(key) if key != "nowy" else (None, None)
     if key != "nowy" and item is None:
         abort(404)
+    if item is not None and _sec != section:
+        abort(404)
     return _section_response(project, section, editing=key, values=form_text(section, item))
 
 
@@ -110,6 +112,8 @@ def save_item(project_id, section, key):
     spec = _spec_or_abort(project)
     _sec, existing = spec.find(key) if key != "nowy" else (None, None)
     if key != "nowy" and existing is None:
+        abort(404)
+    if existing is not None and _sec != section:
         abort(404)
     try:
         item = item_from_form(section, request.form, existing)
@@ -148,6 +152,8 @@ def keep_item(project_id, section, key):
     spec = _spec_or_abort(project)
     _sec, item = spec.find(key)
     if item is None:
+        abort(404)
+    if _sec != section:
         abort(404)
     item.stale, item.source = False, "manual"
     project.spec = spec.model_dump(mode="json")

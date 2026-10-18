@@ -50,10 +50,12 @@ def item_from_form(section: str, form, existing):
     f = lambda name: (form.get(name) or "").strip()  # noqa: E731
     try:
         if section == "entities":
-            fields = [Field(key=f"field:{slug(_col(r, 0, 'pole'))}", name=_col(r, 0, "pole"), type=_type(_col(r, 1)),
+            fields = [Field(key=f"field:{slug(_col(r, 0, 'pole'))}-{i}",
+                            name=_col(r, 0, "pole"), type=_type(_col(r, 1)),
                             required=_yes(_col(r, 2)), validation=_col(r, 3),
                             enum_values=[v.strip() for v in _col(r, 4).split(",") if v.strip()],
-                            ref_entity=_col(r, 5), is_identifier=_yes(_col(r, 6))) for r in _rows(f("fields"))]
+                            ref_entity=_col(r, 5), is_identifier=_yes(_col(r, 6)))
+                    for i, r in enumerate(_rows(f("fields")))]
             relations = [Relation(key=f"rel:{slug(_col(r, 0))}-{i}", to_entity=_col(r, 0), kind=_col(r, 1, "1-n"),
                                   label=_col(r, 2)) for i, r in enumerate(_rows(f("relations")))]
             return Entity(**base, name=f("name"), description=f("description"), fields=fields, relations=relations)

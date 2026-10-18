@@ -61,3 +61,25 @@ def test_readiness_shown_and_viewer_cannot_edit(team):  # noqa: F811
     assert "Gotowość" in html
     key = load_spec(Project.query.get(p.id).spec).entities[0].key
     assert team["viewer"].post(f"/p/{p.id}/specyfikacja/entities/{key}", data={"name": "X"}).status_code == 403
+
+
+def test_wrong_section_for_key_aborts_404(auth_client):
+    p = new_project(auth_client)
+    spec = spec_of(p)
+    entity_key = spec.entities[0].key
+    # Try to access entity key in wrong section (screens)
+    r = auth_client.post(f"/p/{p.id}/specyfikacja/screens/{entity_key}",
+                         data={"name": "X", "role": "test", "fields": "", "actions": ""})
+    assert r.status_code == 404
+    # Verify no screen was created with that key
+    spec_after = spec_of(p)
+    assert not any(s.key == entity_key for s in spec_after.screens)
+
+
+def test_field_keys_are_unique_with_index(auth_client):
+    e = item_from_form("entities", {"name": "A", "description": "",
+                                    "fields": "x | text\nx | text", "relations": ""}, None)
+    assert len(e.fields) == 2
+    assert e.fields[0].key != e.fields[1].key
+    assert e.fields[0].key == "field:x-0"
+    assert e.fields[1].key == "field:x-1"
