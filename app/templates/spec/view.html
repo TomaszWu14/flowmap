@@ -13,6 +13,17 @@
       <button class="btn small" type="submit">Odbuduj z mapy</button></form>{% endif %}
   </div>
 {% else %}
+<div class="row" style="margin-bottom:1rem">
+  <span class="score"><span class="score-ring" style="--p: {{ ready.score }}"><span>{{ ready.score }}</span></span>Gotowość dla Claude Code</span>
+  {% if can_edit %}
+  <form method="post" action="{{ url_for('spec.save_stack', project_id=project.id) }}" class="row">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="sr-only" for="stack">Stos</label>
+    <input id="stack" name="stack" value="{{ spec.stack }}" placeholder="Stos, np. Flask + PostgreSQL" style="width:260px">
+    <button class="btn small" type="submit">Zapisz stos</button>
+  </form>
+  {% endif %}
+</div>
 <div class="spec-layout">
   <nav class="spec-nav" aria-label="Sekcje specyfikacji">
     {% for key, label in sections.items() %}

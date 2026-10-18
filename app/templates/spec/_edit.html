@@ -1,0 +1,12 @@
+<form class="card stack" style="max-width:none" hx-post="{{ url_for('spec.save_item', project_id=project.id, section=section, key=key) }}" hx-target="#spec-section">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {% for name, label, kind in form_fields %}
+    <label>{{ label }}
+      {% if kind == 'textarea' %}<textarea name="{{ name }}" rows="5" class="mono">{{ values.get(name, '') }}</textarea>
+      {% else %}<input name="{{ name }}" value="{{ values.get(name, '') }}">{% endif %}
+    </label>
+  {% endfor %}
+  <p class="field-help">Typy pól: text, long_text, integer, decimal, money, boolean, date, datetime, email, phone, enum, file, reference.</p>
+  <div class="row"><button class="btn primary" type="submit">Zapisz</button>
+    <button class="btn" type="button" hx-get="{{ url_for('spec.view', project_id=project.id, sekcja=section) }}" hx-select="#spec-section" hx-target="#spec-section" hx-swap="outerHTML">Anuluj</button></div>
+</form>

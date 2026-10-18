@@ -37,3 +37,13 @@ def test_spec_access(team):  # noqa: F811
     assert team["viewer"].get(f"/p/{p.id}/specyfikacja").status_code == 200
     assert team["viewer"].post(f"/p/{p.id}/specyfikacja/odbuduj").status_code == 403
     assert team["outsider"].get(f"/p/{p.id}/specyfikacja").status_code == 404
+
+
+def test_spec_auto_build_on_first_view(auth_client, db):
+    p = new_project(auth_client)
+    p.spec = None
+    db.session.commit()
+    html = auth_client.get(f"/p/{p.id}/specyfikacja").get_data(as_text=True)
+    assert "Rezerwacja" in html
+    refreshed_p = Project.query.get(p.id)
+    assert refreshed_p.spec is not None
