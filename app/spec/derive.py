@@ -58,7 +58,14 @@ def derive(graph: dict, meta: dict) -> Spec:
     by_key = {n["key"]: n for n in nodes}
     start = next((n for n in nodes if n["type"] == "start"), None)
     initiator = (start or {}).get("actor") or ""
-    humans = list(dict.fromkeys(n["actor"] for n in nodes if n.get("actor") and n["actor"] != "System"))
+    humans = []
+    seen_actor_slugs = set()
+    for n in nodes:
+        actor = n.get("actor")
+        if not actor or actor == "System" or slug(actor) in seen_actor_slugs:
+            continue
+        seen_actor_slugs.add(slug(actor))
+        humans.append(actor)
 
     # --- entities
     main_name = _main_name(meta)
@@ -79,18 +86,26 @@ def derive(graph: dict, meta: dict) -> Spec:
     # --- states of the main entity (walk order, decisions give approve/reject)
     statuses = [Status(name="nowy", initial=True)]
     transitions = []
+    current = "nowy"
     for n in _ordered(graph):
         if n["type"] == "decision":
+            before = current
             for e in graph["edges"]:
                 if e["source"] == n["key"] and e.get("label"):
-                    name = "odrzucony" if NEGATIVE_LABEL.match(e["label"]) else "zatwierdzony"
-                    _add_status(statuses, name)
-                    transitions.append(Transition(from_status="nowy", to_status=name, node_key=n["key"]))
+                    if NEGATIVE_LABEL.match(e["label"]):
+                        name = "odrzucony"
+                        _add_status(statuses, name)
+                        transitions.append(Transition(from_status=before, to_status=name, node_key=n["key"]))
+                    else:
+                        name = "zatwierdzony"
+                        _add_status(statuses, name)
+                        transitions.append(Transition(from_status=before, to_status=name, node_key=n["key"]))
+                        current = name
         elif n["type"] == "end":
             name = n["title"][:60].lower()
             _add_status(statuses, name, final=True)
-            transitions.append(Transition(from_status=statuses[-2].name if len(statuses) > 1 else "nowy",
-                                          to_status=name, node_key=n["key"], role=slug(n.get("actor") or "")))
+            transitions.append(Transition(from_status=current, to_status=name, node_key=n["key"],
+                                          role=slug(n.get("actor") or "")))
     if not any(s.final for s in statuses):
         _add_status(statuses, "zamknięty", final=True)
     main.fields.append(_field("status", type="enum", enum_values=[s.name for s in statuses], required=True))
@@ -100,14 +115,16 @@ def derive(graph: dict, meta: dict) -> Spec:
     # --- roles
     roles = []
     for actor in humans:
-        if actor == initiator:
+        if slug(actor) == "administrator":
+            perms = {e.key: {"read": "all", "create": "all", "update": "all", "delete": "all"} for e in entities}
+        elif actor == initiator:
             perms = {main.key: {"read": "own", "create": "own", "update": "own", "delete": "none"}}
             if any(e.key == f"entity:{slug(actor)}" for e in entities):
                 perms[f"entity:{slug(actor)}"] = {"read": "own", "create": "own", "update": "own", "delete": "none"}
         else:
             perms = {main.key: {"read": "all", "create": "none", "update": "all", "delete": "none"}}
         roles.append(Role(key=f"role:{slug(actor)}", name=actor, permissions=perms))
-    if not any(r.name == "Administrator" for r in roles):
+    if not any(slug(r.name) == "administrator" for r in roles):
         roles.append(Role(key="role:administrator", name="Administrator", description="Pełny dostęp",
                           permissions={e.key: {"read": "all", "create": "all", "update": "all", "delete": "all"}
                                        for e in entities}))

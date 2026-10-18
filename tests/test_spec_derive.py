@@ -56,3 +56,52 @@ def test_derive_service_staff_role_permissions():
     assert roles["Serwisant"].permissions[main] == {"read": "all", "create": "none", "update": "all",
                                                     "delete": "none"}
     assert roles["Administrator"].permissions[main]["delete"] == "all"
+
+
+def test_derive_transition_from_status_tracks_running_status():
+    # booking has two sequential decisions: "free" then "prepay". Once "free"'s positive
+    # branch sets the running status to "zatwierdzony", every later transition out of
+    # "prepay" (both branches) must start from that status, not a hardcoded "nowy".
+    spec = derive(full_graph("booking"), META)
+    sm = spec.states[0]
+    status_names = {s.name for s in sm.statuses}
+    prepay_transitions = [t for t in sm.transitions if t.node_key == "prepay"]
+    assert prepay_transitions
+    assert all(t.from_status == "zatwierdzony" for t in prepay_transitions)
+    assert all(t.from_status in status_names and t.to_status in status_names for t in sm.transitions)
+
+
+def _graph(nodes_actors):
+    """Build a minimal start -> ... -> end graph dict; nodes_actors: [(key, type, actor, inputs)]."""
+    nodes = [{"key": k, "type": t, "title": k, "actor": a, "inputs": list(i), "outputs": [], "data": {},
+              "description": ""} for k, t, a, i in nodes_actors]
+    edges = [{"source": nodes[i]["key"], "target": nodes[i + 1]["key"], "label": "", "condition": ""}
+             for i in range(len(nodes) - 1)]
+    return {"nodes": nodes, "edges": edges}
+
+
+def test_derive_administrator_actor_always_gets_full_permissions():
+    graph = _graph([
+        ("start", "start", "Klient", []),
+        ("review", "user_action", "Administrator", ["Komentarz"]),
+        ("end", "end", "Klient", []),
+    ])
+    spec = derive(graph, {"name": "Wniosek", "start_sentence": "Klient zgłasza wniosek"})
+    admin = next(r for r in spec.roles if r.name == "Administrator")
+    for entity in spec.entities:
+        assert admin.permissions[entity.key] == {"read": "all", "create": "all", "update": "all", "delete": "all"}
+
+
+def test_derive_actor_case_diacritics_deduplicated():
+    graph = _graph([
+        ("start", "start", "Klient", []),
+        ("a1", "user_action", "Serwisant", ["Numer"]),
+        ("a2", "user_action", "serwisant", ["Raport"]),
+        ("end", "end", "Klient", []),
+    ])
+    spec = derive(graph, {"name": "Zgłoszenie", "start_sentence": "Klient zgłasza usterkę"})
+    role_keys = [r.key for r in spec.roles]
+    entity_keys = [e.key for e in spec.entities]
+    assert len(role_keys) == len(set(role_keys))
+    assert len(entity_keys) == len(set(entity_keys))
+    assert sum(1 for r in spec.roles if slug(r.name) == "serwisant") == 1
