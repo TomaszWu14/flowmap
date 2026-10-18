@@ -23,10 +23,18 @@ i gotowe polecenie dla generatora kodu (Claude Code, Lovable, Bolt).
   generatora kodu, eksport/import projektu w JSON.
 - **Tryb bez AI** — bez klucza API aplikacja działa na regułach i 3 szablonach procesów
   (rezerwacja wizyty, zamówienie w sklepie, zgłoszenie serwisowe).
+- **Mapa z dokumentu** — wklejasz opis procesu, powstaje szkic mapy (AI albo reguły), pytania uzupełniają gałęzie.
+- **Wspólna praca** — współpracownicy z rolą edytor lub podgląd; **link do podglądu** bez logowania (mapa,
+  specyfikacja, symulacja); **komentarze** przy krokach (otwarte liczy strażnik).
+- **Historia** — porównanie dwóch wersji mapy (dodane, usunięte i zmienione kroki z podświetleniem).
+- **Własne szablony** — gotową mapę zapisujesz jako szablon; tryb bez AI podpowiada z niej kroki.
+- **Eksport zadań** — Jira (CSV), Linear (CSV), GitHub Issues (JSONL + polecenie `gh`).
+- **Konto** — „Nie pamiętam hasła” (link e-mailem przez SMTP albo jednorazowy link od admina).
 - Publiczna strona z przykładowym projektem: `/przyklad`.
-- **Panel administratora** `/admin`: statystyki, konfiguracja, lista kont z blokowaniem i nadawaniem
-  uprawnień. Treści cudzych projektów nie widać. Uprawnienia nadaje tylko `flask set-admin` (albo
-  `flask create-user --admin`).
+- **Panel administratora** `/admin`: statystyki; ustawienia bez redeployu (rejestracja, wyłącznik AI, limit AI);
+  lista kont z blokowaniem, nadawaniem uprawnień i linkiem do ustawienia hasła; dziennik zdarzeń
+  (`/admin/zdarzenia`). Treści cudzych projektów nie widać. Uprawnienia nadaje tylko `flask set-admin`
+  (albo `flask create-user --admin`).
 
 ## Stos
 
