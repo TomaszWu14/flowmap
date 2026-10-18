@@ -7,7 +7,7 @@ from ..ai import templates
 from ..flow import graph as g
 from ..flow.routes import graph_payload
 from ..projects.service import project_from_graph
-from . import builders
+from . import builders, tasks
 
 bp = Blueprint("export", __name__)
 EXAMPLE = "booking"
@@ -32,6 +32,7 @@ def index(project_id):
     return render_template(
         "export/index.html", project=project, spec=spec, mermaid=builders.to_mermaid(graph),
         prompt=builders.to_prompt(_meta(project), spec, target), target=target, targets=builders.TARGETS,
+        task_count=len(tasks.build_tasks(_meta(project), graph)), github_command=tasks.GITHUB_COMMAND,
     )
 
 
@@ -54,6 +55,12 @@ def download(project_id, kind):
     if kind == "projekt.json":
         body = json.dumps(builders.to_json(meta, graph), ensure_ascii=False, indent=2)
         return _download(body, "projekt.flowmap.json", "application/json")
+    if kind == "zadania-jira.csv":
+        return _download(tasks.to_jira_csv(tasks.build_tasks(meta, graph)), kind, "text/csv")
+    if kind == "zadania-linear.csv":
+        return _download(tasks.to_linear_csv(tasks.build_tasks(meta, graph)), kind, "text/csv")
+    if kind == "zadania-github.jsonl":
+        return _download(tasks.to_github_json(tasks.build_tasks(meta, graph)), kind, "application/x-ndjson")
     return render_template("error.html", code=404, message="Nieznany format eksportu."), 404
 
 
