@@ -24,6 +24,9 @@ i gotowe polecenie dla generatora kodu (Claude Code, Lovable, Bolt).
 - **Tryb bez AI** — bez klucza API aplikacja działa na regułach i 3 szablonach procesów
   (rezerwacja wizyty, zamówienie w sklepie, zgłoszenie serwisowe).
 - Publiczna strona z przykładowym projektem: `/przyklad`.
+- **Panel administratora** `/admin`: statystyki, konfiguracja, lista kont z blokowaniem i nadawaniem
+  uprawnień. Treści cudzych projektów nie widać. Uprawnienia nadaje tylko `flask set-admin` (albo
+  `flask create-user --admin`).
 
 ## Stos
 
@@ -43,6 +46,7 @@ export FLASK_APP=app:create_app      # Windows PowerShell: $env:FLASK_APP="app:c
 flask db upgrade                     # tworzy instance/flowmap.db (SQLite)
 flask create-user ty@example.com     # zapyta o hasło (min. 12 znaków)
 flask set-password ty@example.com    # zmiana hasła istniejącego konta
+flask set-admin ty@example.com       # uprawnienia administratora (--revoke odbiera)
 flask run                            # http://127.0.0.1:5000
 ```
 

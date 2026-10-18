@@ -7,7 +7,7 @@ from wtforms import EmailField, PasswordField
 from wtforms.validators import DataRequired, EqualTo, Length, Regexp
 
 from ..extensions import db
-from ..models import MIN_PASSWORD_LENGTH, User
+from ..models import MIN_PASSWORD_LENGTH, User, utcnow
 
 bp = Blueprint("auth", __name__)
 
@@ -49,6 +49,11 @@ def login():
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data.strip().lower()).first()
         if user and user.check_password(form.password.data):
+            if user.is_blocked:
+                flash("Konto jest zablokowane. Skontaktuj się z administratorem.", "error")
+                return render_template("auth/login.html", form=form)
+            user.last_login_at = utcnow()
+            db.session.commit()
             login_user(user, remember=True)
             return redirect(_safe_next(request.args.get("next")))
         flash("Nieprawidłowy e-mail lub hasło.", "error")

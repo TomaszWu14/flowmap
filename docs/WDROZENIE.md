@@ -60,6 +60,15 @@ flask create-user ty@example.com
 
 (zapyta o hasło, min. 12 znaków). Zapomniane hasło zmienisz tak samo: `flask set-password ty@example.com`.
 
+## 6a. Konto administratora
+
+1. Zarejestruj się na `/register` (albo `flask create-user ty@example.com --admin` w terminalu).
+2. W Coolify → **Terminal** kontenera `app`: `flask set-admin ty@example.com`.
+3. Wyloguj się i zaloguj ponownie — w menu pojawi się **Admin** (`/admin`).
+
+Uprawnień nie da się nadać przez zmienną środowiskową z adresem e-mail — przy otwartej rejestracji
+ktoś mógłby założyć konto na Twój adres przed Tobą.
+
 ## 7. Aktualizacje i kopie
 
 - Nowa wersja: push na `main` → **Redeploy** w Coolify (albo webhook / auto-deploy z GitHub App).

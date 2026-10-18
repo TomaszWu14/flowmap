@@ -1,4 +1,5 @@
 import pytest
+from flask import g
 
 from app import create_app
 from app.config import TestConfig
@@ -11,6 +12,13 @@ PASSWORD = "bardzo-dlugie-haslo"
 @pytest.fixture
 def app():
     app = create_app(TestConfig)
+
+    @app.teardown_request
+    def _forget_cached_user(_exc):
+        # The fixture keeps one app context open, so `g` would leak the logged-in user between
+        # requests of different test clients. In production every request gets a fresh `g`.
+        g.pop("_login_user", None)
+
     with app.app_context():
         _db.create_all()
         yield app
