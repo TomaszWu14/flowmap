@@ -13,6 +13,11 @@ FIELD_TYPE_LABELS = {
     "money": "kwota", "boolean": "tak/nie", "date": "data", "datetime": "data i godzina", "email": "e-mail",
     "phone": "telefon", "enum": "lista wyboru", "file": "plik", "reference": "odwołanie",
 }
+PERM_LABELS = {"all": "wszystkie", "own": "tylko swoje", "none": "—"}
+CHANNEL_LABELS = {"email": "e-mail", "sms": "SMS", "push": "push", "in_app": "w aplikacji"}
+DIRECTION_LABELS = {"out": "wychodząca", "in": "przychodząca", "both": "dwukierunkowa"}
+NFR_LABELS = {"security": "bezpieczeństwo", "performance": "wydajność", "privacy": "prywatność (RODO)",
+              "accessibility": "dostępność", "other": "inne"}
 SECTIONS = ("entities", "screens", "roles", "states", "notifications", "integrations", "nfr")
 FieldType = Literal["text", "long_text", "integer", "decimal", "money", "boolean", "date", "datetime", "email",
                     "phone", "enum", "file", "reference"]

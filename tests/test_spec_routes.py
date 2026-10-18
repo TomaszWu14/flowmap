@@ -22,6 +22,16 @@ def test_broken_spec_offers_rebuild(auth_client, db):
     assert Project.query.get(p.id).spec["entities"][0]["key"].startswith("entity:")
 
 
+def test_spec_polish_labels_and_names(auth_client):
+    p = new_project(auth_client)
+    html = auth_client.get(f"/p/{p.id}/specyfikacja?sekcja=roles").get_data(as_text=True)
+    assert "tylko swoje" in html
+    assert "Rezerwacja" in html
+    assert "entity:rezerwacja" not in html
+    html = auth_client.get(f"/p/{p.id}/specyfikacja?sekcja=nfr").get_data(as_text=True)
+    assert "bezpieczeństwo" in html
+
+
 def test_spec_access(team):  # noqa: F811
     p = team["project"]
     assert team["viewer"].get(f"/p/{p.id}/specyfikacja").status_code == 200
