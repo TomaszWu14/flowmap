@@ -2,9 +2,13 @@
 
 from flask import abort
 from flask_login import current_user
+from pydantic import ValidationError
 
 from ..extensions import db
 from ..models import Edge, Node, Project, ProjectMember, Version, new_key
+from ..spec.derive import derive
+from ..spec.merge import merge
+from ..spec.schema import Spec, load_spec
 
 ERROR_CONDITION = "error"
 DEFAULT_ACTORS = {"automation": "System", "integration": "System", "wait": "System"}
@@ -102,15 +106,34 @@ def open_labels(project: Project, node: Node) -> list[str | None]:
     return [] if any(e.condition != ERROR_CONDITION for e in out) else [None]
 
 
+# --- spec -------------------------------------------------------------
+
+def project_spec(project: Project) -> Spec | None:
+    """Stored spec, or None when the stored document is broken (UI offers a rebuild)."""
+    try:
+        return load_spec(project.spec)
+    except ValidationError:
+        return None
+
+
+def refresh_spec(project: Project) -> None:
+    """Re-derive the spec from the map, keeping manual and AI items (cheap, no AI)."""
+    meta = {"name": project.name, "start_sentence": project.start_sentence}
+    current = project_spec(project) if project.spec else None
+    project.spec = merge(current, derive(project.graph(), meta)).model_dump(mode="json")
+
+
 # --- versions -------------------------------------------------------------
 
 def save_version(project: Project, description: str) -> Version:
     """Snapshot after a change. Drops the redo tail, like any editor."""
+    refresh_spec(project)
     if project.version_cursor_id is not None:
         for v in [v for v in project.versions if v.id > project.version_cursor_id]:
             project.versions.remove(v)
             db.session.delete(v)
-    version = Version(project_id=project.id, description=description[:300], snapshot=project.graph())
+    snapshot = project.graph() | {"spec": project.spec}
+    version = Version(project_id=project.id, description=description[:300], snapshot=snapshot)
     project.versions.append(version)
     db.session.flush()
     project.version_cursor_id = version.id
@@ -138,6 +161,11 @@ def load_graph(project: Project, graph: dict) -> None:
     for e in graph.get("edges", []):
         if e["source"] in by_key and e["target"] in by_key:
             add_edge(project, by_key[e["source"]], by_key[e["target"]], e.get("label", ""), e.get("condition", ""))
+    if "spec" in graph:
+        project.spec = graph["spec"]
+    else:  # snapshots from before the spec layer
+        project.spec = None
+        refresh_spec(project)
 
 
 def _neighbour_version(project: Project, older: bool) -> Version | None:
