@@ -46,8 +46,12 @@
         <td class="muted">{{ u.last_login_at.strftime('%d.%m.%Y %H:%M') if u.last_login_at else '—' }}</td>
         <td class="muted">{{ u.created_at.strftime('%d.%m.%Y') }}</td>
         <td>
-          {% if u.id != current_user.id %}
           <div class="row">
+            <form method="post" action="{{ url_for('admin.reset_link', user_id=u.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn small" type="submit" title="Jednorazowy link do ustawienia hasła, ważny 24 h">Link do hasła</button>
+            </form>
+          {% if u.id != current_user.id %}
             <form method="post" action="{{ url_for('admin.user_action', user_id=u.id, action='unblock' if u.is_blocked else 'block') }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="btn small {{ '' if u.is_blocked else 'danger' }}" type="submit">{{ 'Odblokuj' if u.is_blocked else 'Zablokuj' }}</button>
@@ -56,8 +60,8 @@
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="btn small" type="submit">{{ 'Odbierz admina' if u.is_admin else 'Nadaj admina' }}</button>
             </form>
-          </div>
           {% endif %}
+          </div>
         </td>
       </tr>
     {% endfor %}

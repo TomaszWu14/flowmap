@@ -37,7 +37,8 @@ Coolify sam generuje zmienne z prefiksem `SERVICE_` użyte w `docker-compose.yml
 | `ALLOW_SIGNUP` | ręcznie, opcjonalnie | `false` = rejestracja wyłączona |
 | `ANTHROPIC_API_KEY` | ręcznie, opcjonalnie | bez klucza działa tryb reguł i szablonów |
 | `ANTHROPIC_MODEL` | ręcznie, opcjonalnie | domyślnie `claude-opus-5-5` |
-| `AI_DAILY_LIMIT` | ręcznie, opcjonalnie | domyślnie 100 zapytań/użytkownika/dzień |
+| `AI_DAILY_LIMIT` | ręcznie, opcjonalnie | domyślnie 100 zapytań/użytkownika/dzień (można zmienić w panelu admina) |
+| `MAIL_SERVER` i reszta `MAIL_*` | ręcznie, opcjonalnie | SMTP do linków „Nie pamiętam hasła”; bez tego admin generuje link w panelu |
 
 Jeśli Coolify nie wygeneruje którejś zmiennej `SERVICE_*`, ustaw ją ręcznie wartością z
 `openssl rand -hex 32`. **Nie zmieniaj hasła bazy po pierwszym starcie** — Postgres zapisuje je

@@ -10,6 +10,7 @@
     {{ field(form.password, autocomplete="current-password") }}
     <button class="btn primary" type="submit">Zaloguj</button>
   </form>
+  <p class="muted" style="margin-top:1rem"><a href="{{ url_for('auth.forgot_password') }}">Nie pamiętam hasła</a></p>
   {% if signup_open() %}
     <p class="muted" style="margin-top:1rem">Nie masz konta? <a href="{{ url_for('auth.register') }}">Zarejestruj się</a>.</p>
   {% endif %}

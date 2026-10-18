@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% from "_form.html" import field %}
+{% block title %}Nie pamiętam hasła{% endblock %}
+{% block content %}
+<div class="card" style="max-width:440px;margin:2rem auto">
+  <h1>Nie pamiętam hasła</h1>
+  {% if form %}
+    <p class="muted">Podaj adres konta — wyślemy jednorazowy link do ustawienia nowego hasła.</p>
+    <form method="post" class="stack" novalidate>
+      {{ form.hidden_tag() }}
+      {{ field(form.email, autocomplete="email", autofocus=true) }}
+      <button class="btn primary" type="submit">Wyślij link</button>
+    </form>
+  {% else %}
+    <p>Wysyłka e-maili nie jest skonfigurowana. Poproś administratora o link do ustawienia nowego hasła.</p>
+  {% endif %}
+  <p class="muted" style="margin-top:1rem"><a href="{{ url_for('auth.login') }}">← Wróć do logowania</a></p>
+</div>
+{% endblock %}
