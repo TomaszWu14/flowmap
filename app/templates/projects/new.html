@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "_form.html" import field %}
+{% block title %}Nowy projekt{% endblock %}
+{% block content %}
+<div class="card" style="max-width:600px;margin:0 auto">
+  <h1>Nowy projekt</h1>
+  <form method="post" class="stack" style="max-width:none" novalidate>
+    {{ form.hidden_tag() }}
+    {{ field(form.name, placeholder="Rezerwacje w salonie") }}
+    {{ field(form.start_sentence, placeholder="Klient chce umówić wizytę w salonie") }}
+    <fieldset>
+      <legend>{{ form.mode.label.text }}</legend>
+      {% for sub in form.mode %}
+        <label class="radio">{{ sub() }} {{ sub.label.text }}</label>
+      {% endfor %}
+    </fieldset>
+    {{ field(form.template) }}
+    <span class="field-help">Szablon podpowiada kroki, gdy aplikacja działa bez klucza AI. „Dobierz automatycznie” rozpoznaje temat po zdaniu startowym.</span>
+    <button class="btn primary" type="submit">Utwórz i zacznij pytania</button>
+  </form>
+</div>
+{% endblock %}

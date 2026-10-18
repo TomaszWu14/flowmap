@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% from "_form.html" import field %}
+{% block title %}Rejestracja{% endblock %}
+{% block content %}
+<div class="card" style="max-width:440px;margin:2rem auto">
+  <h1>Załóż konto</h1>
+  <form method="post" class="stack" novalidate>
+    {{ form.hidden_tag() }}
+    {{ field(form.email, autocomplete="email", autofocus=true) }}
+    {{ field(form.password, autocomplete="new-password", minlength=12) }}
+    <span class="field-help">Minimum 12 znaków — najlepiej kilka słów.</span>
+    {{ field(form.password2, autocomplete="new-password") }}
+    <button class="btn primary" type="submit">Utwórz konto</button>
+  </form>
+  <p class="muted" style="margin-top:1rem">Masz już konto? <a href="{{ url_for('auth.login') }}">Zaloguj się</a>.</p>
+</div>
+{% endblock %}

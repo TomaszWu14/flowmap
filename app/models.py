@@ -1,0 +1,168 @@
+import secrets
+from datetime import UTC, date, datetime
+
+from flask_login import UserMixin
+from werkzeug.security import check_password_hash, generate_password_hash
+
+from .extensions import db, login_manager
+
+NODE_TYPES = ("start", "user_action", "screen", "automation", "decision", "wait", "integration", "end")
+NODE_TYPE_LABELS = {
+    "start": "Start",
+    "user_action": "Działanie użytkownika",
+    "screen": "Ekran",
+    "automation": "Automatyzacja",
+    "decision": "Decyzja",
+    "wait": "Oczekiwanie",
+    "integration": "Integracja",
+    "end": "Koniec",
+}
+MODES = ("quick", "thorough")
+MIN_PASSWORD_LENGTH = 12
+
+
+def utcnow() -> datetime:
+    return datetime.now(UTC).replace(tzinfo=None)
+
+
+def new_key() -> str:
+    return secrets.token_hex(4)
+
+
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+    ai_usage_date = db.Column(db.Date)
+    ai_usage_count = db.Column(db.Integer, default=0, nullable=False)
+
+    projects = db.relationship("Project", back_populates="owner", cascade="all, delete-orphan")
+
+    def set_password(self, password: str) -> None:
+        if len(password) < MIN_PASSWORD_LENGTH:
+            raise ValueError(f"Hasło musi mieć co najmniej {MIN_PASSWORD_LENGTH} znaków.")
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password: str) -> bool:
+        return check_password_hash(self.password_hash, password)
+
+    def consume_ai_request(self, daily_limit: int) -> bool:
+        """Increment today's AI counter; False when the limit is reached."""
+        today = date.today()
+        if self.ai_usage_date != today:
+            self.ai_usage_date = today
+            self.ai_usage_count = 0
+        if self.ai_usage_count >= daily_limit:
+            return False
+        self.ai_usage_count += 1
+        return True
+
+
+@login_manager.user_loader
+def load_user(user_id: str):
+    return db.session.get(User, int(user_id))
+
+
+class Project(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    owner_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    name = db.Column(db.String(200), nullable=False)
+    start_sentence = db.Column(db.String(500), nullable=False)
+    mode = db.Column(db.String(20), nullable=False, default="quick")
+    template = db.Column(db.String(40))
+    status = db.Column(db.String(20), nullable=False, default="draft")  # draft | complete
+    version_cursor_id = db.Column(db.Integer)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
+    owner = db.relationship("User", back_populates="projects")
+    nodes = db.relationship("Node", back_populates="project", cascade="all, delete-orphan", order_by="Node.id")
+    edges = db.relationship("Edge", back_populates="project", cascade="all, delete-orphan", order_by="Edge.id")
+    questions = db.relationship("QuestionLog", cascade="all, delete-orphan", order_by="QuestionLog.id")
+    versions = db.relationship("Version", cascade="all, delete-orphan", order_by="Version.id")
+
+    def node_by_key(self, key: str):
+        return next((n for n in self.nodes if n.key == key), None)
+
+    def graph(self) -> dict:
+        """Plain-dict snapshot of the map; the shared format for guard, export, simulation and versions."""
+        keys = {n.id: n.key for n in self.nodes}
+        return {
+            "nodes": [n.to_dict() for n in self.nodes],
+            "edges": [
+                {
+                    "source": keys[e.source_id],
+                    "target": keys[e.target_id],
+                    "label": e.label or "",
+                    "condition": e.condition or "",
+                }
+                for e in self.edges
+            ],
+        }
+
+
+class Node(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("project.id"), nullable=False, index=True)
+    key = db.Column(db.String(16), nullable=False, default=new_key)
+    type = db.Column(db.String(20), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, default="")
+    actor = db.Column(db.String(100), default="")
+    inputs = db.Column(db.JSON, default=list)
+    outputs = db.Column(db.JSON, default=list)
+    data = db.Column(db.JSON, default=dict)  # branches, template step key, asked helper questions
+    pos_x = db.Column(db.Float)
+    pos_y = db.Column(db.Float)
+
+    project = db.relationship("Project", back_populates="nodes")
+
+    __table_args__ = (db.UniqueConstraint("project_id", "key"),)
+
+    def to_dict(self) -> dict:
+        return {
+            "key": self.key,
+            "type": self.type,
+            "title": self.title,
+            "description": self.description or "",
+            "actor": self.actor or "",
+            "inputs": list(self.inputs or []),
+            "outputs": list(self.outputs or []),
+            "data": dict(self.data or {}),
+            "x": self.pos_x,
+            "y": self.pos_y,
+        }
+
+
+class Edge(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("project.id"), nullable=False, index=True)
+    source_id = db.Column(db.Integer, db.ForeignKey("node.id", ondelete="CASCADE"), nullable=False)
+    target_id = db.Column(db.Integer, db.ForeignKey("node.id", ondelete="CASCADE"), nullable=False)
+    label = db.Column(db.String(100), default="")
+    condition = db.Column(db.String(300), default="")
+
+    project = db.relationship("Project", back_populates="edges")
+    source = db.relationship("Node", foreign_keys=[source_id])
+    target = db.relationship("Node", foreign_keys=[target_id])
+
+
+class QuestionLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("project.id"), nullable=False, index=True)
+    node_key = db.Column(db.String(16))
+    kind = db.Column(db.String(20), nullable=False)
+    question = db.Column(db.Text, nullable=False)
+    options = db.Column(db.JSON, default=list)
+    answer = db.Column(db.Text, default="")
+    source = db.Column(db.String(10), default="rules")  # rules | ai
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+
+
+class Version(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("project.id"), nullable=False, index=True)
+    description = db.Column(db.String(300), nullable=False)
+    snapshot = db.Column(db.JSON, nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)

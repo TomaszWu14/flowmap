@@ -1,0 +1,38 @@
+# FlowMap: app + PostgreSQL. Works locally (`docker compose up`) and as a Coolify "Docker Compose" resource.
+# Coolify fills SERVICE_* variables automatically; locally put them in .env (see .env.example).
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      SECRET_KEY: ${SERVICE_PASSWORD_64_SECRETKEY:?set SECRET_KEY}
+      DATABASE_URL: postgresql://flowmap:${SERVICE_HEX_32_POSTGRES:?set DB password}@db:5432/flowmap
+      ALLOW_SIGNUP: ${ALLOW_SIGNUP:-true}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5-5}
+      AI_DAILY_LIMIT: ${AI_DAILY_LIMIT:-100}
+    expose:
+      - "8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: flowmap
+      POSTGRES_DB: flowmap
+      POSTGRES_PASSWORD: ${SERVICE_HEX_32_POSTGRES:?set DB password}
+    volumes:
+      - flowmap-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flowmap -d flowmap"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  flowmap-db:

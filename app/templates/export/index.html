@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Eksport — {{ project.name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Eksport</h1><p class="muted">{{ project.name }}</p></div>
+  <a class="btn" href="{{ url_for('flow.view', project_id=project.id) }}">← Wróć do mapy</a>
+</div>
+<div class="export-grid">
+  <section class="card">
+    <div class="page-head" style="margin-bottom:.6rem">
+      <h2>Polecenie dla generatora kodu</h2>
+      <div class="row">
+        <form method="get" class="row">
+          <label class="sr-only" for="target">Narzędzie</label>
+          <select id="target" name="target" style="width:auto">
+            {% for k, v in targets.items() %}<option value="{{ k }}" {{ 'selected' if k == target }}>{{ v }}</option>{% endfor %}
+          </select>
+          <button class="btn small" type="submit">Zmień</button>
+        </form>
+        <button class="btn small primary" type="button" data-copy="prompt-text">Kopiuj</button>
+        <a class="btn small" href="{{ url_for('export.download', project_id=project.id, kind='prompt.md', target=target) }}">Pobierz</a>
+      </div>
+    </div>
+    <pre class="code" id="prompt-text">{{ prompt }}</pre>
+  </section>
+
+  <section class="card">
+    <div class="page-head" style="margin-bottom:.6rem">
+      <h2>Specyfikacja (Markdown)</h2>
+      <div class="row">
+        <button class="btn small" type="button" data-copy="spec-text">Kopiuj</button>
+        <a class="btn small" href="{{ url_for('export.download', project_id=project.id, kind='spec.md') }}">Pobierz .md</a>
+      </div>
+    </div>
+    <pre class="code" id="spec-text">{{ spec }}</pre>
+  </section>
+
+  <section class="card">
+    <div class="page-head" style="margin-bottom:.6rem">
+      <h2>Diagram Mermaid</h2>
+      <div class="row">
+        <button class="btn small" type="button" data-copy="mermaid-text">Kopiuj</button>
+        <a class="btn small" href="{{ url_for('export.download', project_id=project.id, kind='diagram.mmd') }}">Pobierz .mmd</a>
+      </div>
+    </div>
+    <p class="muted">Wklej do mermaid.live, GitHuba albo Notion.</p>
+    <pre class="code" id="mermaid-text">{{ mermaid }}</pre>
+  </section>
+
+  <section class="card">
+    <h2>Pliki</h2>
+    <div class="row">
+      <a class="btn" href="{{ url_for('export.download', project_id=project.id, kind='proces.bpmn') }}">BPMN 2.0 (.bpmn)</a>
+      <a class="btn" href="{{ url_for('export.download', project_id=project.id, kind='projekt.json') }}">Projekt (JSON)</a>
+    </div>
+    <p class="muted" style="margin-top:.6rem">BPMN otworzysz w Camunda Modeler lub bpmn.io. JSON zaimportujesz z powrotem w FlowMap.</p>
+  </section>
+</div>
+{% endblock %}
