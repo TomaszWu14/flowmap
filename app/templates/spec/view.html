@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Specyfikacja — {{ project.name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ project.name }}</h1>
+    <div class="row"><a class="btn small" href="{{ url_for('flow.view', project_id=project.id) }}">Mapa</a>
+      <span class="btn small primary" aria-current="page">Specyfikacja</span></div></div>
+</div>
+{% if spec is none %}
+  <div class="alert error">Zapisana specyfikacja jest uszkodzona.
+    {% if can_edit %}<form method="post" action="{{ url_for('spec.rebuild', project_id=project.id) }}" style="display:inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn small" type="submit">Odbuduj z mapy</button></form>{% endif %}
+  </div>
+{% else %}
+<div class="spec-layout">
+  <nav class="spec-nav" aria-label="Sekcje specyfikacji">
+    {% for key, label in sections.items() %}
+      <a href="{{ url_for('spec.view', project_id=project.id, sekcja=key) }}" class="{{ 'active' if key == section }}">
+        {{ label }} <span class="badge">{{ spec[key]|length }}</span></a>
+    {% endfor %}
+  </nav>
+  <section id="spec-section">{% include "spec/_section.html" %}</section>
+</div>
+{% endif %}
+{% endblock %}
