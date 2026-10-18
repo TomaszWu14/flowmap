@@ -7,7 +7,7 @@ import anthropic
 from flask import current_app
 from pydantic import BaseModel, ValidationError
 
-from .schemas import AiNextQuestion, AiReview, Option, Question, StepSpec
+from .schemas import AiDraft, AiNextQuestion, AiReview, Option, Question, StepSpec
 
 PROMPTS = Path(__file__).resolve().parent.parent / "prompts"
 STEP_TYPES = ["user_action", "screen", "automation", "decision", "wait", "integration", "end"]
@@ -71,6 +71,28 @@ REVIEW_TOOL = {
             "node_key": {"type": "string"},
             "edge_label": {"type": "string"},
             "steps": {"type": "array", "items": _STEP},
+        })},
+    }),
+}
+
+
+DRAFT_TOOL = {
+    "name": "draft_process_map",
+    "description": "Zwraca pierwszą wersję mapy procesu: kroki i połączenia.",
+    "strict": True,
+    "input_schema": _obj({
+        "steps": {"type": "array", "items": _obj({
+            "key": {"type": "string"},
+            "type": {"type": "string", "enum": ["start", *STEP_TYPES]},
+            "title": {"type": "string"},
+            "actor": {"type": "string"},
+            "description": {"type": "string"},
+            "branches": {"type": "array", "items": {"type": "string"}},
+        })},
+        "edges": {"type": "array", "items": _obj({
+            "source": {"type": "string"},
+            "target": {"type": "string"},
+            "label": {"type": "string"},
         })},
     }),
 }
@@ -159,6 +181,20 @@ def ask_next_step(project, graph: dict, node: dict, slot: str | None) -> Questio
         options.append(Option(label=opt.label, steps=steps, connect_to=connect))
     return Question(kind="next", node_key=node["key"], slot=slot or "", text=result.question,
                     hint="Propozycje AI. Możesz też wpisać własny krok.", options=options, source="ai")
+
+
+def draft_map(text: str) -> dict:
+    """Graph dict drafted by the model from free text. Raises AIError."""
+    result: AiDraft = call_tool(_prompt("draft", text=text), DRAFT_TOOL, AiDraft)
+    nodes = []
+    for s in result.steps:
+        data = {}
+        if s.type == "decision":
+            data["branches"] = list(dict.fromkeys(b.strip()[:100] for b in s.branches if b.strip())) or ["tak", "nie"]
+        nodes.append({"key": s.key, "type": s.type, "title": s.title, "actor": s.actor, "description": s.description,
+                      "inputs": [], "outputs": [], "data": data})
+    edges = [{"source": e.source, "target": e.target, "label": e.label, "condition": ""} for e in result.edges]
+    return {"nodes": nodes, "edges": edges}
 
 
 def review_map(project, graph: dict, issues: list[dict]) -> list[dict]:
