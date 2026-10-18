@@ -27,6 +27,9 @@ def _context(project, section: str) -> dict:
 @login_required
 def view(project_id):
     project = g.project_for(project_id, "view")
+    if project.spec is None:
+        g.refresh_spec(project)
+        db.session.commit()
     section = request.args.get("sekcja", "entities")
     if section not in SECTIONS:
         abort(400)
