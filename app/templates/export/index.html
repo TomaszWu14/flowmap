@@ -57,6 +57,27 @@
   </section>
 
   <section class="card">
+    <h2>Zadania do Jiry, Linear, GitHuba</h2>
+    <p class="muted">{{ task_count }} zadań — historyjka dla każdego kroku człowieka, zadanie dla automatyzacji, integracji i decyzji,
+      z kryteriami akceptacji z mapy.</p>
+    <div class="row">
+      <a class="btn" href="{{ url_for('export.download', project_id=project.id, kind='zadania-jira.csv') }}">Jira (CSV)</a>
+      <a class="btn" href="{{ url_for('export.download', project_id=project.id, kind='zadania-linear.csv') }}">Linear (CSV)</a>
+      <a class="btn" href="{{ url_for('export.download', project_id=project.id, kind='zadania-github.jsonl') }}">GitHub Issues (JSONL)</a>
+    </div>
+    <details style="margin-top:.6rem">
+      <summary>Jak zaimportować</summary>
+      <div>
+        <p><strong>Jira:</strong> Ustawienia systemu → Import zewnętrzny → CSV; zmapuj kolumny Summary, Description, Issue Type, Labels.</p>
+        <p><strong>Linear:</strong> Settings → Import / Export → CSV.</p>
+        <p><strong>GitHub:</strong> w katalogu z plikiem, po <span class="mono">gh auth login</span> (podmień OWNER/REPO):</p>
+        <pre class="code" id="gh-command">{{ github_command }}</pre>
+        <button class="btn small" type="button" data-copy="gh-command">Kopiuj polecenie</button>
+      </div>
+    </details>
+  </section>
+
+  <section class="card">
     <h2>Zapisz jako mój szablon</h2>
     <p class="muted">Tryb bez AI zacznie podpowiadać kroki z tej mapy w nowych projektach. Słowa kluczowe dobierają szablon automatycznie po zdaniu startowym.</p>
     <form method="post" action="{{ url_for('projects.save_template', project_id=project.id) }}" class="row" style="align-items:end">
