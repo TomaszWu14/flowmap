@@ -75,7 +75,9 @@ def derive(graph: dict, meta: dict) -> Spec:
     ])
     entities = [main]
     for actor in humans:
-        inputs = list(dict.fromkeys(f for n in nodes if n.get("actor") == actor for f in n.get("inputs", [])))
+        inputs = list(dict.fromkeys(
+            f for n in nodes if n.get("actor") and slug(n["actor"]) == slug(actor)
+            for f in n.get("inputs", [])))
         if not inputs or slug(actor) == slug(main_name):
             continue
         fields = [_field("id", type="integer", is_identifier=True, required=True)]

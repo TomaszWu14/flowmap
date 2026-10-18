@@ -105,3 +105,19 @@ def test_derive_actor_case_diacritics_deduplicated():
     assert len(role_keys) == len(set(role_keys))
     assert len(entity_keys) == len(set(entity_keys))
     assert sum(1 for r in spec.roles if slug(r.name) == "serwisant") == 1
+
+
+def test_derive_actor_inputs_merged_by_slug():
+    # Inputs from "Serwisant" and "serwisant" must both be collected into the same entity.
+    graph = _graph([
+        ("start", "start", "Klient", []),
+        ("a1", "user_action", "Serwisant", ["Numer"]),
+        ("a2", "user_action", "serwisant", ["Raport"]),
+        ("end", "end", "Klient", []),
+    ])
+    spec = derive(graph, {"name": "Serwis", "start_sentence": "Klient zgłasza usterkę"})
+    serwisant = next((e for e in spec.entities if slug(e.name) == "serwisant"), None)
+    assert serwisant is not None
+    field_names = {f.name for f in serwisant.fields}
+    assert "Numer" in field_names, f"Expected 'Numer' in fields {field_names}"
+    assert "Raport" in field_names, f"Expected 'Raport' in fields {field_names}"
