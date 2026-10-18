@@ -1,11 +1,13 @@
 """Read-only 'Specyfikacja' tab: sections derived from the map, rebuild on a broken document."""
 
-from flask import Blueprint, abort, flash, make_response, redirect, render_template, request, url_for
+from flask import Blueprint, Response, abort, flash, make_response, redirect, render_template, request, url_for
 from flask_login import login_required
 
 from ..extensions import db
 from ..flow import graph as g
+from ..models import Comment
 from .forms import form_text, item_from_form
+from .package import build_files, build_zip
 from .readiness import readiness
 from .schema import CHANNEL_LABELS, DIRECTION_LABELS, FIELD_TYPE_LABELS, NFR_LABELS, PERM_LABELS, SECTIONS
 
@@ -160,6 +162,20 @@ def keep_item(project_id, section, key):
     g.save_version(project, f"Specyfikacja: zachowano {key}")
     db.session.commit()
     return _section_response(project, section)
+
+
+@bp.get("/p/<int:project_id>/eksport/claude-code.zip")
+@login_required
+def package(project_id):
+    project = g.project_for(project_id, "view")
+    spec = g.project_spec(project)
+    if spec is None:
+        abort(409)
+    comments = [c.body for c in Comment.query.filter_by(project_id=project.id, resolved=False).order_by(Comment.id)]
+    meta = {"name": project.name, "start_sentence": project.start_sentence}
+    body = build_zip(build_files(meta, project.graph(), spec, comments))
+    return Response(body, mimetype="application/zip",
+                    headers={"Content-Disposition": 'attachment; filename="flowmap-claude-code.zip"'})
 
 
 @bp.post("/p/<int:project_id>/specyfikacja/stos")
