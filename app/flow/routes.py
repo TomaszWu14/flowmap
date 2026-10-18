@@ -5,6 +5,7 @@ from flask_login import login_required
 
 from ..ai.client import AIError, ai_enabled, review_map
 from ..ai.schemas import Option, Question
+from ..comments.routes import open_comment_counts
 from ..extensions import db
 from ..models import NODE_TYPE_LABELS, NODE_TYPES, QuestionLog
 from . import graph as g
@@ -15,8 +16,8 @@ from .simulate import simulation_state
 bp = Blueprint("flow", __name__)
 
 
-def graph_payload(graph: dict, pending: set[str] | None = None) -> dict:
-    report = guard.report(graph)
+def graph_payload(graph: dict, pending: set[str] | None = None, comments: dict[str, int] | None = None) -> dict:
+    report = guard.report(graph, comments)
     by_node: dict[str, list[str]] = {}
     for issue in report["issues"]:
         if issue["node_key"]:
@@ -24,6 +25,7 @@ def graph_payload(graph: dict, pending: set[str] | None = None) -> dict:
     for n in graph["nodes"]:
         n["issues"] = by_node.get(n["key"], [])
         n["pending"] = bool(pending and n["key"] in pending)
+        n["comments"] = (comments or {}).get(n["key"], 0)
         n["type_label"] = NODE_TYPE_LABELS[n["type"]]
     return {"nodes": graph["nodes"], "edges": graph["edges"], **report}
 
@@ -72,7 +74,7 @@ def view(project_id):
 def graph_json(project_id):
     project = g.project_for(project_id, "view")
     pending = {n.key for n in q.pending_nodes(project)}
-    payload = graph_payload(project.graph(), pending)
+    payload = graph_payload(project.graph(), pending, open_comment_counts(project))
     payload.update(can_undo=g.can_undo(project), can_redo=g.can_redo(project), status=project.status)
     return jsonify(payload)
 
@@ -257,7 +259,7 @@ def reset_layout(project_id):
 @login_required
 def guard_panel(project_id):
     project = g.project_for(project_id, "view")
-    report = guard.report(project.graph())
+    report = guard.report(project.graph(), open_comment_counts(project))
     return render_template("flow/_guard.html", project=project, report=report, ai=ai_enabled(),
                            suggestions=None, log=None, titles={n.key: n.title for n in project.nodes})
 

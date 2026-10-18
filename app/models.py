@@ -88,6 +88,7 @@ class Project(db.Model):
     versions = db.relationship("Version", cascade="all, delete-orphan", order_by="Version.id")
     members = db.relationship("ProjectMember", back_populates="project", cascade="all, delete-orphan",
                               order_by="ProjectMember.id")
+    comments = db.relationship("Comment", cascade="all, delete-orphan")
 
     def node_by_key(self, key: str):
         return next((n for n in self.nodes if n.key == key), None)
@@ -166,6 +167,18 @@ class ProjectMember(db.Model):
     project = db.relationship("Project", back_populates="members")
 
     __table_args__ = (db.UniqueConstraint("project_id", "user_id"),)
+
+
+class Comment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False, index=True)
+    node_key = db.Column(db.String(16), nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"))
+    body = db.Column(db.Text, nullable=False)
+    resolved = db.Column(db.Boolean, default=False, nullable=False, server_default=db.false())
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+
+    author = db.relationship("User")
 
 
 class QuestionLog(db.Model):

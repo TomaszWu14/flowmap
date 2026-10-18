@@ -13,6 +13,7 @@
   <li><span>→ {{ e.target.title }}{% if e.label %} <span class="muted">„{{ e.label }}”</span>{% endif %}</span></li>
   {% endfor %}
 </ul>
+<section id="comments" class="comments" hx-get="{{ url_for('comments.list_comments', project_id=project.id, key=node.key) }}" hx-trigger="load"></section>
 {% endif %}
 <div class="row" style="margin-top:1rem">
   <a class="btn" href="{{ url_for('flow.simulate', project_id=project.id) }}">Przejdź proces</a>

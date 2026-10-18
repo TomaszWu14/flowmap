@@ -54,7 +54,7 @@
   function elements(data) {
     const nodes = data.nodes.map((n) => {
       const classes = [n.pending ? "pending" : "", n.issues.length ? "issue" : ""].join(" ").trim();
-      const label = n.title + (n.actor ? "\n— " + n.actor : "") + (n.issues.length ? "\n⚠ " + n.issues.length : "");
+      const label = n.title + (n.actor ? "\n— " + n.actor : "") + (n.issues.length ? "\n⚠ " + n.issues.length : "") + (n.comments ? "  💬 " + n.comments : "");
       const item = { group: "nodes", data: { id: n.key, type: n.type, label: label }, classes: classes };
       if (n.x !== null && n.y !== null) item.position = { x: n.x, y: n.y };
       return item;
