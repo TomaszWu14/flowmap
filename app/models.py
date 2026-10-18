@@ -164,6 +164,16 @@ class QuestionLog(db.Model):
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
 
 
+class AuditEvent(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False, index=True)
+    action = db.Column(db.String(40), nullable=False, index=True)
+    actor_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"))
+    actor_email = db.Column(db.String(255), default="")  # snapshot: survives account changes
+    target = db.Column(db.String(300), default="")
+    ip = db.Column(db.String(64), default="")
+
+
 class AppSetting(db.Model):
     key = db.Column(db.String(50), primary_key=True)
     value = db.Column(db.JSON, nullable=False)

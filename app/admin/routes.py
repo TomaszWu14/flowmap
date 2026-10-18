@@ -5,11 +5,11 @@ from functools import wraps
 
 from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
-from .. import settings
+from .. import audit, settings
 from ..extensions import db
-from ..models import Project, QuestionLog, User, utcnow
+from ..models import AuditEvent, Project, QuestionLog, User, utcnow
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -53,6 +53,21 @@ def index():
                            project_counts=project_counts, today=date.today())
 
 
+@bp.get("/zdarzenia")
+@admin_required
+def events():
+    action = request.args.get("action", "")
+    q = (request.args.get("q") or "").strip().lower()
+    query = AuditEvent.query
+    if action in audit.ACTIONS:
+        query = query.filter_by(action=action)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(or_(AuditEvent.actor_email.ilike(like), AuditEvent.target.ilike(like)))
+    rows = query.order_by(AuditEvent.id.desc()).limit(300).all()
+    return render_template("admin/events.html", rows=rows, actions=audit.ACTIONS, action=action, q=q)
+
+
 @bp.post("/settings")
 @admin_required
 def save_settings():
@@ -63,6 +78,8 @@ def save_settings():
     settings.set_value("allow_signup", request.form.get("allow_signup") == "on")
     settings.set_value("ai_enabled", request.form.get("ai_enabled") == "on")
     settings.set_value("ai_daily_limit", limit)
+    summary = f"rejestracja={settings.signup_open()}, ai={settings.get('ai_enabled')}, limit={limit}"
+    audit.log("settings_changed", summary)
     db.session.commit()
     flash("Ustawienia zapisane.", "success")
     return redirect(url_for("admin.index"))
@@ -89,6 +106,8 @@ def user_action(user_id, action):
             user.is_blocked = action == "block"
         else:
             user.is_admin = action == "grant-admin"
+        audit.log({"block": "user_blocked", "unblock": "user_unblocked", "grant-admin": "admin_granted",
+                   "revoke-admin": "admin_revoked"}[action], user.email)
         db.session.commit()
         messages = {
             "block": "zablokowane", "unblock": "odblokowane",
