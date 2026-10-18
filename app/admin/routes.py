@@ -3,10 +3,11 @@
 from datetime import date, timedelta
 from functools import wraps
 
-from flask import Blueprint, abort, current_app, flash, redirect, render_template, url_for
+from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import func
 
+from .. import settings
 from ..extensions import db
 from ..models import Project, QuestionLog, User, utcnow
 
@@ -41,14 +42,30 @@ def index():
         "ai_today": sum(u.ai_usage_count for u in users if u.ai_usage_date == date.today()),
     }
     config = {
-        "ai": bool(current_app.config["ANTHROPIC_API_KEY"]),
+        "ai_key": bool(current_app.config["ANTHROPIC_API_KEY"]),
+        "ai_enabled": bool(settings.get("ai_enabled")),
         "model": current_app.config["ANTHROPIC_MODEL"],
-        "ai_limit": current_app.config["AI_DAILY_LIMIT"],
-        "signup": current_app.config["ALLOW_SIGNUP"],
+        "ai_limit": settings.ai_daily_limit(),
+        "signup": settings.signup_open(),
         "env": current_app.config["APP_ENV"],
     }
     return render_template("admin/index.html", users=users, stats=stats, config_info=config,
                            project_counts=project_counts, today=date.today())
+
+
+@bp.post("/settings")
+@admin_required
+def save_settings():
+    limit = request.form.get("ai_daily_limit", type=int)
+    if limit is None or not 0 <= limit <= 10000:
+        flash("Limit AI musi być liczbą od 0 do 10000.", "error")
+        return redirect(url_for("admin.index"))
+    settings.set_value("allow_signup", request.form.get("allow_signup") == "on")
+    settings.set_value("ai_enabled", request.form.get("ai_enabled") == "on")
+    settings.set_value("ai_daily_limit", limit)
+    db.session.commit()
+    flash("Ustawienia zapisane.", "success")
+    return redirect(url_for("admin.index"))
 
 
 def _target(user_id: int) -> User:

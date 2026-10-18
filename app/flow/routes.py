@@ -262,8 +262,9 @@ def guard_panel(project_id):
 @bp.post("/p/<int:project_id>/guard/review")
 @login_required
 def guard_review(project_id):
-    from flask import current_app
     from flask_login import current_user
+
+    from .. import settings
 
     project = g.owned_project(project_id)
     graph = project.graph()
@@ -271,7 +272,7 @@ def guard_review(project_id):
     error, log, suggestions = None, None, None
     if not ai_enabled():
         error = "Przegląd AI wymaga klucza ANTHROPIC_API_KEY."
-    elif not current_user.consume_ai_request(current_app.config["AI_DAILY_LIMIT"]):
+    elif not current_user.consume_ai_request(settings.ai_daily_limit()):
         error = "Dzienny limit zapytań do AI został wyczerpany."
     else:
         db.session.commit()

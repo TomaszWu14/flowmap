@@ -1,11 +1,12 @@
 from urllib.parse import urlsplit
 
-from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 from flask_wtf import FlaskForm
 from wtforms import EmailField, PasswordField
 from wtforms.validators import DataRequired, EqualTo, Length, Regexp
 
+from .. import settings
 from ..extensions import db
 from ..models import MIN_PASSWORD_LENGTH, User, utcnow
 
@@ -62,7 +63,7 @@ def login():
 
 @bp.route("/register", methods=["GET", "POST"])
 def register():
-    if not current_app.config["ALLOW_SIGNUP"]:
+    if not settings.signup_open():
         abort(404)
     if current_user.is_authenticated:
         return redirect(url_for("projects.index"))

@@ -18,7 +18,9 @@ class AIError(Exception):
 
 
 def ai_enabled() -> bool:
-    return bool(current_app.config.get("ANTHROPIC_API_KEY"))
+    from .. import settings
+
+    return bool(current_app.config.get("ANTHROPIC_API_KEY")) and bool(settings.get("ai_enabled"))
 
 
 def _client() -> anthropic.Anthropic:

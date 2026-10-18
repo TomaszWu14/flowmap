@@ -27,8 +27,10 @@ def create_app(config_class: type = Config) -> Flask:
     from .flow.routes import bp as flow_bp
     from .models import NODE_TYPE_LABELS
     from .projects.routes import bp as projects_bp
+    from .settings import signup_open
 
     app.jinja_env.globals["type_labels"] = NODE_TYPE_LABELS
+    app.jinja_env.globals["signup_open"] = signup_open
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(projects_bp)

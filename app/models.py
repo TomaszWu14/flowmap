@@ -164,6 +164,11 @@ class QuestionLog(db.Model):
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
 
 
+class AppSetting(db.Model):
+    key = db.Column(db.String(50), primary_key=True)
+    value = db.Column(db.JSON, nullable=False)
+
+
 class Version(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.Integer, db.ForeignKey("project.id"), nullable=False, index=True)
