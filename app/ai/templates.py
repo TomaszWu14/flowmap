@@ -70,6 +70,7 @@ TEMPLATES = {
                       inputs=["Numer zamówienia"], outputs=["Numer przesyłki"]),
             "courier": S(type="integration", title="Zlecenie kuriera", actor="System",
                          inputs=["Adres dostawy"], outputs=["Numer śledzenia"]),
+            "courier_retry": S(type="wait", title="Ponowienie zlecenia kuriera za godzinę", actor="System"),
             "end": S(type="end", title="Zamówienie dostarczone", actor="Klient"),
         },
         "edges": [
@@ -77,6 +78,7 @@ TEMPLATES = {
             ("stock", "payment", "tak"), ("stock", "nostock", "nie"), ("nostock", "catalog", ""),
             ("payment", "confirm", ""), ("payment", "pay_fail", "brak płatności"), ("pay_fail", "payment", ""),
             ("confirm", "pack", ""), ("pack", "courier", ""), ("courier", "end", ""),
+            ("courier", "courier_retry", "błąd"), ("courier_retry", "courier", ""),
         ],
     },
     "service": {
@@ -155,8 +157,10 @@ def full_graph(template_key: str, start_sentence: str | None = None) -> dict:
             "actor": s.get("actor", ""), "inputs": list(s.get("inputs", [])), "outputs": list(s.get("outputs", [])),
             "data": data, "x": None, "y": None,
         })
+    # a labelled edge leaving a non-decision step is an error path
     edges = [
-        {"source": a, "target": b, "label": lab, "condition": "error" if lab == "brak płatności" else ""}
+        {"source": a, "target": b, "label": lab,
+         "condition": "error" if lab and tpl["steps"][a]["type"] != "decision" else ""}
         for a, b, lab in tpl["edges"]
     ]
     return {"nodes": nodes, "edges": edges}
