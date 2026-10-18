@@ -1,14 +1,17 @@
 """Read-only 'Specyfikacja' tab: sections derived from the map, rebuild on a broken document."""
 
 from flask import Blueprint, Response, abort, flash, make_response, redirect, render_template, request, url_for
-from flask_login import login_required
+from flask_login import current_user, login_required
 
+from .. import settings
+from ..ai.client import AIError, ai_enabled
 from ..extensions import db
 from ..flow import graph as g
 from ..models import Comment
 from .forms import form_text, item_from_form
 from .package import build_files, build_zip
 from .readiness import readiness
+from .review import apply_proposal, review_spec
 from .schema import CHANNEL_LABELS, DIRECTION_LABELS, FIELD_TYPE_LABELS, NFR_LABELS, PERM_LABELS, SECTIONS
 
 bp = Blueprint("spec", __name__)
@@ -176,6 +179,71 @@ def package(project_id):
     body = build_zip(build_files(meta, project.graph(), spec, comments))
     return Response(body, mimetype="application/zip",
                     headers={"Content-Disposition": 'attachment; filename="flowmap-claude-code.zip"'})
+
+
+@bp.post("/p/<int:project_id>/specyfikacja/przeglad")
+@login_required
+def ai_review(project_id):
+    project = g.project_for(project_id, "edit")
+    spec = _spec_or_abort(project)
+    if not ai_enabled():
+        flash("Przegląd techniczny AI wymaga klucza ANTHROPIC_API_KEY.", "error")
+    elif not current_user.consume_ai_request(settings.ai_daily_limit()):
+        flash("Dzienny limit zapytań do AI został wyczerpany.", "error")
+    else:
+        db.session.commit()
+        try:
+            spec.proposals = review_spec(project.graph(), spec, project.start_sentence)
+            project.spec = spec.model_dump(mode="json")
+            g.save_version(project, f"Przegląd techniczny AI: {len(spec.proposals)} propozycji")
+            flash(f"AI zaproponowało {len(spec.proposals)} zmian — zatwierdź je w panelu „Do zatwierdzenia”.",
+                 "success")
+        except AIError as exc:
+            flash(f"Przegląd AI nieudany: {exc}.", "error")
+    db.session.commit()
+    return redirect(url_for("spec.view", project_id=project.id))
+
+
+@bp.post("/p/<int:project_id>/specyfikacja/propozycje/<pid>/<action>")
+@login_required
+def proposal_action(project_id, pid, action):
+    project = g.project_for(project_id, "edit")
+    spec = _spec_or_abort(project)
+    proposal = next((x for x in spec.proposals if x.id == pid), None)
+    if proposal is None or action not in ("accept", "reject"):
+        abort(404)
+    if action == "reject":
+        spec.proposals = [x for x in spec.proposals if x.id != pid]
+    else:
+        try:
+            spec = apply_proposal(spec, proposal)
+        except ValueError as exc:
+            flash(str(exc), "error")
+            return redirect(url_for("spec.view", project_id=project.id))
+    project.spec = spec.model_dump(mode="json")
+    g.save_version(project, f"Propozycja AI {'zatwierdzona' if action == 'accept' else 'odrzucona'}: "
+                            f"{proposal.summary}")
+    db.session.commit()
+    return redirect(url_for("spec.view", project_id=project.id))
+
+
+@bp.post("/p/<int:project_id>/specyfikacja/propozycje/wszystkie")
+@login_required
+def accept_all(project_id):
+    project = g.project_for(project_id, "edit")
+    spec = _spec_or_abort(project)
+    skipped = 0
+    for proposal in list(spec.proposals):
+        try:
+            spec = apply_proposal(spec, proposal)
+        except ValueError:
+            skipped += 1
+    project.spec = spec.model_dump(mode="json")
+    g.save_version(project, "Zatwierdzono wszystkie propozycje AI")
+    db.session.commit()
+    if skipped:
+        flash(f"Pominięto {skipped} nieaktualnych propozycji.", "info")
+    return redirect(url_for("spec.view", project_id=project.id))
 
 
 @bp.post("/p/<int:project_id>/specyfikacja/stos")

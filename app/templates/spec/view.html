@@ -22,8 +22,13 @@
     <input id="stack" name="stack" value="{{ spec.stack }}" placeholder="Stos, np. Flask + PostgreSQL" style="width:260px">
     <button class="btn small" type="submit">Zapisz stos</button>
   </form>
+  <form method="post" action="{{ url_for('spec.ai_review', project_id=project.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn small" type="submit">Przegląd techniczny AI</button>
+  </form>
   {% endif %}
 </div>
+{% if spec.proposals %}{% include "spec/_proposals.html" %}{% endif %}
 <div class="spec-layout">
   <nav class="spec-nav" aria-label="Sekcje specyfikacji">
     {% for key, label in sections.items() %}
