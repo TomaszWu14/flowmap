@@ -33,6 +33,14 @@ class Config:
     WTF_CSRF_TIME_LIMIT = None
     MAX_CONTENT_LENGTH = 2 * 1024 * 1024  # JSON import limit
 
+    MAIL_SERVER = os.environ.get("MAIL_SERVER", "")
+    MAIL_PORT = int(os.environ.get("MAIL_PORT", "587"))
+    MAIL_USERNAME = os.environ.get("MAIL_USERNAME", "")
+    MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD", "")
+    MAIL_FROM = os.environ.get("MAIL_FROM", "FlowMap <no-reply@flowmap.local>")
+    MAIL_USE_TLS = _bool("MAIL_USE_TLS", True)
+    RESET_TOKEN_HOURS = int(os.environ.get("RESET_TOKEN_HOURS", "1"))
+
     ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
     ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-opus-5-5")
     AI_TIMEOUT_SECONDS = float(os.environ.get("AI_TIMEOUT_SECONDS", "60"))
@@ -49,3 +57,4 @@ class TestConfig(Config):
     REMEMBER_COOKIE_SECURE = False
     ANTHROPIC_API_KEY = ""
     ALLOW_SIGNUP = True
+    MAIL_SERVER = ""

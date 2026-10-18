@@ -8,6 +8,7 @@ from flask_login import current_user, login_required
 from sqlalchemy import func, or_
 
 from .. import audit, settings
+from ..auth.tokens import make_reset_token
 from ..extensions import db
 from ..models import AuditEvent, Project, QuestionLog, User, utcnow
 
@@ -93,6 +94,20 @@ def _target(user_id: int) -> User:
         flash("Nie możesz zmieniać uprawnień ani blokady własnego konta.", "error")
         return None
     return user
+
+
+@bp.post("/users/<int:user_id>/reset-link")
+@admin_required
+def reset_link(user_id):
+    """One-time 24h reset link to hand over manually (works without e-mail)."""
+    user = db.session.get(User, user_id)
+    if user is None:
+        abort(404)
+    link = url_for("auth.reset_password", token=make_reset_token(user, 24), _external=True)
+    audit.log("password_reset_requested", f"{user.email} (link od admina)")
+    db.session.commit()
+    flash(f"Link do ustawienia hasła dla {user.email} (ważny 24 h, jednorazowy): {link}", "info")
+    return redirect(url_for("admin.index"))
 
 
 @bp.post("/users/<int:user_id>/<action>")

@@ -77,7 +77,9 @@ docker compose exec app flask create-user ty@example.com
 | `ANTHROPIC_API_KEY` | — | bez klucza działa tryb reguł i szablonów |
 | `ANTHROPIC_MODEL` | `claude-opus-5-5` | model do pytań i przeglądu |
 | `AI_TIMEOUT_SECONDS` | `60` | timeout jednego zapytania |
-| `AI_DAILY_LIMIT` | `100` | limit zapytań AI na użytkownika na dzień |
+| `AI_DAILY_LIMIT` | `100` | limit zapytań AI na użytkownika na dzień (nadpisywany w panelu admina) |
+| `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM`, `MAIL_USE_TLS` | — | SMTP; włącza „Nie pamiętam hasła” |
+| `RESET_TOKEN_HOURS` | `1` | ważność linku resetu wysyłanego e-mailem |
 
 W `docker-compose.yml` hasło bazy i `SECRET_KEY` pochodzą ze zmiennych `SERVICE_HEX_32_POSTGRES`
 i `SERVICE_PASSWORD_64_SECRETKEY` — Coolify generuje je sam. Hasło bazy jest w hex, bo znaki `/ + @`
