@@ -14,13 +14,17 @@
 </section>
 
 <section class="card" style="margin-top:1rem">
-  <h2>Konfiguracja</h2>
-  <div class="row">
-    <span class="badge {{ 'ok' if config_info.ai }}">AI: {{ 'włączone · ' ~ config_info.model if config_info.ai else 'wyłączone (tryb reguł)' }}</span>
-    <span class="badge {{ 'ok' if config_info.signup }}">Rejestracja: {{ 'otwarta' if config_info.signup else 'zamknięta' }}</span>
-    <span class="badge">Środowisko: {{ config_info.env }}</span>
-  </div>
-  <p class="muted" style="margin:.6rem 0 0;font-size:.85rem">Zmieniasz to zmiennymi środowiskowymi w Coolify (<span class="mono">ANTHROPIC_API_KEY</span>, <span class="mono">ALLOW_SIGNUP</span>) i robisz Redeploy.</p>
+  <h2>Ustawienia</h2>
+  <form method="post" action="{{ url_for('admin.save_settings') }}" class="settings-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="radio"><input type="checkbox" name="allow_signup" {{ 'checked' if config_info.signup }}> Rejestracja otwarta</label>
+    <label class="radio"><input type="checkbox" name="ai_enabled" {{ 'checked' if config_info.ai_enabled }} {{ 'disabled' if not config_info.ai_key }}>
+      Podpowiedzi AI włączone {% if not config_info.ai_key %}<span class="muted">(brak <span class="mono">ANTHROPIC_API_KEY</span> — działa tryb reguł)</span>{% else %}<span class="muted">· {{ config_info.model }}</span>{% endif %}</label>
+    {% if not config_info.ai_key and config_info.ai_enabled %}<input type="hidden" name="ai_enabled" value="on">{% endif %}
+    <label style="max-width:260px">Limit zapytań AI na osobę dziennie <input type="number" name="ai_daily_limit" min="0" max="10000" value="{{ config_info.ai_limit }}"></label>
+    <div class="row"><button class="btn primary" type="submit">Zapisz ustawienia</button><span class="badge">Środowisko: {{ config_info.env }}</span></div>
+  </form>
+  <p class="muted" style="margin:.6rem 0 0;font-size:.85rem">Klucz API ustawiasz w Coolify (<span class="mono">ANTHROPIC_API_KEY</span>) — sekretów nie trzymamy w bazie.</p>
 </section>
 
 <section class="card" style="margin-top:1rem">

@@ -7,7 +7,7 @@
     <p class="lead">FlowMap pyta „co dzieje się dalej?”, podsuwa gotowe odpowiedzi i rysuje proces na żywo —
       aż do końca. Z gotowej mapy powstaje specyfikacja, diagram BPMN i polecenie dla generatora kodu.</p>
     <div class="row">
-      {% if config.ALLOW_SIGNUP %}<a class="btn primary" href="{{ url_for('auth.register') }}">Załóż konto</a>{% endif %}
+      {% if signup_open() %}<a class="btn primary" href="{{ url_for('auth.register') }}">Załóż konto</a>{% endif %}
       <a class="btn" href="{{ url_for('auth.login') }}">Zaloguj się</a>
       <a class="btn" href="{{ url_for('export.example') }}">Zobacz przykład</a>
     </div>

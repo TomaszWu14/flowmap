@@ -30,7 +30,11 @@ def test_signup_switch(db):
         ALLOW_SIGNUP = False
 
     app = create_app(NoSignup)
-    assert app.test_client().get("/register").status_code == 404
+    with app.app_context():
+        from app.extensions import db as _db
+
+        _db.create_all()
+        assert app.test_client().get("/register").status_code == 404
 
 
 def test_login_wrong_password(client, user):

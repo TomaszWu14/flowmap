@@ -1,8 +1,8 @@
 """Which question to ask next, and how an answer changes the map."""
 
-from flask import current_app
 from flask_login import current_user
 
+from .. import settings
 from ..ai import rules
 from ..ai.client import AIError, ai_enabled, ask_next_step
 from ..ai.schemas import Option, Question
@@ -58,7 +58,7 @@ def build_question(project: Project, node: Node, kind: str, slot: str | None) ->
     fallback = rules.next_question(graph, nd, slot, project.mode, project.template)
     if not ai_enabled():
         return fallback
-    if not current_user.consume_ai_request(current_app.config["AI_DAILY_LIMIT"]):
+    if not current_user.consume_ai_request(settings.ai_daily_limit()):
         db.session.commit()
         fallback.notice = "Dzienny limit zapytań do AI został wyczerpany — podpowiedzi z reguł."
         return fallback

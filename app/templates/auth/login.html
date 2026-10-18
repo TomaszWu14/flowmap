@@ -10,7 +10,7 @@
     {{ field(form.password, autocomplete="current-password") }}
     <button class="btn primary" type="submit">Zaloguj</button>
   </form>
-  {% if config.ALLOW_SIGNUP %}
+  {% if signup_open() %}
     <p class="muted" style="margin-top:1rem">Nie masz konta? <a href="{{ url_for('auth.register') }}">Zarejestruj się</a>.</p>
   {% endif %}
 </div>

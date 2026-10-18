@@ -66,3 +66,51 @@ def test_grant_admin_and_self_protection(client, db):
     client.post(f"/admin/users/{admin.id}/revoke-admin")
     assert db.session.get(User, admin.id).is_admin
     assert client.post(f"/admin/users/{other.id}/delete").status_code == 404
+
+
+def make_admin(client, db):
+    admin = make_user("admin@example.com")
+    admin.is_admin = True
+    db.session.commit()
+    login(client, admin.email)
+    return admin
+
+
+def test_settings_toggle_signup_and_limit(client, db):
+    from app import settings
+
+    make_admin(client, db)
+    assert settings.signup_open() is True
+    r = client.post("/admin/settings", data={"ai_daily_limit": "7"}, follow_redirects=True)
+    assert "Ustawienia zapisane" in r.get_data(as_text=True)
+    assert settings.signup_open() is False and settings.ai_daily_limit() == 7
+    client.post("/logout")
+    assert client.get("/register").status_code == 404
+    assert "Załóż konto" not in client.get("/").get_data(as_text=True)
+
+
+def test_settings_validation_and_access(client, db):
+    from app import settings
+
+    make_admin(client, db)
+    r = client.post("/admin/settings", data={"ai_daily_limit": "-1", "allow_signup": "on"}, follow_redirects=True)
+    assert "od 0 do 10000" in r.get_data(as_text=True)
+    assert settings.ai_daily_limit() == 100
+    other = make_user("ola@example.com")
+    client.post("/logout")
+    login(client, other.email)
+    assert client.post("/admin/settings", data={"ai_daily_limit": "1"}).status_code == 404
+
+
+def test_ai_kill_switch(client, db, app):
+    from app import settings
+    from app.ai.client import ai_enabled
+
+    app.config["ANTHROPIC_API_KEY"] = "sk-test"
+    make_admin(client, db)
+    with app.test_request_context():
+        assert ai_enabled()
+    client.post("/admin/settings", data={"ai_daily_limit": "5", "allow_signup": "on"})
+    assert settings.get("ai_enabled") is False
+    with app.test_request_context():
+        assert not ai_enabled()

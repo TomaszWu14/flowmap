@@ -181,6 +181,7 @@ details > form, details > div { margin-top: .6rem; display: grid; gap: .6rem; }
 .stat strong { font-size: 1.9rem; line-height: 1.1; }
 .stat small { color: var(--muted); }
 .table-wrap { overflow-x: auto; }
+.settings-form { display: grid; gap: .7rem; }
 
 /* simulation */
 .sim { display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 1fr) 280px; align-items: start; }

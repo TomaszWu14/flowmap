@@ -12,7 +12,7 @@
     <h1>{{ meta.name }}</h1>
     <p class="muted">Gotowa mapa procesu „{{ meta.start_sentence }}” — tylko do podglądu, bez logowania.</p>
   </div>
-  {% if not current_user.is_authenticated and config.ALLOW_SIGNUP %}
+  {% if not current_user.is_authenticated and signup_open() %}
     <a class="btn primary" href="{{ url_for('auth.register') }}">Zbuduj własną mapę</a>
   {% endif %}
 </div>
