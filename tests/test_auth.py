@@ -64,3 +64,13 @@ def test_csrf_enforced():
         _db.create_all()
         r = app.test_client().post("/login", data={"email": "a@b.pl", "password": "x" * 12})
         assert r.status_code == 400
+
+
+def test_set_password_cli(app, user):
+    runner = app.test_cli_runner()
+    result = runner.invoke(args=["set-password", "ALA@example.com", "--password", "nowe-haslo-123456"])
+    assert result.exit_code == 0, result.output
+    assert user.check_password("nowe-haslo-123456")
+    assert runner.invoke(args=["set-password", user.email, "--password", "krotkie"]).exit_code != 0
+    assert user.check_password("nowe-haslo-123456")
+    assert runner.invoke(args=["set-password", "brak@example.com", "--password", "x" * 12]).exit_code != 0

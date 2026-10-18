@@ -58,7 +58,7 @@ otwórz w Coolify **Terminal** kontenera `app` i wykonaj:
 flask create-user ty@example.com
 ```
 
-(zapyta o hasło, min. 12 znaków).
+(zapyta o hasło, min. 12 znaków). Zapomniane hasło zmienisz tak samo: `flask set-password ty@example.com`.
 
 ## 7. Aktualizacje i kopie
 

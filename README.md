@@ -42,6 +42,7 @@ cp .env.example .env                 # opcjonalnie: ANTHROPIC_API_KEY
 export FLASK_APP=app:create_app      # Windows PowerShell: $env:FLASK_APP="app:create_app"
 flask db upgrade                     # tworzy instance/flowmap.db (SQLite)
 flask create-user ty@example.com     # zapyta o hasło (min. 12 znaków)
+flask set-password ty@example.com    # zmiana hasła istniejącego konta
 flask run                            # http://127.0.0.1:5000
 ```
 

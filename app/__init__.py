@@ -77,4 +77,22 @@ def create_app(config_class: type = Config) -> Flask:
         db.session.commit()
         click.echo(f"Utworzono konto {email}")
 
+    @app.cli.command("set-password")
+    @click.argument("email")
+    @click.password_option()
+    def set_password(email, password):
+        """Set a new password for an existing account."""
+        from .models import User
+
+        email = email.strip().lower()
+        user = User.query.filter_by(email=email).first()
+        if user is None:
+            raise click.ClickException("Nie ma konta o tym adresie.")
+        try:
+            user.set_password(password)
+        except ValueError as exc:
+            raise click.ClickException(str(exc)) from exc
+        db.session.commit()
+        click.echo(f"Zmieniono hasło dla {email}")
+
     return app
