@@ -17,16 +17,22 @@
           <span class="score-ring" id="score-ring"><span id="score-value">–</span></span>
           <span id="score-label">kompletność</span>
         </button>
+        {% set can_edit = project.current_role != 'viewer' %}
+        {% if not can_edit %}<span class="badge">tylko podgląd</span>{% endif %}
+        {% if can_edit %}
         <button class="btn small" id="btn-undo" type="button" disabled
                 hx-post="{{ url_for('flow.undo', project_id=project.id) }}" hx-target="#panel-body">↶ Cofnij</button>
         <button class="btn small" id="btn-redo" type="button" disabled
                 hx-post="{{ url_for('flow.redo', project_id=project.id) }}" hx-target="#panel-body">↷ Ponów</button>
         <button class="btn small" type="button" hx-post="{{ url_for('flow.reset_layout', project_id=project.id) }}"
                 hx-swap="none" title="Ułóż mapę automatycznie">⤧ Ułóż</button>
+        {% endif %}
         <a class="btn small" href="{{ url_for('flow.simulate', project_id=project.id) }}">▶ Przejdź proces</a>
         <a class="btn small" href="{{ url_for('export.index', project_id=project.id) }}">⇩ Eksport</a>
         <a class="btn small" href="{{ url_for('projects.versions', project_id=project.id) }}">Wersje</a>
+        {% if project.current_role == 'owner' %}
         <a class="btn small" href="{{ url_for('share.settings', project_id=project.id) }}">Udostępnij</a>
+        {% endif %}
         <form method="post" action="{{ url_for('projects.copy', project_id=project.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="btn small" type="submit">Kopia</button>
@@ -35,7 +41,7 @@
       <div id="map"
            data-graph-url="{{ url_for('flow.graph_json', project_id=project.id) }}"
            data-panel-url="{{ url_for('flow.panel', project_id=project.id) }}"
-           data-positions-url="{{ url_for('flow.positions', project_id=project.id) }}"></div>
+           {% if project.current_role == 'viewer' %}data-readonly="1"{% else %}data-positions-url="{{ url_for('flow.positions', project_id=project.id) }}"{% endif %}></div>
       <div class="legend" aria-hidden="true">
         <span><i style="--c:var(--t-screen)"></i>Ekran</span><span><i style="--c:var(--t-user_action)"></i>Działanie</span>
         <span><i style="--c:var(--t-automation)"></i>Automatyzacja</span><span><i style="--c:var(--t-decision)"></i>Decyzja</span>

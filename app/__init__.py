@@ -48,6 +48,10 @@ def create_app(config_class: type = Config) -> Flask:
     def not_found(_e):
         return render_template("error.html", code=404, message="Nie znaleziono strony."), 404
 
+    @app.errorhandler(403)
+    def forbidden(_e):
+        return render_template("error.html", code=403, message="Masz w tym projekcie tylko podgląd."), 403
+
     @app.errorhandler(400)
     def bad_request(e):
         return render_template("error.html", code=400, message=getattr(e, "description", "Błędne żądanie.")), 400

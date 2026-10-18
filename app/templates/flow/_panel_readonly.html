@@ -1,0 +1,20 @@
+{% if node %}
+<header class="panel-head">
+  <span class="type-chip t-{{ node.type }}">{{ type_labels[node.type] }}</span>
+  <h2>{{ node.title }}</h2>
+  <p class="muted" style="margin:0">{{ node.actor or 'bez aktora' }}</p>
+</header>
+<div class="alert info">Masz w tym projekcie tylko podgląd. Kliknij krok na mapie, żeby zobaczyć szczegóły.</div>
+{% if node.description %}<p>{{ node.description }}</p>{% endif %}
+{% if node.inputs %}<p><strong>Dane wejściowe:</strong> {{ node.inputs|join(', ') }}</p>{% endif %}
+{% if node.outputs %}<p><strong>Dane wyjściowe / widok:</strong> {{ node.outputs|join(', ') }}</p>{% endif %}
+<ul class="edge-list">
+  {% for e in project.edges if e.source_id == node.id %}
+  <li><span>→ {{ e.target.title }}{% if e.label %} <span class="muted">„{{ e.label }}”</span>{% endif %}</span></li>
+  {% endfor %}
+</ul>
+{% endif %}
+<div class="row" style="margin-top:1rem">
+  <a class="btn" href="{{ url_for('flow.simulate', project_id=project.id) }}">Przejdź proces</a>
+  <a class="btn" href="{{ url_for('export.index', project_id=project.id) }}">Eksport</a>
+</div>

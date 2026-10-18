@@ -1,5 +1,21 @@
 {% extends "base.html" %}
-{% block title %}Projekty{% endblock %}
+{% block title %}Projekty{% if shared %}
+<h2 style="margin-top:2rem">Udostępnione dla mnie</h2>
+<div class="grid-cards">
+  {% for m in shared %}{% set p = m.project %}
+  <article class="card project-card">
+    <h2><a href="{{ url_for('flow.view', project_id=p.id) }}">{{ p.name }}</a></h2>
+    <p class="muted">„{{ p.start_sentence }}”</p>
+    <div class="row">
+      <span class="badge {{ 'ok' if m.role == 'editor' }}">{{ role_labels[m.role] }}</span>
+      <span class="badge">właściciel: {{ p.owner.email }}</span>
+      <span class="badge">{{ p.nodes|length }} kroków</span>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
 {% block content %}
 <div class="page-head">
   <div><h1>Twoje projekty</h1><p class="muted">Każdy projekt to jedna mapa procesu.</p></div>
@@ -28,6 +44,22 @@
   <h2>Nie masz jeszcze projektów</h2>
   <p class="muted">Zacznij od jednego zdania, np. „Klient chce umówić wizytę w salonie”.</p>
   <a class="btn primary" href="{{ url_for('projects.new') }}">Utwórz pierwszy projekt</a>
+</div>
+{% endif %}
+{% if shared %}
+<h2 style="margin-top:2rem">Udostępnione dla mnie</h2>
+<div class="grid-cards">
+  {% for m in shared %}{% set p = m.project %}
+  <article class="card project-card">
+    <h2><a href="{{ url_for('flow.view', project_id=p.id) }}">{{ p.name }}</a></h2>
+    <p class="muted">„{{ p.start_sentence }}”</p>
+    <div class="row">
+      <span class="badge {{ 'ok' if m.role == 'editor' }}">{{ role_labels[m.role] }}</span>
+      <span class="badge">właściciel: {{ p.owner.email }}</span>
+      <span class="badge">{{ p.nodes|length }} kroków</span>
+    </div>
+  </article>
+  {% endfor %}
 </div>
 {% endif %}
 {% endblock %}

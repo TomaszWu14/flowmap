@@ -4,18 +4,38 @@ from flask import abort
 from flask_login import current_user
 
 from ..extensions import db
-from ..models import Edge, Node, Project, Version, new_key
+from ..models import Edge, Node, Project, ProjectMember, Version, new_key
 
 ERROR_CONDITION = "error"
 DEFAULT_ACTORS = {"automation": "System", "integration": "System", "wait": "System"}
 NEEDS_ACTOR = ("user_action", "screen", "automation", "decision", "wait", "integration")
 
 
-def owned_project(project_id: int) -> Project:
-    """Every project endpoint goes through here: foreign or missing project -> 404."""
+ROLE_RANK = {"viewer": 1, "editor": 2, "owner": 3}
+NEED_RANK = {"view": 1, "edit": 2, "owner": 3}
+ROLE_LABELS = {"viewer": "podgląd", "editor": "edytor", "owner": "właściciel"}
+
+
+def project_role(project: Project, user) -> str | None:
+    if project.owner_id == user.id:
+        return "owner"
+    member = ProjectMember.query.filter_by(project_id=project.id, user_id=user.id).first()
+    return member.role if member else None
+
+
+def project_for(project_id: int, need: str) -> Project:
+    """Every project endpoint goes through here.
+
+    Not a member (or missing project) -> 404, so foreign projects stay invisible.
+    Member without enough rights (viewer trying to edit) -> 403.
+    """
     project = db.session.get(Project, project_id)
-    if project is None or project.owner_id != current_user.id:
+    role = project_role(project, current_user) if project else None
+    if role is None:
         abort(404)
+    if ROLE_RANK[role] < NEED_RANK[need]:
+        abort(403)
+    project.current_role = role  # for templates
     return project
 
 
