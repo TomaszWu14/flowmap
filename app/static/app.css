@@ -264,3 +264,13 @@ details.insert { border-top: 0; padding: .3rem 0 0; flex-basis: 100%; }
 kbd { font: inherit; font-size: .75rem; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px;
   padding: 0 .3rem; background: var(--surface-2); }
 @media (max-width: 900px), (hover: none) { .kbd-hint { display: none; } .map-search input { width: 7rem; } }
+.player { position: absolute; right: .6rem; bottom: .6rem; z-index: 6; width: min(360px, calc(100% - 1.2rem));
+  max-height: calc(100% - 4.5rem); overflow: auto; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 14px; box-shadow: var(--shadow); padding: .8rem .9rem; }
+.player-head { display: flex; gap: .5rem; align-items: center; font-size: .82rem; }
+.player-title { display: block; font-size: 1.05rem; margin: .35rem 0 .2rem; }
+.player-line { margin: .15rem 0; font-size: .9rem; }
+.player-choices { display: grid; gap: .35rem; margin-top: .5rem; }
+.player-controls { display: flex; gap: .3rem; flex-wrap: wrap; margin-top: .6rem; }
+.player-auto { display: flex; gap: .35rem; align-items: center; font-size: .8rem; color: var(--muted); margin-top: .4rem; }
+@media (max-width: 900px) { .player { bottom: 72px; } }

@@ -57,3 +57,12 @@ def test_guard_panel_lists_open_questions(auth_client):
     p = new_project(auth_client)
     html = auth_client.get(f"/p/{p.id}/guard").get_data(as_text=True)
     assert "Otwarte pytania (1)" in html and "co dalej" in html and "Odpowiedz" in html
+
+
+def test_flow_player_is_loaded_on_every_map(auth_client, client):
+    p = new_project(auth_client)
+    assert "player.js" in auth_client.get(f"/p/{p.id}").get_data(as_text=True)
+    auth_client.post(f"/p/{p.id}/udostepnianie/link")
+    token = Project.query.get(p.id).share_token
+    assert "player.js" in auth_client.get(f"/s/{token}").get_data(as_text=True)
+    assert "player.js" in auth_client.get("/przyklad").get_data(as_text=True)
