@@ -74,7 +74,8 @@ BPMNDI = "http://www.omg.org/spec/BPMN/20100524/DI"
 DC = "http://www.omg.org/spec/DD/20100524/DC"
 DI = "http://www.omg.org/spec/DD/20100524/DI"
 BPMN_TAGS = {
-    "start": "startEvent", "end": "endEvent", "decision": "exclusiveGateway", "user_action": "userTask",
+    "start": "startEvent", "end": "endEvent", "decision": "exclusiveGateway", "parallel": "parallelGateway",
+    "user_action": "userTask",
     "screen": "userTask", "automation": "serviceTask", "integration": "serviceTask",
     "wait": "intermediateCatchEvent",
 }

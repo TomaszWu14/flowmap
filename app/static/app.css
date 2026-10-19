@@ -21,7 +21,7 @@
 
   /* step-type palette (also read by map.js) */
   --t-start: #2f7d46; --t-end: #b42318; --t-screen: #1d5fa8; --t-user_action: #6d3fc0;
-  --t-automation: #0f766e; --t-decision: #b7791f; --t-wait: #6b665b; --t-integration: #a3307a;
+  --t-automation: #0f766e; --t-decision: #b7791f; --t-parallel: #4f46e5; --t-wait: #6b665b; --t-integration: #a3307a;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
@@ -31,7 +31,7 @@
     --ok: #4ade80; --warn: #fbbf24; --danger: #f87171; --info: #60a5fa; --grid: rgba(236, 232, 223, .06);
     --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
     --t-start: #4ade80; --t-end: #f87171; --t-screen: #60a5fa; --t-user_action: #a78bfa;
-    --t-automation: #2dd4bf; --t-decision: #fbbf24; --t-wait: #a29d92; --t-integration: #f472b6;
+    --t-automation: #2dd4bf; --t-decision: #fbbf24; --t-parallel: #a5b4fc; --t-wait: #a29d92; --t-integration: #f472b6;
     color-scheme: dark;
   }
 }
@@ -41,7 +41,7 @@
   --ok: #4ade80; --warn: #fbbf24; --danger: #f87171; --info: #60a5fa; --grid: rgba(236, 232, 223, .06);
   --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
   --t-start: #4ade80; --t-end: #f87171; --t-screen: #60a5fa; --t-user_action: #a78bfa;
-  --t-automation: #2dd4bf; --t-decision: #fbbf24; --t-wait: #a29d92; --t-integration: #f472b6;
+  --t-automation: #2dd4bf; --t-decision: #fbbf24; --t-parallel: #a5b4fc; --t-wait: #a29d92; --t-integration: #f472b6;
   color-scheme: dark;
 }
 

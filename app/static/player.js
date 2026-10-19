@@ -14,9 +14,11 @@
     integration: () => "Wymiana danych z systemem zewnętrznym.",
     wait: () => "Proces czeka na zdarzenie albo odpowiedź.",
     decision: (who) => `Decyzja — ${who} wybiera dalszą ścieżkę:`,
+    parallel: () => "Bramka AND.",
     end: () => "Tu proces się kończy.",
   };
   let path = [], card = null, timer = null, playing = false, speed = 1, autoFirst = false, choices = null;
+  let lanesStack = [];  // open AND splits: {split, rest: [edges], total}
 
   const fm = () => window.flowMap;
   const ms = (base) => base / SPEEDS[speed];
@@ -43,7 +45,10 @@
     if (n.outputs && n.outputs.length) lines.push(`${n.type === "screen" ? "Pokazuje" : "Wynik"}: ${n.outputs.join(", ")}.`);
     if (n.inputs && n.inputs.length) lines.push(`Dane: ${n.inputs.join(", ")}.`);
     if (n.description) lines.push(dot(n.description));
-    if (n.type === "decision") outs.forEach((e) => lines.push(`• ${e.label || "dalej"} → ${by[e.target].title}`));
+    const split = n.type === "parallel" && outs.length > 1;
+    if (n.type === "parallel") lines[0] = split ? "Ścieżki równoległe — wszystkie dzieją się jednocześnie:"
+      : "Zbiegnięcie ścieżek — proces czeka, aż wszystkie się zakończą.";
+    if (n.type === "decision" || split) outs.forEach((e) => lines.push(`• ${e.label || "dalej"} → ${by[e.target].title}`));
     else if (outs.length === 1) lines.push(dot(`Dalej: ${by[outs[0].target].title}`));
     else if (outs.length > 1) lines.push(`Dalej jedna z ${outs.length} ścieżek.`);
     else if (n.type !== "end") lines.push("⚠ Po tym kroku nic się nie dzieje — ślepy zaułek.");
@@ -181,8 +186,23 @@
   }
 
   function advance() {
-    const { out } = graph();
-    const outs = out[path[path.length - 1]] || [];
+    const { by, out } = graph();
+    const cur = by[path[path.length - 1]];
+    const outs = out[cur.key] || [];
+    const top = lanesStack[lanesStack.length - 1];
+    const atJoin = cur.type === "parallel" && outs.length <= 1 && (out[cur.key] || []).length !== 0
+      && !(cur.data && (cur.data.branches || []).length);
+    if (top && top.rest.length && (atJoin || !outs.length)) {  // next parallel path, from the split again
+      const edge = top.rest.shift();
+      path.push(top.split);
+      show(`Ścieżka równoległa ${top.total - top.rest.length} z ${top.total}.`);
+      return travel(edge, playing);
+    }
+    if (top && !top.rest.length && atJoin) lanesStack.pop();
+    if (cur.type === "parallel" && outs.length > 1) {
+      lanesStack.push({ split: cur.key, rest: outs.slice(1), total: outs.length });
+      return travel(outs[0], playing);
+    }
     if (!outs.length || path.length >= MAX_STEPS) {
       playing = false;
       show(path.length >= MAX_STEPS ? `Zatrzymano po ${MAX_STEPS} krokach — czy to nie pętla?` : "Koniec przejścia.");
@@ -250,6 +270,7 @@
     const panel = document.getElementById("panel");
     if (panel && window.matchMedia("(max-width: 900px)").matches) panel.classList.add("collapsed");
     path = [first.key];
+    lanesStack = [];
     choices = null;
     playing = true;
     show();

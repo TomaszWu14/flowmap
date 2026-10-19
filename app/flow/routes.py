@@ -75,8 +75,9 @@ def open_questions(project) -> list[dict]:
     out = []
     for n in q.pending_nodes(project):
         kind, slot = q.pending_kind(project, n)
-        out.append({"key": n.key, "title": n.title,
-                    "what": PENDING_LABELS.get(kind, kind) + (f" → „{slot}”" if slot else "")})
+        slots = g.open_labels(project, n) if kind == "next" else [slot]  # every open branch, not only the first
+        out += [{"key": n.key, "title": n.title, "what": PENDING_LABELS.get(kind, kind) + (f" → „{s}”" if s else "")}
+                for s in slots]
     return out
 
 
@@ -162,7 +163,7 @@ def answer(project_id):
             option = question.options[idx]
     except ValueError as exc:
         return render_panel(project, node, question.kind, question.slot, error=str(exc), focus_changed=False)
-    if node.type == "decision" and question.kind == "next" and question.slot:
+    if (node.type == "decision" or g.is_split(node)) and question.kind == "next" and question.slot:
         branches = list(node.data.get("branches", []))
         if question.slot not in branches:
             g.set_node_data(node, branches=branches + [question.slot])
@@ -189,7 +190,7 @@ def edit_node(project_id, key):
     node.description = (f.get("description") or "").strip()[:2000]
     node.inputs = [v.strip()[:100] for v in (f.get("inputs") or "").split(",") if v.strip()]
     node.outputs = [v.strip()[:100] for v in (f.get("outputs") or "").split(",") if v.strip()]
-    if node.type == "decision":
+    if node.type in ("decision", "parallel"):  # a parallel gateway without paths is a join
         branches = [b.strip()[:100] for b in (f.get("branches") or "").split(",") if b.strip()]
         g.set_node_data(node, branches=list(dict.fromkeys(branches)))
     if "icon" in f:  # "" = automatic, otherwise a known pictogram
@@ -217,7 +218,7 @@ def connect_node(project_id, key):
     node = g.owned_node(project, key)
     target = g.owned_node(project, request.form.get("target", ""))
     label = (request.form.get("label") or "").strip()
-    if node.type == "decision":
+    if node.type == "decision" or g.is_split(node):
         open_ = g.open_labels(project, node)
         label = label or (open_[0] if open_ else "")
         if label and label not in node.data.get("branches", []):
@@ -264,7 +265,7 @@ def insert_on_edge(project_id, edge_id):
     if not title:
         return render_panel(project, edge.source, error="Podaj nazwę wstawianego kroku.", focus_changed=False)
     step_type = request.form.get("type", "user_action")
-    if step_type not in NODE_TYPES or step_type in ("start", "end", "decision"):
+    if step_type not in NODE_TYPES or step_type in ("start", "end", "decision", "parallel"):
         step_type = "user_action"
     source, target = edge.source, edge.target
     new = g.add_node(project, step_type, title, (request.form.get("actor") or "").strip() or source.actor)
@@ -382,7 +383,7 @@ def guard_fix(project_id):
     node = g.owned_node(project, f.get("node_key", ""))
     code = f.get("code")
     if code in ("dead_end", "open_branch", "decision_exits"):
-        if node.type == "end" or (code != "dead_end" and node.type != "decision"):
+        if node.type == "end" or (code != "dead_end" and node.type not in ("decision", "parallel")):
             abort(400)
         labels = [f.get("label") or ""]
         if code == "decision_exits":  # close every unused branch, then add "nie"/"inne" until there are 2 exits

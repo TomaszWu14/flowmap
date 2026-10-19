@@ -27,7 +27,13 @@ def generic_next(node: dict, label: str | None, mode: str, main_actor: str = "U�
     if actor == "System":
         actor = main_actor
     t = node["type"]
-    if t == "decision":
+    if t == "parallel" and label:  # a path of an AND split (a join continues like a system step)
+        specs = [
+            _s("user_action", "Zadanie w tej ścieżce", actor),
+            _s("automation", "Zadanie systemowe w tej ścieżce", "System"),
+            _s("automation", "Wysłanie powiadomienia e-mail", "System", outputs=["E-mail"]),
+        ]
+    elif t == "decision":
         if label and NEGATIVE_LABEL.match(label):
             specs = [
                 _s("screen", "Komunikat o błędzie i poprawa danych", actor),
@@ -60,7 +66,7 @@ def generic_next(node: dict, label: str | None, mode: str, main_actor: str = "U�
             _s("screen", "Ekran potwierdzenia", actor),
             _s("integration", "Przekazanie danych do systemu zewnętrznego", "System"),
         ]
-    elif t == "automation":
+    elif t in ("automation", "parallel"):
         specs = [
             _s("automation", "Wysłanie powiadomienia e-mail", "System", outputs=["E-mail"]),
             _s("screen", "Ekran z wynikiem", actor),
@@ -132,6 +138,42 @@ def _without_repeats(opt: Option, done: set[str]) -> Option | None:
     return opt if len(steps) == len(opt.steps) else opt.model_copy(update={"steps": steps})
 
 
+def _merge_option(graph: dict, node: dict) -> Option | None:
+    """Inside a parallel path: offer to meet the other paths at a join gateway (existing one, or a new one)."""
+    by_key = {n["key"]: n for n in graph["nodes"]}
+    parents: dict[str, list[str]] = {}
+    children: dict[str, list[str]] = {}
+    for e in graph["edges"]:
+        parents.setdefault(e["target"], []).append(e["source"])
+        children.setdefault(e["source"], []).append(e["target"])
+    is_split = lambda n: n["type"] == "parallel" and (n.get("data") or {}).get("branches")  # noqa: E731
+    if is_split(node) or (node["type"] == "parallel" and parents.get(node["key"])):
+        return None  # the split itself, or already a join
+    seen, stack, split = set(), list(parents.get(node["key"], [])), None
+    while stack and split is None:
+        k = stack.pop()
+        if k in seen:
+            continue
+        seen.add(k)
+        if is_split(by_key[k]):
+            split = by_key[k]
+        stack.extend(parents.get(k, []))
+    if split is None:
+        return None
+    seen, stack = set(), list(children.get(split["key"], []))
+    while stack:
+        k = stack.pop()
+        if k in seen:
+            continue
+        seen.add(k)
+        n = by_key[k]
+        if n["type"] == "parallel" and not is_split(n) and k != node["key"]:
+            return Option(label=f"Zbiegnij ścieżki w: {n['title']}", kind="connect", connect_to=k)
+        stack.extend(children.get(k, []))
+    return Option(label="Zbiegnij ścieżki (bramka łącząca AND)",
+                  steps=[_s("parallel", "Zbiegnięcie ścieżek", node.get("actor") or "System")])
+
+
 def next_question(graph: dict, node: dict, label: str | None, mode: str, template: str | None) -> Question:
     graph_tpl = {n["data"]["tpl"]: n["key"] for n in graph["nodes"] if (n.get("data") or {}).get("tpl")}
     by_key = {n["key"]: n for n in graph["nodes"]}
@@ -165,6 +207,9 @@ def next_question(graph: dict, node: dict, label: str | None, mode: str, templat
         opt = _without_repeats(opt, done)
         if opt and opt.label not in seen:
             options.append(opt)
+    merge = _merge_option(graph, node)
+    if merge:
+        options.insert(0, merge)
     options.append(Option(label="Koniec procesu", steps=[_end(actor=node.get("actor", ""))]))
 
     where = f"„{node['title']}”" + (f" → {label}" if label else "")
@@ -259,7 +304,7 @@ def helper_kinds(node: dict, mode: str) -> list[str]:
     kinds = []
     if node["type"] in ("start", "end"):
         return kinds
-    if not node.get("actor"):
+    if not node.get("actor") and node["type"] != "parallel":  # an AND gateway has no performer
         kinds.append("actor")
     if mode == "thorough":
         if node["type"] == "screen":

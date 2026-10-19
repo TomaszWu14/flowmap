@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-StepType = Literal["user_action", "screen", "automation", "decision", "wait", "integration", "end"]
+StepType = Literal["user_action", "screen", "automation", "decision", "parallel", "wait", "integration", "end"]
 QuestionKind = Literal["next", "actor", "screen", "data", "error", "branches"]
 OptionKind = Literal["steps", "connect", "skip", "actor", "fields", "branches"]
 

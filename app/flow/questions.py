@@ -119,9 +119,10 @@ def option_from_other(kind: str, form) -> Option:
         return Option(label=f"{steps[0]['title']} (+{len(steps) - 1})", steps=steps, **edge)
     step_type = form.get("type") or "user_action"
     step = {"type": step_type, "title": text, "actor": actor}
-    if step_type == "decision":
+    if step_type in ("decision", "parallel"):
         branches = [b.strip() for b in (form.get("branches") or "").split(",") if b.strip()]
-        step["branches"] = branches if len(branches) >= 2 else ["tak", "nie"]
+        default = ["tak", "nie"] if step_type == "decision" else ["ścieżka 1", "ścieżka 2"]
+        step["branches"] = branches if len(branches) >= 2 else default
     return Option(label=text, steps=[step], **edge)
 
 
@@ -156,7 +157,7 @@ def apply_option(project: Project, node: Node, question: Question, option: Optio
     prev, label = node, None
     for i, spec in enumerate(option.steps):
         data = {"tpl": spec.tpl} if spec.tpl else {}
-        if spec.type == "decision" and spec.branches:
+        if spec.type in ("decision", "parallel") and spec.branches:
             data["branches"] = list(dict.fromkeys(spec.branches))
         new = g.add_node(project, spec.type, spec.title, spec.actor, spec.description, spec.inputs, spec.outputs, data)
         if i == 0:
@@ -167,7 +168,7 @@ def apply_option(project: Project, node: Node, question: Question, option: Optio
         prev = new
         if spec.type == "end":
             break
-        if spec.type == "decision":
+        if spec.type == "decision" or (spec.type == "parallel" and spec.branches):
             # Following steps continue on the first branch; the other branches stay open as questions.
             label = (data.get("branches") or ["tak"])[0]
             if i == len(option.steps) - 1:

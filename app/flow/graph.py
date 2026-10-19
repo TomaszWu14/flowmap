@@ -108,12 +108,17 @@ def set_node_data(node: Node, **values) -> None:
     node.data = data  # reassign so SQLAlchemy sees the JSON change
 
 
+def is_split(node: Node) -> bool:
+    """A parallel (AND) gateway with named paths splits the flow; one without paths joins them."""
+    return node.type == "parallel" and bool((node.data or {}).get("branches"))
+
+
 def open_labels(project: Project, node: Node) -> list[str | None]:
     """Branch labels still waiting for a next step. None = plain 'what next' slot."""
     if node.type == "end":
         return []
     out = outgoing(project, node)
-    if node.type == "decision":
+    if node.type == "decision" or is_split(node):  # AND split: every path is a slot
         used = {e.label for e in out}
         return [b for b in (node.data or {}).get("branches", []) if b not in used]
     return [] if any(e.condition != ERROR_CONDITION for e in out) else [None]
