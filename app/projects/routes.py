@@ -14,7 +14,7 @@ from ..extensions import db
 from ..flow import graph as g
 from ..flow.diff import diff_graphs, node_status
 from ..flow.routes import graph_payload
-from ..models import Node, Project, ProjectMember, UserTemplate, Version
+from ..models import Attachment, Node, Project, ProjectMember, UserTemplate, Version
 from ..text import steps_label
 from .service import copy_project, create_project, project_from_graph
 
@@ -57,8 +57,10 @@ def index():
     ids = [p.id for p in projects] + [m.project_id for m in shared]
     steps = dict(db.session.query(Node.project_id, func.count(Node.id))
                  .filter(Node.project_id.in_(ids)).group_by(Node.project_id).all()) if ids else {}
+    covers = dict(db.session.query(Attachment.project_id, Attachment.id)
+                  .filter(Attachment.project_id.in_(ids), Attachment.is_cover.is_(True)).all()) if ids else {}
     return render_template("projects/index.html", projects=projects, shared=shared, role_labels=g.ROLE_LABELS,
-                           steps=steps)
+                           steps=steps, covers=covers)
 
 
 @bp.route("/projekty/nowy", methods=["GET", "POST"])

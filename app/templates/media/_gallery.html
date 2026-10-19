@@ -1,0 +1,29 @@
+{% set gid = 'gallery-' ~ (node_key or 'project') %}
+<div class="gallery" id="{{ gid }}" data-gallery
+     data-upload-url="{{ url_for('media.upload', project_id=project.id) }}" data-node-key="{{ node_key }}">
+  {% if error %}<div class="alert error" role="alert">{{ error }}</div>{% endif %}
+  {% if images %}
+  <ul class="gallery-grid">
+    {% for img in images %}
+    <li>
+      <a href="{{ url_for('media.show', project_id=project.id, att_id=img.id) }}" target="_blank" rel="noopener">
+        <img src="{{ url_for('media.show', project_id=project.id, att_id=img.id) }}" alt="{{ img.caption or img.filename }}" loading="lazy"></a>
+      {% if img.caption %}<span class="muted">{{ img.caption }}</span>{% endif %}
+      {% if project.can_edit %}<div class="row">
+        {% if not node_key %}<button class="btn small {{ 'primary' if img.is_cover }}" type="button"
+          hx-post="{{ url_for('media.cover', project_id=project.id, att_id=img.id) }}" hx-target="#{{ gid }}" hx-swap="outerHTML"
+          title="Pokaż jako okładkę projektu na liście">{{ '★ Okładka' if img.is_cover else '☆ Okładka' }}</button>{% endif %}
+        <button class="btn small danger" type="button" hx-post="{{ url_for('media.delete', project_id=project.id, att_id=img.id) }}"
+          hx-target="#{{ gid }}" hx-swap="outerHTML" aria-label="Usuń grafikę {{ img.caption or img.filename }}">Usuń</button>
+      </div>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  {% if project.can_edit %}
+  <label class="gallery-drop">
+    <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-image-input>
+    <span>+ Dodaj grafikę <span class="muted">— wybierz plik, przeciągnij tutaj albo wklej zrzut (Ctrl+V)</span></span>
+  </label>
+  {% elif not images %}<p class="muted">Brak grafik.</p>{% endif %}
+</div>

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Materiały — {{ project.name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Materiały projektu</h1><p class="muted">{{ project.name }} — zdjęcia stanowisk, notatki z warsztatów, istniejące
+    dokumenty. Grafikę oznaczoną gwiazdką zobaczysz jako okładkę na liście projektów.</p></div>
+  <a class="btn" href="{{ url_for('flow.view', project_id=project.id) }}">← Wróć do mapy</a>
+</div>
+<section class="card">{% include "media/_gallery.html" %}</section>
+{% endblock %}

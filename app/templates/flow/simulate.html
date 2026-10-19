@@ -26,6 +26,7 @@
     <div class="phone {{ 'other-actor' if not state.mine }}">
       <span class="type-chip t-{{ n.type }}">{{ type_labels[n.type] }}{% if not state.mine %} · w tle: {{ n.actor or 'brak aktora' }}{% endif %}</span>
       <div class="screen-title">{{ n.title }}</div>
+      {% if shot %}<img class="screen-shot" src="{{ shot }}" alt="Grafika kroku „{{ n.title }}”">{% endif %}
       {% if n.description %}<p class="muted">{{ n.description }}</p>{% endif %}
       {% for f in n.outputs %}<div class="fake-field">{{ f }}</div>{% endfor %}
       {% for f in n.inputs %}<div class="fake-field">✎ {{ f }}</div>{% endfor %}

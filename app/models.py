@@ -176,6 +176,21 @@ class ProjectMember(db.Model):
     __table_args__ = (db.UniqueConstraint("project_id", "user_id"),)
 
 
+class Attachment(db.Model):
+    """An image attached to a project (node_key empty = project material) or to one step."""
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False, index=True)
+    node_key = db.Column(db.String(16), nullable=False, default="", server_default="")
+    author_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"))
+    filename = db.Column(db.String(200), nullable=False, default="")
+    mime = db.Column(db.String(30), nullable=False)
+    data = db.Column(db.LargeBinary, nullable=False)
+    caption = db.Column(db.String(200), nullable=False, default="", server_default="")
+    is_cover = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+
+
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.Integer, db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False, index=True)

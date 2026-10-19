@@ -124,7 +124,8 @@
     const nodes = data.nodes.map((n) => {
       const classes = [n.pending ? "pending" : "", n.issues.length ? "issue" : "",
         n.diff ? "diff-" + n.diff : ""].join(" ").trim();
-      const label = n.title + (n.actor ? "\n— " + n.actor : "") + (n.issues.length ? "\n⚠ " + n.issues.length : "") + (n.comments ? "  💬 " + n.comments : "");
+      const label = n.title + (n.actor ? "\n— " + n.actor : "") + (n.issues.length ? "\n⚠ " + n.issues.length : "") + (n.comments ? "  💬 " + n.comments : "")
+        + (n.images ? "  🖼 " + n.images : "");
       const item = { group: "nodes", data: { id: n.key, type: n.type, actor: n.actor || "", icon: n.icon || "", label: label },
         classes: classes };
       if (n.x !== null && n.y !== null) item.position = { x: n.x, y: n.y };
@@ -396,6 +397,13 @@
       tipLine("Opis", n.description);
       tipLine("Do poprawy", (n.issues || []).join(" · "));
       tipLine("Komentarze", n.comments ? String(n.comments) : "");
+      if (n.image_url) {
+        const img = document.createElement("img");
+        img.src = n.image_url;
+        img.alt = "";
+        img.className = "map-tip-img";
+        tip.append(img);
+      }
       const pos = ev.target.renderedPosition();
       tip.style.left = Math.min(pos.x + 20, el.clientWidth - 300) + "px";
       tip.style.top = Math.max(pos.y + 40, 60) + "px";

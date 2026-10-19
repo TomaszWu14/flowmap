@@ -148,4 +148,72 @@
       if (ev.key === "ArrowRight") { ev.preventDefault(); setWidth(now - 30); }
     });
   }
+
+  // --- images: shrink in the browser (≤ 1600 px), upload by picker, drag & drop or paste -----
+  async function shrink(file) {
+    if (file.type === "image/gif" || !window.createImageBitmap) return file;  // keep animations as they are
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+    if (scale === 1 && file.size <= 1.5 * 1024 * 1024) return file;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bmp.width * scale);
+    canvas.height = Math.round(bmp.height * scale);
+    canvas.getContext("2d").drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg", 0.85));
+    return new File([blob], (file.name || "grafika").replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
+  }
+  const csrfToken = () => (document.querySelector('meta[name="csrf-token"]') || {}).content || "";
+  async function uploadImages(gallery, files) {
+    let current = gallery;
+    for (const original of files) {
+      if (!original.type.startsWith("image/")) continue;
+      const fd = new FormData();
+      fd.append("file", await shrink(original));
+      fd.append("node_key", current.dataset.nodeKey || "");
+      try {
+        const res = await fetch(current.dataset.uploadUrl, { method: "POST", body: fd, headers: { "X-CSRFToken": csrfToken() } });
+        const html = await res.text();
+        const box = document.createElement("div");
+        box.innerHTML = html;
+        const fresh = box.firstElementChild;
+        if (fresh) {
+          current.replaceWith(fresh);
+          if (window.htmx) window.htmx.process(fresh);
+          current = fresh;
+        }
+        if (!res.ok) throw new Error(String(res.status));
+      } catch (e) {
+        toast("Nie udało się wysłać grafiki.", { error: true });
+        return;
+      }
+    }
+    document.body.dispatchEvent(new CustomEvent("mapChanged", { detail: {} }));
+    toast("Dodano grafikę.");
+  }
+  document.addEventListener("change", (ev) => {
+    const input = ev.target.closest && ev.target.closest("[data-image-input]");
+    if (input && input.files.length) uploadImages(input.closest("[data-gallery]"), [...input.files]);
+  });
+  document.addEventListener("dragover", (ev) => {
+    const g = ev.target.closest && ev.target.closest("[data-gallery]");
+    if (g && g.querySelector("[data-image-input]")) { ev.preventDefault(); g.classList.add("drag"); }
+  });
+  document.addEventListener("dragleave", (ev) => {
+    const g = ev.target.closest && ev.target.closest("[data-gallery]");
+    if (g) g.classList.remove("drag");
+  });
+  document.addEventListener("drop", (ev) => {
+    const g = ev.target.closest && ev.target.closest("[data-gallery]");
+    if (!g || !g.querySelector("[data-image-input]")) return;
+    ev.preventDefault();
+    g.classList.remove("drag");
+    uploadImages(g, [...ev.dataTransfer.files]);
+  });
+  document.addEventListener("paste", (ev) => {
+    const t = ev.target;
+    if (t && (t.isContentEditable || ["INPUT", "TEXTAREA"].includes(t.tagName))) return;
+    const files = [...(ev.clipboardData ? ev.clipboardData.files : [])].filter((f) => f.type.startsWith("image/"));
+    const gallery = [...document.querySelectorAll("[data-gallery]")].find((g) => g.querySelector("[data-image-input]"));
+    if (files.length && gallery) { ev.preventDefault(); uploadImages(gallery, files); }
+  });
 })();
