@@ -7,7 +7,7 @@ from pydantic import ValidationError
 from ..ai.client import AIError, ai_enabled, spend_ai_request
 from ..extensions import db
 from ..flow import graph as g
-from ..models import Comment
+from ..models import Attachment, Comment
 from .forms import form_text, item_from_form
 from .package import build_files, build_zip
 from .readiness import readiness
@@ -164,7 +164,8 @@ def package(project_id):
     project = g.project_for(project_id, "view")
     spec = _spec_or_abort(project)
     comments = [c.body for c in Comment.query.filter_by(project_id=project.id, resolved=False).order_by(Comment.id)]
-    body = build_zip(build_files(project.meta, project.graph(), spec, comments))
+    images = Attachment.query.filter_by(project_id=project.id).order_by(Attachment.id).all()
+    body = build_zip(build_files(project.meta, project.graph(), spec, comments, images))
     return Response(body, mimetype="application/zip",
                     headers={"Content-Disposition": 'attachment; filename="flowmap-claude-code.zip"'})
 

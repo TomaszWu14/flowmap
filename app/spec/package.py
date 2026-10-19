@@ -18,6 +18,15 @@ STACK_TYPES = {"text": "VARCHAR(255)", "long_text": "TEXT", "integer": "INTEGER"
                "money": "NUMERIC(12,2) + waluta", "boolean": "BOOLEAN", "date": "DATE", "datetime": "TIMESTAMP",
                "email": "VARCHAR(255) + walidacja e-mail", "phone": "VARCHAR(32) + walidacja", "enum": "ENUM / CHECK",
                "file": "ścieżka do pliku + metadane", "reference": "klucz obcy"}
+EXT = {"image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif"}
+
+
+def image_path(att) -> str:
+    return f"images/{att.id}.{EXT.get(att.mime, 'bin')}"
+
+
+def _img(att) -> str:
+    return f"![{_md(att.caption or att.filename)}]({image_path(att)})"
 
 
 def _name(spec: Spec, key: str) -> str:
@@ -48,7 +57,20 @@ def claude_md(meta, spec: Spec) -> str:
     return "\n".join(out) + "\n"
 
 
-def spec_md(meta, graph, spec: Spec) -> str:
+def images_md(graph, images: list) -> list[str]:
+    if not images:
+        return []
+    titles = {n["key"]: n["title"] for n in graph["nodes"]}
+    out = ["", "## Grafiki", "", "Zrzuty ekranów, zdjęcia stanowisk i skany dołączone do mapy (pliki w `images/`).", ""]
+    groups = [("", "Materiały projektu")] + [(k, f"Krok: {titles[k]}") for k in titles]
+    for key, label in groups:
+        atts = [a for a in images if a.node_key == key]
+        if atts:
+            out += [f"### {_md(label)}", ""] + [f"- {_img(a)}" for a in atts] + [""]
+    return out
+
+
+def spec_md(meta, graph, spec: Spec, images: list = ()) -> str:
     out = [f"# Specyfikacja: {_md(meta['name'])}", "", "## Proces", "", "```mermaid", to_mermaid(graph).rstrip(),
            "```", "", "## Role i uprawnienia", "", "| Rola | Encja | Odczyt | Tworzenie | Edycja | Usuwanie |",
            "|---|---|---|---|---|---|"]
@@ -60,7 +82,8 @@ def spec_md(meta, graph, spec: Spec) -> str:
     for s in spec.screens:
         out += [f"### {_md(s.name)}", f"- Rola: {_md(_name(spec, s.role)) if s.role else '—'}"]
         out += [f"- Pole: {_md(f.name)} ({FIELD_TYPE_LABELS[f.type]})" for f in s.fields]
-        out += [f"- Akcja: {_md(a)}" for a in s.actions] + [""]
+        out += [f"- Akcja: {_md(a)}" for a in s.actions]
+        out += [f"- Grafika: {_img(a)}" for a in images if s.node_key and a.node_key == s.node_key] + [""]
     out += ["## Powiadomienia", ""] + [
         f"- {_md(n.trigger)} → {CHANNEL_LABELS[n.channel]}, do: {_md(_name(spec, n.recipient_role))}"
         for n in spec.notifications] + [""]
@@ -68,6 +91,7 @@ def spec_md(meta, graph, spec: Spec) -> str:
         f"- {_md(i.name)} ({DIRECTION_LABELS[i.direction]}); dane: {_md(', '.join(i.data)) or '—'}; "
         f"przy błędzie: {_md(i.on_error) or '—'}" for i in spec.integrations] + [""]
     out += ["## Wymagania niefunkcjonalne", ""] + [f"- [{NFR_LABELS[n.category]}] {_md(n.text)}" for n in spec.nfr]
+    out += images_md(graph, images)
     return "\n".join(out) + "\n"
 
 
@@ -125,20 +149,24 @@ def open_questions_md(graph, spec: Spec, open_comments: list[str]) -> str:
     return "# Otwarte pytania\n\n" + ("\n".join(f"- {_md(x)}" for x in items) or "- brak") + "\n"
 
 
-def build_files(meta: dict, graph: dict, spec: Spec, open_comments: list[str]) -> dict[str, str]:
+def build_files(meta: dict, graph: dict, spec: Spec, open_comments: list[str],
+                images: list = ()) -> dict[str, str | bytes]:
+    """images: Attachment rows of the project; each is packed as images/<id>.<ext> and linked from SPEC.md."""
     data = {"format": FORMAT, "project": meta, "nodes": graph["nodes"], "edges": graph["edges"],
             "spec": spec.model_dump(mode="json")}
-    return {"CLAUDE.md": claude_md(meta, spec), "SPEC.md": spec_md(meta, graph, spec),
+    return {"CLAUDE.md": claude_md(meta, spec), "SPEC.md": spec_md(meta, graph, spec, images),
             "DATA_MODEL.md": data_model_md(spec), "ACCEPTANCE.md": acceptance_md(graph, spec),
             "OPEN_QUESTIONS.md": open_questions_md(graph, spec, open_comments),
-            "flowmap.json": json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n"}
+            "flowmap.json": json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+            **{image_path(a): a.data for a in images}}
 
 
-def build_zip(files: dict[str, str]) -> bytes:
+def build_zip(files: dict[str, str | bytes]) -> bytes:
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         for name in sorted(files):
             info = zipfile.ZipInfo(f"docs/flowmap/{name}", date_time=ZIP_DATE)
             info.compress_type = zipfile.ZIP_DEFLATED
-            zf.writestr(info, files[name].encode("utf-8"))
+            body = files[name]
+            zf.writestr(info, body.encode("utf-8") if isinstance(body, str) else body)
     return buf.getvalue()
