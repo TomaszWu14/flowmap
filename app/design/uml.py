@@ -6,6 +6,7 @@ from ..export.builders import _md, _mm
 from ..spec.schema import Spec
 from .lint import lint
 
+ARROWS = {"call": "->>", "reply": "-->>", "async": "-)", "error": "--x"}
 CARDINALITY = {"1-1": '"1" -- "1"', "1-n": '"1" --> "*"', "n-n": '"*" -- "*"'}
 
 
@@ -50,6 +51,37 @@ def use_case_diagram(spec: Spec, title: str = "System") -> str:
     return "\n".join(out + extends) + "\n"
 
 
+def _seq_text(text: str) -> str:
+    """Mermaid sequence text: ';' and '#' break the line parser."""
+    return _mm(text).replace(";", ",").replace("#", "").strip() or "—"
+
+
+def sequence_diagram(seq, spec: Spec) -> str:
+    """UML sequence diagram; error messages right after a call/reply become the 'else' branches of an alt block."""
+    humans = {r.name for r in spec.roles}
+    ids = {p: f"P{i}" for i, p in enumerate(seq.participants)}
+    out = ["sequenceDiagram"]
+    out += [f"    {'actor' if p in humans else 'participant'} {ids[p]} as {_seq_text(p)}" for p in seq.participants]
+    msgs = [m for m in seq.messages if m.source in ids and m.target in ids]
+    i = 0
+    while i < len(msgs):
+        m = msgs[i]
+        errors = []
+        while m.kind != "error" and i + 1 + len(errors) < len(msgs) and msgs[i + 1 + len(errors)].kind == "error":
+            errors.append(msgs[i + 1 + len(errors)])
+        line = f"{ids[m.source]}{ARROWS[m.kind]}{ids[m.target]}: {_seq_text(m.text)}"
+        if errors:
+            out += ["    alt powodzenie", f"        {line}"]
+            for e in errors:
+                out += [f"    else {_seq_text(e.text)}",
+                        f"        {ids[e.source]}{ARROWS['error']}{ids[e.target]}: {_seq_text(e.text)}"]
+            out.append("    end")
+        else:
+            out.append(f"    {line}")
+        i += 1 + len(errors)
+    return "\n".join(out) + "\n"
+
+
 def uml_md(meta: dict, spec: Spec) -> str:
     roles = {r.key: r.name for r in spec.roles}
     names = {u.key: u.name for u in spec.use_cases}
@@ -67,6 +99,11 @@ def uml_md(meta: dict, spec: Spec) -> str:
             out += ["", "Scenariusze alternatywne:", ""]
             out += [f"- {_md(a.condition)}: {_md(' → '.join(a.steps)) or '—'}" for a in u.alternatives]
         out.append("")
+    out += ["## Sekwencje", ""]
+    for s in spec.sequences:
+        out += [f"### {_md(s.name)}", "", "```mermaid", sequence_diagram(s, spec).rstrip(), "```", ""]
+    if not spec.sequences:
+        out += ["- brak", ""]
     out += ["## Diagram klas", "", "```mermaid", class_diagram(spec).rstrip(), "```", "", "## Uwagi strażnika UML", ""]
     out += [f"- {_md(i['message'])} — {_md(i['why'])}" for i in lint(spec)] or ["- brak"]
     return "\n".join(out) + "\n"

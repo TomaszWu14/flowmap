@@ -5,16 +5,19 @@ from pydantic import ValidationError
 from .derive import slug
 from .schema import (
     FIELD_TYPES,
+    MESSAGE_KINDS,
     Alternative,
     Entity,
     Field,
     Integration,
+    Message,
     Nfr,
     Notification,
     Relation,
     Role,
     Screen,
     ScreenField,
+    Sequence,
     StateMachine,
     Status,
     Transition,
@@ -24,7 +27,7 @@ from .schema import (
 
 PREFIX = {"entities": "entity", "screens": "screen", "roles": "role", "states": "states",
           "notifications": "notification", "integrations": "integration", "nfr": "nfr",
-          "use_cases": "uc"}
+          "use_cases": "uc", "sequences": "seq"}
 
 
 def _rows(text: str | None) -> list[list[str]]:
@@ -90,6 +93,14 @@ def item_from_form(section: str, form, existing):
             return UseCase(**base, name=f("name"), actor=f("actor"), goal=f("goal"),
                            main=[r[0] for r in _rows(f("main"))], alternatives=alts,
                            includes=[k.strip() for k in f("includes").split(",") if k.strip()])
+        if section == "sequences":
+            for r in _rows(f("messages")):
+                if _col(r, 3, "call") not in MESSAGE_KINDS:
+                    raise ValueError(f"nieznany rodzaj komunikatu „{_col(r, 3)}”. "
+                                     f"Dozwolone: {', '.join(MESSAGE_KINDS)}.")
+            return Sequence(**base, name=f("name"), participants=[r[0] for r in _rows(f("participants"))],
+                            messages=[Message(source=_col(r, 0), target=_col(r, 1), text=_col(r, 2),
+                                              kind=_col(r, 3, "call")) for r in _rows(f("messages"))])
     except ValidationError as exc:
         raise ValueError(f"Niepoprawne dane ({exc.error_count()} błędów): sprawdź wymagane pola i wartości.") from exc
     raise ValueError("Nieznana sekcja.")
@@ -124,4 +135,7 @@ def form_text(section: str, item) -> dict:
         return {"name": item.name, "actor": item.actor, "goal": item.goal, "main": "\n".join(item.main),
                 "alternatives": "\n".join(f"{a.condition} | {'; '.join(a.steps)}" for a in item.alternatives),
                 "includes": ", ".join(item.includes)}
+    if section == "sequences":
+        return {"name": item.name, "participants": "\n".join(item.participants),
+                "messages": "\n".join(f"{m.source} | {m.target} | {m.text} | {m.kind}" for m in item.messages)}
     return item.model_dump()

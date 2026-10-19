@@ -12,12 +12,21 @@ from .forms import form_text, item_from_form
 from .package import build_files, build_zip
 from .readiness import readiness
 from .review import apply_proposal, review_spec
-from .schema import CHANNEL_LABELS, DIRECTION_LABELS, FIELD_TYPE_LABELS, KIND_LABELS, NFR_LABELS, PERM_LABELS, SECTIONS
+from .schema import (
+    CHANNEL_LABELS,
+    DIRECTION_LABELS,
+    FIELD_TYPE_LABELS,
+    KIND_LABELS,
+    MESSAGE_KINDS,
+    NFR_LABELS,
+    PERM_LABELS,
+    SECTIONS,
+)
 
 bp = Blueprint("spec", __name__)
 SECTION_LABELS = {"entities": "Encje", "screens": "Ekrany", "roles": "Role", "states": "Statusy",
                   "notifications": "Powiadomienia", "integrations": "Integracje", "nfr": "Wymagania (NFR)",
-                  "use_cases": "Przypadki użycia"}
+                  "use_cases": "Przypadki użycia", "sequences": "Sekwencje"}
 FORM_FIELDS = {
     "entities": [("name", "Nazwa", "input"), ("description", "Opis", "textarea"),
                  ("fields", "Pola: nazwa | typ | wymagane t/n | walidacja | wartości | encja odwołania | id t/n",
@@ -43,6 +52,9 @@ FORM_FIELDS = {
                   ("main", "Scenariusz główny (krok w linii)", "textarea"),
                   ("alternatives", "Scenariusze alternatywne: warunek | krok; krok", "textarea"),
                   ("includes", "«include» — klucze przypadków użycia po przecinku", "input")],
+    "sequences": [("name", "Nazwa", "input"), ("participants", "Uczestnicy (po jednym w linii)", "textarea"),
+                  ("messages", "Komunikaty: od | do | tekst | call/reply/async/error "
+                   "(wywołanie, odpowiedź, asynchronicznie, błąd)", "textarea")],
 }
 
 
@@ -59,7 +71,7 @@ def _context(project, section: str) -> dict:
     return {"project": project, "spec": spec, "section": section, "sections": SECTION_LABELS,
             "type_labels_f": FIELD_TYPE_LABELS, "perm_labels": PERM_LABELS, "channel_labels": CHANNEL_LABELS,
             "direction_labels": DIRECTION_LABELS, "nfr_labels": NFR_LABELS, "names": names,
-            "kind_labels": KIND_LABELS, "ai": ai_enabled(),
+            "kind_labels": KIND_LABELS, "message_kinds": MESSAGE_KINDS, "ai": ai_enabled(),
             "can_edit": project.can_edit, "ready": ready, "issues_by_key": issues_by_key,
             "form_fields": FORM_FIELDS[section], "editing": None, "values": {}, "error": None}
 

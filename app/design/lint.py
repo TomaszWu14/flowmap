@@ -3,10 +3,12 @@
 from ..spec.schema import Spec
 
 WEIGHTS = {"nn_without_join": 5, "island_entity": 3, "reference_without_relation": 3,
-           "role_without_use_case": 3, "use_case_without_goal": 3, "use_case_without_alternative": 2}
+           "role_without_use_case": 3, "use_case_without_goal": 3, "use_case_without_alternative": 2,
+           "integration_without_error_message": 4, "idle_participant": 2}
 SECTION_OF = {"nn_without_join": "classes", "island_entity": "classes", "reference_without_relation": "classes",
               "role_without_use_case": "use_cases", "use_case_without_goal": "use_cases",
-              "use_case_without_alternative": "use_cases"}
+              "use_case_without_alternative": "use_cases", "integration_without_error_message": "sequences",
+              "idle_participant": "sequences"}
 
 
 def _i(code, message, key, why):
@@ -62,4 +64,19 @@ def lint(spec: Spec) -> list[dict]:
                              "alternatywnego.", u.key,
                              "W prawdziwych procesach coś idzie inaczej (brak danych, odmowa, błąd systemu) — "
                              "opisz co najmniej jeden wyjątek."))
+    integrations = {i.name for i in spec.integrations}
+    for s in spec.sequences:
+        used = {p for m in s.messages for p in (m.source, m.target)}
+        for p in s.participants:
+            if p not in used:
+                issues.append(_i("idle_participant", f"Uczestnik „{p}” w sekwencji „{s.name}” nie ma komunikatów.",
+                                 s.key, "Uczestnik bez komunikatów nic nie wnosi do scenariusza — usuń go albo "
+                                 "dopisz, z kim się komunikuje."))
+            called = any(m.target == p and m.kind == "call" for m in s.messages)
+            failed = any(m.source == p and m.kind == "error" for m in s.messages)
+            if p in integrations and called and not failed:
+                issues.append(_i("integration_without_error_message", f"Wywołanie „{p}” w sekwencji „{s.name}” "
+                                 "nie ma ścieżki błędu.", s.key,
+                                 "System zewnętrzny może nie odpowiedzieć albo odmówić — pokaż w sekwencji, "
+                                 "co wtedy dzieje się z procesem (blok alt)."))
     return issues

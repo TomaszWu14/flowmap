@@ -25,7 +25,7 @@ KIND_LABELS = {
     "add_status": "nowy status", "add_transition": "nowe przejście", "set_permission": "uprawnienie",
     "add_notification": "powiadomienie", "add_nfr": "wymaganie", "other_note": "uwaga",
 }
-SECTIONS = ("entities", "screens", "roles", "states", "notifications", "integrations", "nfr", "use_cases")
+SECTIONS = ("entities", "screens", "roles", "states", "notifications", "integrations", "nfr", "use_cases", "sequences")
 Source = Literal["rules", "ai", "manual"]
 Perm = Literal["all", "own", "none"]
 
@@ -137,6 +137,22 @@ class UseCase(Item):
     includes: list[str] = []  # keys of other use cases
 
 
+MESSAGE_KINDS = {"call": "wywołanie", "reply": "odpowiedź", "async": "asynchronicznie", "error": "błąd"}
+
+
+class Message(BaseModel):
+    source: str = PField(min_length=1, max_length=100)
+    target: str = PField(min_length=1, max_length=100)
+    text: str = PField(min_length=1, max_length=300)
+    kind: Literal["call", "reply", "async", "error"] = "call"
+
+
+class Sequence(Item):
+    name: str = PField(min_length=1, max_length=200)
+    participants: list[str] = []
+    messages: list[Message] = []
+
+
 class Proposal(BaseModel):
     id: str
     kind: str
@@ -154,6 +170,7 @@ class Spec(BaseModel):
     integrations: list[Integration] = []
     nfr: list[Nfr] = []
     use_cases: list[UseCase] = []
+    sequences: list[Sequence] = []
     stack: str = PField(default="", max_length=200)
     proposals: list[Proposal] = []
     dismissed: list[str] = []

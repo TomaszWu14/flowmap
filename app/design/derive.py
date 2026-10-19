@@ -4,8 +4,8 @@ from itertools import pairwise
 
 from ..ai.rules import NEGATIVE_LABEL
 from ..flow.lanes import assign
-from ..spec.derive import slug
-from ..spec.schema import Alternative, UseCase
+from ..spec.derive import NOTIFY, slug
+from ..spec.schema import Alternative, Message, Sequence, UseCase
 
 FLOW = ("start", "end", "decision", "parallel", "wait")
 SYSTEM = "System"
@@ -103,3 +103,45 @@ def use_cases(graph: dict, meta: dict) -> list[UseCase]:
                               goal="Wykonać kroki procesu bez udziału człowieka", main=system_steps,
                               alternatives=alts.get(slug(SYSTEM), [])))
     return result
+
+
+def sequences(graph: dict, meta: dict) -> list[Sequence]:
+    """Main path as one sequence: hand-offs between lanes, integration call/reply/error, async notifications."""
+    by_key = {n["key"]: n for n in graph["nodes"]}
+    lanes = {k: v or "" for k, v in assign(graph).items()}
+    main = main_path(graph)
+    if not main:
+        return []
+    who = lambda k: lanes[k] or SYSTEM  # noqa: E731
+    human = lambda lane: lane and slug(lane) != slug(SYSTEM)  # noqa: E731
+    parts: list[str] = []
+    msgs: list[Message] = []
+
+    def add(src, dst, text, kind="call"):
+        src, dst = src[:100], dst[:100]
+        parts.extend(p for p in dict.fromkeys((src, dst)) if p not in parts)
+        msgs.append(Message(source=src, target=dst, text=(text or "—")[:300], kind=kind))
+
+    prev = who(main[0])
+    last_human = prev if human(prev) else ""
+    for k in main:
+        n = by_key[k]
+        if n["type"] in FLOW:
+            continue
+        me = who(k)
+        if n["type"] == "integration":
+            ext = n["title"]
+            add(me, ext, ", ".join(n.get("inputs", [])) or "żądanie")
+            add(ext, me, ", ".join(n.get("outputs", [])) or "wynik", "reply")
+            for e in graph["edges"]:
+                if e["source"] == k and e.get("condition") == "error":
+                    add(ext, me, e.get("label") or "błąd", "error")
+        elif n["type"] == "automation" and NOTIFY.search(n["title"]):
+            add(SYSTEM, last_human or me, n["title"], "async")
+        else:
+            add(prev, me, n["title"])
+        prev = me
+        if human(me):
+            last_human = me
+    name = f"Ścieżka główna: {meta.get('start_sentence') or meta.get('name', '')}"
+    return [Sequence(key="seq:main", name=name[:200], participants=parts, messages=msgs)]

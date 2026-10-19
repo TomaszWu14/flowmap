@@ -284,6 +284,10 @@ def to_markdown(meta: dict, graph: dict, spec=None) -> str:
         out.append(f"- {NODE_TYPE_LABELS[n['type']]}: **{_md(n['title'])}**{extra}")
     if not notif:
         out.append("- brak")
+    if spec.sequences:
+        out += ["", "### Sekwencja (ścieżka główna)", ""]
+        out += [f"{i}. {_md(m.source)} → {_md(m.target)}: {_md(m.text)}"
+                for i, m in enumerate(spec.sequences[0].messages, 1)]
 
     out += ["", "## 6. Historyjki użytkownika", ""]
     story_nodes = [n for n in nodes if n["type"] in ("user_action", "screen") and n.get("actor")]
