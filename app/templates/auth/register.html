@@ -10,7 +10,7 @@
     {{ field(form.password, autocomplete="new-password", minlength=12) }}
     <span class="field-help">Minimum 12 znaków — najlepiej kilka słów.</span>
     {{ field(form.password2, autocomplete="new-password") }}
-    <button class="btn primary" type="submit">Utwórz konto</button>
+    <button class="btn primary" type="submit">Załóż konto</button>
   </form>
   <p class="muted" style="margin-top:1rem">Masz już konto? <a href="{{ url_for('auth.login') }}">Zaloguj się</a>.</p>
 </div>

@@ -49,7 +49,7 @@
     {% if state.summary %}
       <h2>Podsumowanie</h2>
       <div class="stats">
-        <div><strong>{{ state.summary.steps }}</strong>kroków</div>
+        <div><strong>{{ state.summary.steps }}</strong>{{ state.summary.steps|plural_word('krok', 'kroki', 'kroków') }}</div>
         <div><strong>{{ state.summary.screens }}</strong>ekranów</div>
         <div><strong>{{ state.summary.dead_ends|length }}</strong>ślepych zaułków</div>
       </div>

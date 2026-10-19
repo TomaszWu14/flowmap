@@ -4,6 +4,7 @@ from flask_wtf.csrf import CSRFError
 
 from .config import Config
 from .extensions import csrf, db, login_manager, migrate
+from .text import plural, plural_word, steps_label
 
 ERROR_MESSAGES = {
     400: "Błędne żądanie.",
@@ -13,13 +14,6 @@ ERROR_MESSAGES = {
     409: "Zapisana specyfikacja jest uszkodzona. Otwórz zakładkę Specyfikacja i odbuduj ją z mapy.",
     500: "Coś poszło nie tak po naszej stronie. Spróbuj ponownie za chwilę.",
 }
-
-
-def steps_label(n: int) -> str:
-    """Polish plural: 1 krok, 2-4 kroki (but 12-14 kroków), 5+ kroków."""
-    if n == 1:
-        return "1 krok"
-    return f"{n} kroki" if n % 10 in (2, 3, 4) and n % 100 not in (12, 13, 14) else f"{n} kroków"
 
 
 def create_app(config_class: type = Config) -> Flask:
@@ -51,7 +45,7 @@ def create_app(config_class: type = Config) -> Flask:
 
     app.jinja_env.globals["type_labels"] = NODE_TYPE_LABELS
     app.jinja_env.globals["signup_open"] = signup_open
-    app.jinja_env.filters["kroki"] = steps_label
+    app.jinja_env.filters.update(kroki=steps_label, plural=plural, plural_word=plural_word)
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(projects_bp)

@@ -27,15 +27,16 @@ FORM_FIELDS = {
                 ("fields", "Pola: nazwa | typ | encja.pole", "textarea"),
                 ("actions", "Akcje (po jednej w linii)", "textarea")],
     "roles": [("name", "Nazwa", "input"), ("description", "Opis", "textarea"),
-              ("permissions", "Uprawnienia: encja | odczyt | tworzenie | edycja | usuwanie (all/own/none)",
+              ("permissions", "Uprawnienia: encja | odczyt | tworzenie | edycja | usuwanie "
+               "(all = wszystkie, own = tylko swoje, none = brak)",
                "textarea")],
     "states": [("entity", "Encja (klucz)", "input"), ("statuses", "Statusy: nazwa | start/koniec/-", "textarea"),
                ("transitions", "Przejścia: z | do", "textarea")],
-    "notifications": [("trigger", "Zdarzenie", "input"), ("channel", "Kanał (email/sms/push/in_app)", "input"),
+    "notifications": [("trigger", "Zdarzenie", "input"), ("channel", "Kanał", CHANNEL_LABELS),
                       ("recipient_role", "Odbiorca (klucz roli)", "input"), ("summary", "Treść w skrócie", "input")],
-    "integrations": [("name", "System", "input"), ("direction", "Kierunek (out/in/both)", "input"),
+    "integrations": [("name", "System", "input"), ("direction", "Kierunek", DIRECTION_LABELS),
                      ("data", "Dane (po przecinku)", "input"), ("on_error", "Co przy błędzie", "input")],
-    "nfr": [("category", "Kategoria (security/performance/privacy/accessibility/other)", "input"),
+    "nfr": [("category", "Kategoria", NFR_LABELS),
             ("text", "Treść", "textarea")],
 }
 
@@ -53,7 +54,7 @@ def _context(project, section: str) -> dict:
     return {"project": project, "spec": spec, "section": section, "sections": SECTION_LABELS,
             "type_labels_f": FIELD_TYPE_LABELS, "perm_labels": PERM_LABELS, "channel_labels": CHANNEL_LABELS,
             "direction_labels": DIRECTION_LABELS, "nfr_labels": NFR_LABELS, "names": names,
-            "kind_labels": KIND_LABELS,
+            "kind_labels": KIND_LABELS, "ai": ai_enabled(),
             "can_edit": project.current_role in ("owner", "editor"), "ready": ready, "issues_by_key": issues_by_key,
             "form_fields": FORM_FIELDS[section], "editing": None, "values": {}, "error": None}
 

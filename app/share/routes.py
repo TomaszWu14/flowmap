@@ -39,6 +39,7 @@ def toggle_link(project_id):
     project = g.project_for(project_id, "owner")
     if project.share_token:
         project.share_token = None
+        audit.log("share_link_disabled", project.name)
         flash("Link publiczny wyłączony — stary adres już nie działa.", "success")
     else:
         project.share_token = secrets.token_urlsafe(18)
@@ -96,6 +97,7 @@ def member_role(project_id, member_id):
     if role not in ("editor", "viewer"):
         abort(400)
     member.role = role
+    audit.log("member_role_changed", f"{project.name}: {member.user.email} ({role})")
     db.session.commit()
     flash(f"{member.user.email}: {g.ROLE_LABELS[role]}.", "success")
     return redirect(url_for("share.settings", project_id=project.id))

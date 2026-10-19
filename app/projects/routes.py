@@ -15,6 +15,7 @@ from ..flow import graph as g
 from ..flow.diff import diff_graphs, node_status
 from ..flow.routes import graph_payload
 from ..models import Node, Project, ProjectMember, UserTemplate, Version
+from ..text import steps_label
 from .service import copy_project, create_project, project_from_graph
 
 bp = Blueprint("projects", __name__)
@@ -97,7 +98,8 @@ def from_document():
         project = project_from_graph(current_user, form.name.data, start["title"], form.mode.data, None, graph, note)
         audit.log("project_created", f"{project.name} (z dokumentu)")
         db.session.commit()
-        flash(f"Szkic mapy gotowy: {len(graph['nodes'])} kroków. Uzupełnij brakujące gałęzie w pytaniach.", "success")
+        flash(f"Szkic mapy gotowy: {steps_label(len(graph['nodes']))}. "
+              "Uzupełnij brakujące gałęzie w pytaniach.", "success")
         return redirect(url_for("flow.view", project_id=project.id))
     return render_template("projects/from_document.html", form=form)
 
@@ -158,6 +160,8 @@ def delete(project_id):
 @login_required
 def copy(project_id):
     copy = copy_project(g.project_for(project_id, "view"), current_user)
+    audit.log("project_created", f"{copy.name} (kopia)")
+    db.session.commit()
     flash("Utworzono kopię projektu.", "success")
     return redirect(url_for("flow.view", project_id=copy.id))
 

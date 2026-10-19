@@ -4,7 +4,9 @@ from flask import Blueprint, Response, flash, redirect, render_template, request
 from flask_login import current_user, login_required
 from pydantic import ValidationError
 
+from .. import audit
 from ..ai import templates
+from ..extensions import db
 from ..flow import graph as g
 from ..flow.routes import graph_payload
 from ..projects.service import project_from_graph
@@ -107,6 +109,8 @@ def import_project():
         p = parsed.project
         project = project_from_graph(current_user, p.name, p.start_sentence, p.mode, p.template, graph,
                                      "Zaimportowano z pliku")
+        audit.log("project_created", f"{project.name} (import)")
+        db.session.commit()
         flash("Projekt zaimportowany.", "success")
         return redirect(url_for("flow.view", project_id=project.id))
     return render_template("export/import.html")
