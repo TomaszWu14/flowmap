@@ -109,19 +109,47 @@
     card.append(auto);
   }
 
+  // Wide maps: the card floats next to the step (or the moving token) and follows it.
+  // Narrow maps (phones): the card stays docked at the bottom edge.
+  const floating = () => wrap.clientWidth >= 700;
+
+  function place(ele) {
+    if (!card || !ele || !ele.length) return;
+    card.classList.toggle("floating", floating());
+    if (!floating()) { card.style.left = card.style.top = ""; return; }
+    const mapEl = fm().cy.container();
+    const bb = ele.renderedBoundingBox();
+    const offL = mapEl.offsetLeft, offT = mapEl.offsetTop;
+    const W = wrap.clientWidth, H = wrap.clientHeight, cw = card.offsetWidth, ch = card.offsetHeight;
+    let left = offL + bb.x2 + 18, side = "right";
+    if (left + cw > W - 8) { left = offL + bb.x1 - 18 - cw; side = "left"; }
+    left = Math.max(8, Math.min(left, W - cw - 8));
+    const top = Math.max(offT + 8, Math.min(offT + (bb.y1 + bb.y2) / 2 - ch / 2, H - ch - 8));
+    card.style.left = left + "px";
+    card.style.top = top + "px";
+    card.dataset.side = side;
+  }
+  const anchor = () => {
+    const cy = fm().cy;
+    const token = cy.getElementById("__token");
+    return token.length ? token : cy.getElementById(path[path.length - 1]);
+  };
+
   function focus(key) {
-    // Center the step in the part of the map the card does not cover (on phones the card spans the width).
     const { cy, minZoom } = fm();
     const zoom = Math.max(cy.zoom(), minZoom);
-    const covered = card && card.offsetWidth > cy.width() * 0.6 ? card.offsetHeight + 16 : 0;
     const pos = cy.getElementById(key).position();
-    cy.animate({ zoom, pan: { x: cy.width() / 2 - pos.x * zoom, y: (cy.height() - covered) / 2 - pos.y * zoom } },
-      { duration: ms(350) });
+    let x = cy.width() / 2, y = cy.height() / 2;
+    if (floating()) x = cy.width() * 0.36;  // leave room for the card on the right
+    else if (card) y = (cy.height() - card.offsetHeight - 16) / 2;  // docked card covers the bottom
+    cy.animate({ zoom, pan: { x: x - pos.x * zoom, y: y - pos.y * zoom } },
+      { duration: ms(350), complete: () => place(anchor()) });
   }
 
   function show(message) {
     highlight();
     render(message);
+    place(anchor());
     focus(path[path.length - 1]);
   }
 
@@ -156,6 +184,7 @@
       position: { x: from.x, y: from.y } });
     token.animate({ position: { x: to.x, y: to.y } }, {
       duration: ms(700),
+      step: () => place(token),
       complete: () => {
         cy.remove("#__token");
         path.push(edge.target);
@@ -221,6 +250,12 @@
   open.title = "Odtwórz przepływ krok po kroku, z opisem";
   open.addEventListener("click", () => (card ? close() : start()));
   toolbar.insertBefore(open, toolbar.children[1] || null);
+
+  // Keep the card next to the step when the user pans or zooms by hand.
+  const follow = () => { if (card) place(anchor()); };
+  const hook = () => { if (window.flowMap) window.flowMap.cy.on("viewport", follow); else setTimeout(hook, 200); };
+  hook();
+  window.addEventListener("resize", follow);
 
   // The map re-renders after every edit: the old path may not exist any more.
   document.addEventListener("flowmap:loaded", () => { if (card) close(); });
