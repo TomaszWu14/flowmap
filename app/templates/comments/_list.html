@@ -11,7 +11,7 @@
     <div class="row">
       {% if can_resolve or c.author_id == current_user.id %}
       <button class="btn small" type="button" hx-post="{{ url_for('comments.toggle_resolved', project_id=project.id, comment_id=c.id) }}"
-              hx-target="#comments">{{ 'Otwórz ponownie' if c.resolved else 'Rozwiązane' }}</button>
+              hx-target="#comments">{{ 'Otwórz ponownie' if c.resolved else 'Oznacz jako rozwiązany' }}</button>
       {% endif %}
       {% if c.author_id == current_user.id or project.current_role == 'owner' %}
       <button class="btn small danger" type="button" hx-post="{{ url_for('comments.delete_comment', project_id=project.id, comment_id=c.id) }}"

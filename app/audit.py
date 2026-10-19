@@ -24,6 +24,8 @@ ACTIONS = {
     "project_shared": "Udostępnienie projektu",
     "member_added": "Dodanie współpracownika",
     "member_removed": "Usunięcie współpracownika",
+    "member_role_changed": "Zmiana roli współpracownika",
+    "share_link_disabled": "Wyłączenie linku publicznego",
 }
 
 

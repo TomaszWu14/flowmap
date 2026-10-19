@@ -16,11 +16,13 @@
       <a class="btn small" href="{{ link }}" target="_blank" rel="noopener">Otwórz</a>
     </div>
     <div class="row">
-      <form method="post" action="{{ url_for('share.regenerate_link', project_id=project.id) }}">
+      <form method="post" action="{{ url_for('share.regenerate_link', project_id=project.id) }}"
+            data-confirm="Wygenerować nowy link? Stary adres przestanie działać.">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="btn small" type="submit">Nowy link (stary przestanie działać)</button>
       </form>
-      <form method="post" action="{{ url_for('share.toggle_link', project_id=project.id) }}">
+      <form method="post" action="{{ url_for('share.toggle_link', project_id=project.id) }}"
+            data-confirm="Wyłączyć link publiczny? Obecny adres przestanie działać.">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="btn small danger" type="submit">Wyłącz link</button>
       </form>
@@ -50,7 +52,8 @@
           </select>
           <button class="btn small" type="submit">Zmień</button>
         </form>
-        <form method="post" action="{{ url_for('share.member_remove', project_id=project.id, member_id=m.id) }}">
+        <form method="post" action="{{ url_for('share.member_remove', project_id=project.id, member_id=m.id) }}"
+              data-confirm="Odebrać dostęp {{ m.user.email }}?">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="btn small danger" type="submit">Usuń</button>
         </form>

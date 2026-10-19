@@ -10,9 +10,10 @@
   {% for t in templates %}
   <article class="card project-card">
     <h2>{{ t.name }}</h2>
-    <p class="muted">{{ t.graph.nodes|length }} kroków · {{ t.created_at.strftime('%d.%m.%Y') }}</p>
+    <p class="muted">{{ t.graph.nodes|length|kroki }} · {{ t.created_at.strftime('%d.%m.%Y') }}</p>
     <p>{% if t.keywords %}{% for k in t.keywords %}<span class="badge">{{ k }}</span> {% endfor %}{% else %}<span class="muted">bez słów kluczowych — wybierasz ręcznie</span>{% endif %}</p>
-    <form method="post" action="{{ url_for('projects.delete_template', template_id=t.id) }}">
+    <form method="post" action="{{ url_for('projects.delete_template', template_id=t.id) }}"
+          data-confirm="Usunąć szablon „{{ t.name }}”? Projekty z niego utworzone zostaną.">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="btn small danger" type="submit">Usuń</button>
     </form>

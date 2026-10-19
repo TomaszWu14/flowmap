@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ project.name }}{% endblock %}
+{% block title %}Mapa — {{ project.name }}{% endblock %}
 {% block head %}
 <script src="{{ url_for('static', filename='vendor/cytoscape.min.js') }}" defer></script>
 <script src="{{ url_for('static', filename='vendor/dagre.min.js') }}" defer></script>
@@ -36,7 +36,7 @@
         {% endif %}
         <form method="post" action="{{ url_for('projects.copy', project_id=project.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="btn small" type="submit">Kopia</button>
+          <button class="btn small" type="submit" title="Utwórz kopię projektu">Duplikuj</button>
         </form>
       </div>
       <div id="map"

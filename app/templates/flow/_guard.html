@@ -6,7 +6,7 @@
 <header class="panel-head">
   <span class="type-chip t-decision">Strażnik kompletności</span>
   <h2>Wynik: {{ report.score }}/100</h2>
-  <p class="muted" style="margin:0">{{ report.issues|length }} {{ 'problem' if report.issues|length == 1 else 'problemów' }} do sprawdzenia</p>
+  <p class="muted" style="margin:0">{{ report.issues|length|plural('problem', 'problemy', 'problemów') }} do sprawdzenia</p>
 </header>
 {% if error %}<div class="alert error" role="alert">{{ error }}</div>{% endif %}
 {% if report.issues %}

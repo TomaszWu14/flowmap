@@ -85,7 +85,7 @@ def test_production_requires_secret_key():
 
 
 def test_steps_label_polish_plural():
-    from app import steps_label
+    from app.text import steps_label
     assert [steps_label(n) for n in (1, 2, 4, 5, 12, 22, 25)] == \
         ["1 krok", "2 kroki", "4 kroki", "5 kroków", "12 kroków", "22 kroki", "25 kroków"]
 
@@ -93,7 +93,7 @@ def test_steps_label_polish_plural():
 def test_project_list_has_delete_and_clean_title(auth_client):
     p = new_project(auth_client)
     html = auth_client.get("/projekty").get_data(as_text=True)
-    assert "<title>Projekty" in html and "<h2" not in html.split("<title>")[1].split("</title>")[0]
+    assert "<title>Twoje projekty" in html and "<h2" not in html.split("<title>")[1].split("</title>")[0]
     assert f'action="/p/{p.id}/usun"' in html and "data-confirm" in html
     assert auth_client.post(f"/p/{p.id}/usun").status_code == 302
     assert Project.query.get(p.id) is None

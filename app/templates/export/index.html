@@ -69,7 +69,7 @@
 
   <section class="card">
     <h2>Zadania do Jiry, Linear, GitHuba</h2>
-    <p class="muted">{{ task_count }} zadań — historyjka dla każdego kroku człowieka, zadanie dla automatyzacji, integracji i decyzji,
+    <p class="muted">{{ task_count|plural('zadanie', 'zadania', 'zadań') }} — historyjka dla każdego kroku człowieka, zadanie dla automatyzacji, integracji i decyzji,
       z kryteriami akceptacji z mapy.</p>
     <div class="row">
       <a class="btn" href="{{ url_for('export.download', project_id=project.id, kind='zadania-jira.csv') }}">Jira (CSV)</a>

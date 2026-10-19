@@ -3,7 +3,8 @@
 {% block content %}
 <div class="page-head">
   <div><h1>Panel administratora</h1><p class="muted">Statystyki i konta. Treść projektów widzą tylko ich właściciele.</p></div>
-  <a class="btn" href="{{ url_for('admin.events') }}">Dziennik zdarzeń</a>
+  <div class="row"><a class="btn" href="{{ url_for('admin.events') }}">Dziennik zdarzeń</a>
+    <a class="btn" href="{{ url_for('projects.index') }}">← Projekty</a></div>
 </div>
 
 <section class="stat-grid" aria-label="Statystyki">
