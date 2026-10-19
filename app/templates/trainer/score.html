@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Ocena — {{ project.name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ project.name }}</h1>
+    <div class="row"><a class="btn small" href="{{ url_for('flow.view', project_id=project.id) }}">Mapa</a>
+      <a class="btn small" href="{{ url_for('spec.view', project_id=project.id) }}">Specyfikacja</a>
+      <a class="btn small" href="{{ url_for('design.view', project_id=project.id) }}">Projekt aplikacji</a>
+      <span class="btn small primary" aria-current="page">Ocena</span></div></div>
+  <form method="post" action="{{ url_for('trainer.score_now', project_id=project.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn primary" type="submit">Oceń teraz</button>
+  </form>
+</div>
+<p class="muted">Ocena z reguł: liczy ją aplikacja na podstawie strażników mapy, specyfikacji i UML — za każdym
+  razem tak samo i bez AI. Każde kryterium mówi, co poprawić, żeby zdobyć brakujące punkty.</p>
+{% if not latest %}
+  <div class="card"><p class="muted">Jeszcze nie oceniono — kliknij „Oceń teraz”.</p></div>
+{% else %}
+<div class="score-grid">
+  {% for kind in ('map', 'design') %}{% set e = latest.get(kind) %}{% if e %}
+  <section class="card score-card">
+    <div class="row" style="justify-content:space-between">
+      <h2>{{ e.details.label }}</h2>
+      <span class="score"><span class="score-ring" style="--p: {{ e.score }}"><span>{{ e.score }}</span></span>/ 100</span>
+    </div>
+    {% set prev = previous.get(kind) %}
+    {% if prev %}{% set delta = e.score - prev.score %}
+      <p class="muted">{{ '+' if delta > 0 }}{{ delta }} od poprzedniej oceny ({{ prev.score }})</p>{% endif %}
+    <div class="table-wrap"><table class="versions">
+      <tr><th>Kryterium</th><th>Punkty</th><th>Uwaga</th></tr>
+      {% for c in e.details.criteria %}
+      <tr><td>{{ c.label }}</td><td class="{{ 'ok' if c.points == c.max }}">{{ c.points }} / {{ c.max }}</td><td>{{ c.note }}</td></tr>
+      {% endfor %}
+    </table></div>
+  </section>
+  {% endif %}{% endfor %}
+</div>
+<section class="card" style="margin-top:1rem">
+  <h2>Historia</h2>
+  <div class="table-wrap"><table class="versions">
+    <tr><th>Kiedy</th><th>Mapa procesu</th><th>Projekt aplikacji</th></tr>
+    {% for when, map_score, design_score in history %}
+    <tr class="history-row"><td>{{ when.strftime('%Y-%m-%d %H:%M') }}</td><td>{{ map_score }}</td><td>{{ design_score if design_score is not none else '—' }}</td></tr>
+    {% endfor %}
+  </table></div>
+</section>
+{% endif %}
+{% endblock %}

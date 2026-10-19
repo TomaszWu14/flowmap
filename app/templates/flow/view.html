@@ -15,6 +15,7 @@
         <span class="map-title" title="{{ project.name }}">{{ project.name }}</span>
         <a class="btn small" href="{{ url_for('spec.view', project_id=project.id) }}">Specyfikacja</a>
         <a class="btn small" href="{{ url_for('design.view', project_id=project.id) }}">Projekt aplikacji</a>
+        <a class="btn small" href="{{ url_for('trainer.score', project_id=project.id) }}">Ocena</a>
         {% if project.can_edit %}
         <form method="post" action="{{ url_for('flow.toggle_mode', project_id=project.id) }}" class="mode-toggle"
               title="Nauka: sam proponujesz kroki, podpowiedzi na prośbę. Praca: gotowe propozycje.">
