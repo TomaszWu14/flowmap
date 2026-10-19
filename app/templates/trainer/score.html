@@ -32,28 +32,29 @@
     </div>
     {% set prev = previous.get(kind) %}
     {% if prev %}{% set delta = e.score - prev.score %}
-      <p class="muted">{% if delta %}{{ '+' if delta > 0 }}{{ delta }} od poprzedniej oceny ({{ prev.score }}){% else %}Bez zmian od poprzedniej oceny{% endif %}</p>{% endif %}
+      <p class="muted">{% if delta %}{{ '+' if delta > 0 }}{{ delta }} od poprzedniej oceny ({{ prev.score }}){% else %}Bez zmian od poprzedniej oceny{% endif %}{% if prev.source != e.source %} · poprzednia {{ 'z AI' if prev.source == 'mixed' else 'bez AI' }}{% endif %}</p>{% endif %}
     {% set a = e.details.get('ai') %}
-    {% if a %}
-      <p class="muted">Reguły: {{ e.details.rules_score }}/100 · Ocena AI: {{ a.pct }}/100 (30% wyniku)</p>
-      <p class="top-fix"><strong>Najważniejsza poprawka:</strong> {{ a.top_fix }}</p>
-    {% endif %}
+    {% if a %}<p class="muted">Reguły: {{ e.details.rules_score }}/100 · Ocena AI: {{ a.pct }}/100 (30% wyniku)</p>{% endif %}
     <div class="table-wrap"><table class="versions">
       <tr><th>Kryterium</th><th>Punkty</th><th>Uwaga</th></tr>
       {% for c in e.details.criteria %}
       <tr><td>{{ c.label }}</td><td class="{{ 'ok' if c.points == c.max }}">{{ c.points }} / {{ c.max }}</td><td>{{ c.note }}</td></tr>
       {% endfor %}
     </table></div>
-    {% if a %}
-    <h3 title="Jakościowa ocena modelu Opus — może się różnić między ocenami">Ocena AI</h3>
-    <div class="table-wrap"><table class="versions">
-      <tr><th>Kryterium</th><th>Ocena</th><th>Uzasadnienie</th></tr>
-      {% for c in a.criteria %}<tr><td>{{ c.label }}</td><td>{{ c.score }} / 5</td><td>{{ c.reason }}</td></tr>{% endfor %}
-    </table></div>
-    {% endif %}
   </section>
   {% endif %}{% endfor %}
 </div>
+{% set a = latest.map.details.get('ai') if latest.get('map') else none %}
+{% if a %}
+<section class="card" style="margin-top:1rem">
+  <h2 title="Jakościowa ocena modelu Opus — może się różnić między ocenami">Ocena AI <span class="badge">30% obu wyników</span></h2>
+  <p class="top-fix"><strong>Najważniejsza poprawka:</strong> {{ a.top_fix }}</p>
+  <div class="table-wrap"><table class="versions">
+    <tr><th>Kryterium</th><th>Ocena</th><th>Uzasadnienie</th></tr>
+    {% for c in a.criteria %}<tr><td>{{ c.label }}</td><td>{{ c.score }} / 5</td><td>{{ c.reason }}</td></tr>{% endfor %}
+  </table></div>
+</section>
+{% endif %}
 <section class="card" style="margin-top:1rem">
   <h2>Historia</h2>
   <div class="table-wrap"><table class="versions">
