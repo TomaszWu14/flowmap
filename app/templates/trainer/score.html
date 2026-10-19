@@ -26,7 +26,7 @@
     </div>
     {% set prev = previous.get(kind) %}
     {% if prev %}{% set delta = e.score - prev.score %}
-      <p class="muted">{{ '+' if delta > 0 }}{{ delta }} od poprzedniej oceny ({{ prev.score }})</p>{% endif %}
+      <p class="muted">{% if delta %}{{ '+' if delta > 0 }}{{ delta }} od poprzedniej oceny ({{ prev.score }}){% else %}Bez zmian od poprzedniej oceny{% endif %}</p>{% endif %}
     <div class="table-wrap"><table class="versions">
       <tr><th>Kryterium</th><th>Punkty</th><th>Uwaga</th></tr>
       {% for c in e.details.criteria %}

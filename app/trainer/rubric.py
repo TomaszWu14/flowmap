@@ -37,8 +37,9 @@ def map_score(project, graph: dict) -> dict:
     criteria = [
         _c("guard", "Strażnik mapy", guard["score"] * 0.4, 40,
            f"Wynik strażnika {guard['score']}/100" + (f", uwagi: {len(guard['issues'])}" if guard["issues"] else "")),
-        _c("errors", "Ścieżki błędu", 20 * len(handled) / len(risky) if risky else 20, 20,
-           f"{len(handled)} z {len(risky)} ryzykownych kroków ma ścieżkę błędu" if risky
+        _c("errors", "Ścieżki błędu", (20 * len(handled) / len(risky) if risky else 20) if acting else 0, 20,
+           "Mapa nie ma jeszcze kroków" if not acting
+           else f"{len(handled)} z {len(risky)} ryzykownych kroków ma ścieżkę błędu" if risky
            else "Brak kroków wymagających ścieżki błędu"),
         _c("roles", "Role i przekazania", 15 * len(with_role) / len(acting) if acting else 0, 15,
            f"{len(with_role)} z {len(acting)} kroków ma przypisaną rolę" if acting else "Mapa nie ma jeszcze kroków"),
@@ -63,8 +64,9 @@ def design_score(graph: dict, spec) -> dict:
     missing = [name for name, _pts, ok in checks if not ok]
     criteria = [
         _c("readiness", "Gotowość specyfikacji", ready * 0.4, 40, f"Gotowość {ready}/100 (z uwagami strażnika UML)"),
-        _c("trace", "Śledzenie wymagań", 20 - 5 * len(gaps), 20,
-           f"Luki w macierzy śledzenia: {len(gaps)}" if gaps else "Każdy krok ma realizację i test"),
+        _c("trace", "Śledzenie wymagań", 20 - 5 * len(gaps) if rows else 0, 20,
+           "Mapa nie ma jeszcze kroków do śledzenia" if not rows
+           else f"Luki w macierzy śledzenia: {len(gaps)}" if gaps else "Każdy krok ma realizację i test"),
         _c("tests", "Pokrycie testami", 20 * len(tested) / len(rows) if rows else 0, 20,
            f"{len(tested)} z {len(rows)} kroków w scenariuszach testów" if rows else "Brak kroków do pokrycia"),
         _c("vision", "Wizja i zakres", sum(pts for _name, pts, ok in checks if ok), 20,

@@ -51,3 +51,10 @@ def test_design_vision_and_broken_spec(auth_client):
     assert crit(design_score(p.graph(), spec), "vision")["points"] == 20
     broken = design_score(p.graph(), None)
     assert broken["score"] == 0 and "Odbuduj" in broken["criteria"][0]["note"]
+
+
+def test_empty_map_earns_no_free_points(auth_client):
+    p = new_project(auth_client)  # only the start event
+    m, d = evaluate(Project.query.get(p.id))
+    assert crit(m, "errors")["points"] == 0 and crit(d, "trace")["points"] == 0
+    assert m["score"] < 50
