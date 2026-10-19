@@ -87,3 +87,34 @@ def test_empty_spec_builds_package():
     assert set(f) == FILES
     assert "erDiagram" in f["DATA_MODEL.md"]
     assert f'"{FORMAT}"' in f["flowmap.json"]
+
+
+def test_images_packed_and_linked_from_spec():
+    from types import SimpleNamespace as NS
+    graph = full_graph("booking")
+    spec = derive(graph, META)
+    screen = spec.screens[0]
+    step = next(n for n in graph["nodes"] if n["key"] != screen.node_key and n["type"] != "start")
+    images = [NS(id=7, node_key=screen.node_key, mime="image/png", data=b"png", caption="Formularz", filename="a.png"),
+              NS(id=8, node_key=step["key"], mime="image/jpeg", data=b"jpg", caption="", filename="stanowisko.jpg"),
+              NS(id=9, node_key="", mime="image/webp", data=b"webp", caption="Okładka", filename="c.webp")]
+    f = build_files(META, graph, spec, [], images)
+    assert f["images/7.png"] == b"png" and f["images/8.jpg"] == b"jpg" and f["images/9.webp"] == b"webp"
+    md = f["SPEC.md"]
+    assert "- Grafika: ![Formularz](images/7.png)" in md
+    assert "### Materiały projektu" in md and "![Okładka](images/9.webp)" in md
+    assert f"Krok: {step['title']}" in md and "![stanowisko.jpg](images/8.jpg)" in md
+    names = zipfile.ZipFile(io.BytesIO(build_zip(f))).namelist()
+    assert "docs/flowmap/images/8.jpg" in names
+
+
+def test_download_contains_uploaded_image(auth_client):
+    from app.models import Attachment
+    from tests.test_media import PNG, upload
+    p = new_project(auth_client)
+    play_to_end(auth_client, p)
+    upload(auth_client, p)
+    att = Attachment.query.one()
+    zf = zipfile.ZipFile(io.BytesIO(auth_client.get(f"/p/{p.id}/eksport/claude-code.zip").data))
+    assert zf.read(f"docs/flowmap/images/{att.id}.png") == PNG
+    assert f"(images/{att.id}.png)" in zf.read("docs/flowmap/SPEC.md").decode()
