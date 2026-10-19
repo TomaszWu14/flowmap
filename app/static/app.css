@@ -202,7 +202,7 @@ details > form, details > div { margin-top: .6rem; display: grid; gap: .6rem; }
 .spec-nav a.active { background: var(--accent-soft); font-weight: 700; }
 .spec-card { margin-bottom: .8rem; }
 .spec-card.stale { opacity: .55; }
-@media (max-width: 900px) { .spec-layout { grid-template-columns: 1fr; } .spec-nav { display: flex; overflow-x: auto; position: static; } .spec-nav a { flex: 0 0 auto; } }
+@media (max-width: 900px) { .spec-layout { grid-template-columns: minmax(0, 1fr); } .spec-nav { display: flex; overflow-x: auto; position: static; } .spec-nav a { flex: 0 0 auto; } }
 
 /* simulation */
 .sim { display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 1fr) 280px; align-items: start; }

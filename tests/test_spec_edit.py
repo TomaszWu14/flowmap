@@ -116,3 +116,13 @@ def test_delete_rules_item_stays_deleted_after_map_refresh(auth_client):
 def test_delete_unknown_key_is_404(auth_client):
     p = new_project(auth_client)
     assert auth_client.post(f"/p/{p.id}/specyfikacja/nfr/nfr:brak/usun").status_code == 404
+
+
+def test_role_table_shows_update_permission(auth_client):
+    # p.update in Jinja resolves to dict.update, not the "update" key
+    p = new_project(auth_client)
+    key = spec_of(p).roles[0].key
+    auth_client.post(f"/p/{p.id}/specyfikacja/roles/{key}",
+                     data={"name": "R", "description": "", "permissions": "entity:x | none | none | own | none"})
+    html = auth_client.get(f"/p/{p.id}/specyfikacja?sekcja=roles").get_data(as_text=True)
+    assert "tylko swoje" in html

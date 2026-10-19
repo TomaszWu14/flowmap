@@ -28,7 +28,7 @@
     <p class="muted">Rola: {{ names.get(item.role, item.role) if item.role else '—' }}</p><p>{% for f in item.fields %}<span class="badge">{{ f.name }} · {{ type_labels_f[f.type] }}</span> {% endfor %}</p>
   {% elif section == 'roles' %}
     <div class="table-wrap"><table class="versions"><tr><th>Encja</th><th>Odczyt</th><th>Tworzenie</th><th>Edycja</th><th>Usuwanie</th></tr>
-      {% for ent, p in item.permissions.items() %}<tr><td>{{ names.get(ent, ent) }}</td><td>{{ perm_labels[p.read] }}</td><td>{{ perm_labels[p.create] }}</td><td>{{ perm_labels[p.update] }}</td><td>{{ perm_labels[p.delete] }}</td></tr>{% endfor %}</table></div>
+      {% for ent, p in item.permissions.items() %}<tr><td>{{ names.get(ent, ent) }}</td><td>{{ perm_labels[p['read']] }}</td><td>{{ perm_labels[p['create']] }}</td><td>{{ perm_labels[p['update']] }}</td><td>{{ perm_labels[p['delete']] }}</td></tr>{% endfor %}</table></div>
   {% elif section == 'states' %}
     <p>{% for s in item.statuses %}<span class="badge {{ 'ok' if s.initial }}">{{ s.name }}{% if s.final %} ■{% endif %}</span> {% endfor %}</p>
     <ul>{% for t in item.transitions %}<li>{{ t.from_status }} → {{ t.to_status }}</li>{% endfor %}</ul>

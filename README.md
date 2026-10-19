@@ -21,6 +21,12 @@ i gotowe polecenie dla generatora kodu (Claude Code, Lovable, Bolt).
 - **Eksport** — specyfikacja Markdown (proces, role, ekrany, model danych, powiadomienia, historyjki
   z kryteriami akceptacji, scenariusze testów, otwarte pytania), Mermaid, BPMN 2.0 XML, prompt dla
   generatora kodu, eksport/import projektu w JSON.
+- **Specyfikacja techniczna** — zakładka „Specyfikacja” wyprowadzana z mapy: encje z polami i relacjami,
+  ekrany, role z uprawnieniami, statusy, powiadomienia, integracje, wymagania niefunkcjonalne. Ręczne
+  zmiany przetrwają zmiany mapy, wskaźnik „Gotowość dla Claude Code” pokazuje braki. Opcjonalny przegląd
+  techniczny AI tworzy propozycje do zatwierdzenia (AI niczego nie zmienia samo).
+- **Paczka dla Claude Code** — ZIP ze specyfikacją, modelem danych i poleceniem do wklejenia
+  (`/p/<id>/eksport/claude-code.zip`).
 - **Tryb bez AI** — bez klucza API aplikacja działa na regułach i 3 szablonach procesów
   (rezerwacja wizyty, zamówienie w sklepie, zgłoszenie serwisowe).
 - **Mapa z dokumentu** — wklejasz opis procesu, powstaje szkic mapy (AI albo reguły), pytania uzupełniają gałęzie.
