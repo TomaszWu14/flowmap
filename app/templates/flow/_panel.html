@@ -136,8 +136,9 @@
         <label>Opis <textarea name="description" maxlength="2000">{{ node.description or '' }}</textarea></label>
         <label>Dane wejściowe (po przecinku) <input name="inputs" value="{{ (node.inputs or [])|join(', ') }}"></label>
         <label>Dane wyjściowe / co widać (po przecinku) <input name="outputs" value="{{ (node.outputs or [])|join(', ') }}"></label>
-        {% if node.type == 'decision' %}
-        <label>Gałęzie (po przecinku) <input name="branches" value="{{ (node.data.branches or [])|join(', ') }}"></label>
+        {% if node.type in ('decision', 'parallel') %}
+        <label>{{ 'Gałęzie' if node.type == 'decision' else 'Ścieżki równoległe (puste = bramka łącząca)' }} (po przecinku)
+          <input name="branches" value="{{ (node.data.branches or [])|join(', ') }}"></label>
         {% endif %}
         <button class="btn primary" type="submit">Zapisz zmiany</button>
       </form>

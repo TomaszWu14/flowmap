@@ -6,12 +6,13 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from .extensions import db, login_manager
 
-NODE_TYPES = ("start", "user_action", "screen", "automation", "decision", "wait", "integration", "end")
+NODE_TYPES = ("start", "user_action", "screen", "automation", "decision", "parallel", "wait", "integration", "end")
 NODE_TYPE_LABELS = {
     "start": "Start",
     "user_action": "Działanie użytkownika",
     "screen": "Ekran",
     "automation": "Automatyzacja",
+    "parallel": "Bramka AND (równolegle)",
     "decision": "Decyzja",
     "wait": "Oczekiwanie",
     "integration": "Integracja",

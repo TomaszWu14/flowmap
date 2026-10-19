@@ -8,7 +8,7 @@ from ..ai.rules import needs_error_path
 WEIGHTS = {
     "no_start": 25, "no_end": 25, "dead_end": 10, "open_branch": 8, "decision_exits": 10,
     "missing_actor": 3, "missing_error_path": 8, "unreachable": 10, "open_comment": 2,
-    "duplicate_step": 5, "similar_steps": 0,
+    "duplicate_step": 5, "similar_steps": 0, "parallel_unjoined": 5,
 }
 STOP = {"oraz", "przez", "dla", "danych", "systemie", "procesu"}
 MAX_SIMILAR = 5
@@ -76,20 +76,31 @@ def check(graph: dict) -> list[dict]:
         key, title, edges = n["key"], n["title"], out.get(n["key"], [])
         if n["type"] != "end" and not edges:
             issues.append(_issue("dead_end", f"Gałąź kończy się na „{title}” bez węzła końca.", key))
-        if n["type"] == "decision":
+        split = n["type"] == "parallel" and (n.get("data") or {}).get("branches")
+        if n["type"] == "decision" or split:
+            kind = "Decyzja" if n["type"] == "decision" else "Bramka AND"
             if len(edges) < 2:
-                issues.append(_issue("decision_exits", f"Decyzja „{title}” ma mniej niż 2 wyjścia.", key))
+                issues.append(_issue("decision_exits", f"{kind} „{title}” ma mniej niż 2 wyjścia.", key))
             used = {e["label"] for e in edges}
             for label in n.get("data", {}).get("branches", []):
                 if label not in used and edges:
-                    msg = f"Gałąź „{label}” decyzji „{title}” nie ma dalszego kroku."
+                    owner = "decyzji" if n["type"] == "decision" else "bramki AND"
+                    msg = f"Gałąź „{label}” {owner} „{title}” nie ma dalszego kroku."
                     issues.append(_issue("open_branch", msg, key, label=label))
-        if n["type"] not in ("start", "end") and not n.get("actor"):
+        if n["type"] not in ("start", "end", "parallel") and not n.get("actor"):
             issues.append(_issue("missing_actor", f"Krok „{title}” nie ma aktora (roli).", key))
         if needs_error_path(n) and len(edges) < 2 and not any(e.get("condition") == "error" for e in edges):
             issues.append(_issue("missing_error_path", f"Brak ścieżki błędu dla „{title}”.", key))
         if starts and key not in seen:
             issues.append(_issue("unreachable", f"Krok „{title}” jest nieosiągalny ze startu.", key))
+    joins = {n["key"] for n in nodes if n["type"] == "parallel" and not (n.get("data") or {}).get("branches")}
+    for n in nodes:  # parallel paths must meet again at a join, otherwise "all of them" never finishes
+        branches = out.get(n["key"], [])
+        if n["type"] == "parallel" and (n.get("data") or {}).get("branches") and len(branches) >= 2:
+            common = set.intersection(*(reachable(graph, [e["target"]]) for e in branches)) & joins
+            if not common:
+                issues.append(_issue("parallel_unjoined", f"Ścieżki równoległe po „{n['title']}” się nie zbiegają "
+                                     "— dodaj bramkę łączącą AND.", n["key"]))
     for a, b in similar_pairs(nodes, graph["edges"]):
         issues.append(_issue("similar_steps", f"Kroki „{a['title']}” i „{b['title']}” wyglądają podobnie — "
                              "może to ten sam krok?", b["key"], other=a["key"]))

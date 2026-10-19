@@ -40,8 +40,9 @@
   const nodeColor = (n) => (colorMode === "role" && !["start", "end"].includes(n.data("type"))
     ? roleColor(n.data("actor")) : css("--t-" + n.data("type")));
 
+  const GATEWAYS = ["decision", "parallel"];
   const SHAPES = {
-    start: "round-rectangle", end: "round-rectangle", decision: "diamond", screen: "rectangle",
+    start: "round-rectangle", end: "round-rectangle", decision: "diamond", parallel: "diamond", screen: "rectangle",
     user_action: "round-rectangle", automation: "cut-rectangle", wait: "barrel", integration: "rhomboid",
   };
 
@@ -49,8 +50,8 @@
     return [
       { selector: "node", style: {
         "shape": (n) => SHAPES[n.data("type")] || "round-rectangle",
-        "width": (n) => (n.data("type") === "decision" ? 150 : 176),
-        "height": (n) => (n.data("type") === "decision" ? 96 : 66),
+        "width": (n) => (GATEWAYS.includes(n.data("type")) ? 150 : 176),
+        "height": (n) => (GATEWAYS.includes(n.data("type")) ? 96 : 66),
         "background-color": css("--surface"), "border-width": 2,
         "border-color": nodeColor,
         "label": "data(label)", "color": css("--ink"), "font-size": 11,
@@ -59,9 +60,11 @@
         "background-width": 20, "background-height": 20, "background-clip": "none",
         "background-position-x": 12, "background-position-y": "50%",
         "text-margin-x": (n) => (hasIcon(n) ? 12 : 0),
-        "text-wrap": "wrap", "text-max-width": (n) => (n.data("type") === "decision" ? 100 : hasIcon(n) ? 132 : 156),
+        "text-wrap": "wrap", "text-max-width": (n) => (GATEWAYS.includes(n.data("type")) ? 100 : hasIcon(n) ? 132 : 156),
         "text-valign": "center", "text-halign": "center",
       } },
+      { selector: "node[type='parallel']", style: { "background-position-x": "50%", "background-position-y": "16%",
+        "background-width": 16, "background-height": 16, "text-margin-x": 0, "text-margin-y": 8 } },
       { selector: "node[type='start'], node[type='end']", style: {
         "background-color": (n) => css("--t-" + n.data("type")), "color": css("--surface"), "font-weight": "bold",
       } },
@@ -126,7 +129,7 @@
         n.diff ? "diff-" + n.diff : ""].join(" ").trim();
       const label = n.title + (n.actor ? "\n— " + n.actor : "") + (n.issues.length ? "\n⚠ " + n.issues.length : "") + (n.comments ? "  💬 " + n.comments : "")
         + (n.images ? "  🖼 " + n.images : "");
-      const item = { group: "nodes", data: { id: n.key, type: n.type, actor: n.actor || "", icon: n.icon || "", label: label },
+      const item = { group: "nodes", data: { id: n.key, type: n.type, actor: n.actor || "", icon: n.type === "parallel" ? "plus" : (n.icon || ""), label: label },
         classes: classes };
       if (n.x !== null && n.y !== null) item.position = { x: n.x, y: n.y };
       if (lanes) item.data.parent = "lane-" + Math.max(0, lanes.indexOf(n.lane || ""));
