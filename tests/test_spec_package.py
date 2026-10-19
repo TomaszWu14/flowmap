@@ -10,7 +10,7 @@ from tests.test_flow import play_to_end
 from tests.test_projects import new_project
 
 META = {"name": "Salon", "start_sentence": "Klient chce umówić wizytę"}
-FILES = {"CLAUDE.md", "SPEC.md", "DATA_MODEL.md", "ACCEPTANCE.md", "OPEN_QUESTIONS.md", "flowmap.json"}
+FILES = {"CLAUDE.md", "SPEC.md", "DATA_MODEL.md", "ACCEPTANCE.md", "OPEN_QUESTIONS.md", "flowmap.json", "UML.md"}
 
 
 def files_for(graph=None, spec=None):
@@ -26,6 +26,7 @@ def test_all_files_and_sections():
     assert "erDiagram" in f["DATA_MODEL.md"] and "stateDiagram-v2" in f["DATA_MODEL.md"]
     assert "Zakładając" in f["ACCEPTANCE.md"] and "Wtedy" in f["ACCEPTANCE.md"]
     assert '"format": "flowmap/2"' in f["flowmap.json"]
+    assert "UML.md" in f["CLAUDE.md"] and "flowchart LR" in f["UML.md"]
 
 
 def test_stack_type_mapping_only_when_stack_given():

@@ -1,6 +1,7 @@
 from app.ai.templates import TEMPLATES, full_graph
 from app.design.derive import main_path, use_cases
 from app.design.lint import lint
+from app.design.uml import uml_md, use_case_diagram
 from app.spec.derive import derive
 from app.spec.schema import Role, Spec, UseCase
 
@@ -49,3 +50,24 @@ def test_use_case_guard():
     assert ("role_without_use_case", "role:administrator") not in codes
     assert ("use_case_without_goal", "uc:a") in codes and ("use_case_without_alternative", "uc:a") in codes
     assert ("use_case_without_alternative", "uc:s") not in codes  # included (system) use case
+
+
+def test_use_case_diagram():
+    spec = derive(full_graph("booking"), META)
+    out = use_case_diagram(spec, "Salon")
+    assert out.startswith("flowchart LR\n") and 'subgraph SYS["Salon"]' in out
+    assert '["👤 Klient"]' in out and '(["Klient chce umówić wizytę"])' in out
+    assert '-.->|"«include»"|' in out and '-.->|"«extend»"|' in out
+    assert "Brak przypadków użycia" in use_case_diagram(Spec(), "X")
+
+
+def test_markdown_export_lists_use_cases():
+    from app.export.builders import to_markdown
+    md = to_markdown(META, full_graph("booking"))
+    assert "### Przypadki użycia" in md and "**Klient chce umówić wizytę** — cel: Wizyta odbyta" in md
+
+
+def test_uml_md():
+    md = uml_md(META, derive(full_graph("booking"), META))
+    assert "## Przypadki użycia" in md and "1. Wybór usługi" in md and "## Diagram klas" in md
+    assert "Płatność online — brak płatności" in md and "## Uwagi strażnika UML" in md

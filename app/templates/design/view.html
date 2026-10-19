@@ -27,9 +27,7 @@
         {% else %}
           <p class="muted">Strażnik UML nie ma uwag.</p>
         {% endfor %}
-        {% if section == 'classes' %}
-          <p><a href="{{ url_for('spec.view', project_id=project.id, sekcja='entities') }}">Edytuj encje w specyfikacji</a></p>
-        {% endif %}
+        <p><a href="{{ url_for('spec.view', project_id=project.id, sekcja=edit_section) }}">Edytuj w specyfikacji</a></p>
       </div>
       <figure class="card design-preview" aria-label="Podgląd diagramu">
         <pre class="mermaid" data-source="{{ diagram }}">{{ diagram }}</pre>

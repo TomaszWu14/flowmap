@@ -250,6 +250,11 @@ def to_markdown(meta: dict, graph: dict, spec=None) -> str:
     if not actors:
         out.append("- (brak przypisanych ról)")
     out.append("- Każdy użytkownik widzi tylko własne dane; role inne niż System wymagają logowania.")
+    if spec.use_cases:
+        out += ["", "### Przypadki użycia", ""]
+        out += [f"- **{_md(u.name)}** — cel: {_md(u.goal) or '—'}"
+                + (f"; warianty: {_md('; '.join(a.condition for a in u.alternatives))}" if u.alternatives else "")
+                for u in spec.use_cases]
 
     out += ["", "## 3. Ekrany", ""]
     for s in screens:
