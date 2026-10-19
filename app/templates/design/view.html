@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Projekt aplikacji — {{ project.name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ project.name }}</h1>
+    <div class="row"><a class="btn small" href="{{ url_for('flow.view', project_id=project.id) }}">Mapa</a>
+      <a class="btn small" href="{{ url_for('spec.view', project_id=project.id) }}">Specyfikacja</a>
+      <span class="btn small primary" aria-current="page">Projekt aplikacji</span></div></div>
+</div>
+{% if spec is none %}
+  <div class="alert error">Zapisana specyfikacja jest uszkodzona —
+    <a href="{{ url_for('spec.view', project_id=project.id) }}">odbuduj ją w zakładce Specyfikacja</a>.</div>
+{% else %}
+<div class="spec-layout">
+  <nav class="spec-nav" aria-label="Sekcje projektu aplikacji">
+    {% for key, label in sections.items() %}
+      <a href="{{ url_for('design.view', project_id=project.id, sekcja=key) }}" class="{{ 'active' if key == section }}">{{ label }}</a>
+    {% endfor %}
+  </nav>
+  <section class="design-section">
+    <p class="muted">{{ help }}</p>
+    <div class="design-grid">
+      <div>
+        <h2 title="Strażnik UML sprawdza model i tłumaczy, dlaczego coś jest błędem">Uwagi strażnika UML</h2>
+        {% for i in issues %}
+          <details class="alert design-issue"><summary>{{ i.message }}</summary><p>Dlaczego: {{ i.why }}</p></details>
+        {% else %}
+          <p class="muted">Strażnik UML nie ma uwag.</p>
+        {% endfor %}
+        {% if section == 'classes' %}
+          <p><a href="{{ url_for('spec.view', project_id=project.id, sekcja='entities') }}">Edytuj encje w specyfikacji</a></p>
+        {% endif %}
+      </div>
+      <figure class="card design-preview" aria-label="Podgląd diagramu">
+        <pre class="mermaid" data-source="{{ diagram }}">{{ diagram }}</pre>
+      </figure>
+    </div>
+  </section>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/mermaid.min.js') }}"></script>
+<script src="{{ url_for('static', filename='design.js') }}"></script>
+{% endblock %}

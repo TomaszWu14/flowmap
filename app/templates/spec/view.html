@@ -4,6 +4,7 @@
 <div class="page-head">
   <div><h1>{{ project.name }}</h1>
     <div class="row"><a class="btn small" href="{{ url_for('flow.view', project_id=project.id) }}">Mapa</a>
+      <a class="btn small" href="{{ url_for('design.view', project_id=project.id) }}">Projekt aplikacji</a>
       <span class="btn small primary" aria-current="page">Specyfikacja</span></div></div>
 </div>
 {% if spec is none %}
