@@ -54,6 +54,37 @@
   <div class="alert success">Brak problemów — mapa jest kompletna.</div>
 {% endif %}
 
+{% if ai and project.can_edit and (todo or fill) %}
+<section style="margin-top:1rem">
+  <h3>Uzupełnij mapę z AI</h3>
+  {% if fill_note %}<div class="alert success">{{ fill_note }}</div>{% endif %}
+  {% if fill %}
+    <ul class="issue-list">
+      {% for it in fill %}{% if not fill_done or loop.index0 not in fill_done %}
+      <li class="suggestion">
+        <span><strong>{{ titles.get(it.node_key, it.node_key) }}{% if it.slot %} → „{{ it.slot }}”{% endif %}</strong></span>
+        <span class="muted" style="font-size:.85rem">{{ it.summary }}: {{ it.steps|map(attribute='title')|join(' → ') }}</span>
+        <form hx-post="{{ url_for('flow.guard_fill_apply', project_id=project.id) }}" hx-target="#panel-body">
+          <input type="hidden" name="log_id" value="{{ fill_log.id }}">
+          <input type="hidden" name="index" value="{{ loop.index0 }}">
+          <button class="btn small primary" type="submit">Dodaj</button>
+        </form>
+      </li>
+      {% endif %}{% endfor %}
+    </ul>
+    <form hx-post="{{ url_for('flow.guard_fill_apply', project_id=project.id) }}" hx-target="#panel-body">
+      <input type="hidden" name="log_id" value="{{ fill_log.id }}">
+      <input type="hidden" name="index" value="all">
+      <button class="btn primary" type="submit">Dodaj wszystkie</button>
+    </form>
+  {% elif todo %}
+    <p class="muted">AI zaproponuje dalszy ciąg dla wszystkich otwartych gałęzi naraz — każdą zatwierdzasz osobno.</p>
+    <button class="btn" type="button" hx-post="{{ url_for('flow.guard_fill', project_id=project.id) }}" hx-target="#panel-body"
+            hx-indicator="this">Uzupełnij otwarte gałęzie</button>
+  {% endif %}
+</section>
+{% endif %}
+
 <section style="margin-top:1rem">
   <h3>Przegląd AI</h3>
   {% if suggestions is not none %}

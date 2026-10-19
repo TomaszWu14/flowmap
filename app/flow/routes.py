@@ -3,7 +3,7 @@ import json
 from flask import Blueprint, abort, jsonify, make_response, render_template, request, url_for
 from flask_login import login_required
 
-from ..ai.client import AIError, ai_enabled, review_map, spend_ai_request
+from ..ai.client import AIError, ai_enabled, fill_map, review_map, spend_ai_request
 from ..ai.schemas import Option, Question
 from ..comments.routes import open_comment_counts
 from ..extensions import db
@@ -294,18 +294,31 @@ def reset_layout(project_id):
 @bp.get("/p/<int:project_id>/guard")
 @login_required
 def guard_panel(project_id):
-    project = g.project_for(project_id, "view")
+    return _guard_html(g.project_for(project_id, "view"))
+
+
+def _guard_html(project, **kw):
+    """Guard panel: score, open questions, problems with fixes, AI review and AI fill sections."""
+    ctx = {"suggestions": None, "log": None, "fill": None, "fill_log": None, "error": None} | kw
     report = guard.report(project.graph(), open_comment_counts(project))
     return render_template("flow/_guard.html", project=project, report=report, ai=ai_enabled(),
-                           suggestions=None, log=None, titles={n.key: n.title for n in project.nodes},
-                           todo=open_questions(project))
+                           titles={n.key: n.title for n in project.nodes}, todo=open_questions(project), **ctx)
+
+
+def open_slots(project) -> list[dict]:
+    """"What next" slots waiting for an answer (helper questions like actor/fields are left to the user)."""
+    out = []
+    for n in q.pending_nodes(project):
+        if q.pending_kind(project, n)[0] == "next":  # every open branch of a decision, not just the first
+            out += [{"node_key": n.key, "title": n.title, "slot": label or ""} for label in g.open_labels(project, n)]
+    return out
 
 
 def _guard_response(project, description: str):
     """Save the fix and stay in the guard panel, so the next problem is one click away."""
     g.save_version(project, description)
     db.session.commit()
-    resp = make_response(guard_panel(project.id))
+    resp = make_response(_guard_html(project))
     resp.headers["HX-Trigger"] = json.dumps({"mapChanged": {"focus": ""}})
     return resp
 
@@ -373,8 +386,69 @@ def guard_review(project_id):
         except AIError as exc:
             error = f"Przegląd AI nieudany: {exc}."
     db.session.commit()
-    return render_template("flow/_guard.html", project=project, report=report, ai=ai_enabled(), error=error,
-                           suggestions=suggestions, log=log, titles={n.key: n.title for n in project.nodes})
+    return _guard_html(project, error=error, suggestions=suggestions, log=log)
+
+
+MAX_FILL = 12
+
+
+@bp.post("/p/<int:project_id>/guard/fill")
+@login_required
+def guard_fill(project_id):
+    """AI proposes how to close every open branch in one request; nothing changes until accepted."""
+    project = g.project_for(project_id, "edit")
+    slots = open_slots(project)[:MAX_FILL]
+    if not slots:
+        return _guard_html(project, error="Nie ma otwartych gałęzi do uzupełnienia.")
+    reason = spend_ai_request()
+    if reason:
+        return _guard_html(project, error=f"{reason}.")
+    try:
+        items = fill_map(project, project.graph(), slots)
+    except AIError as exc:
+        return _guard_html(project, error=f"Uzupełnianie AI nieudane: {exc}.")
+    log = QuestionLog(project_id=project.id, kind="fill", question="AI: uzupełnij otwarte gałęzie",
+                      options={"items": items}, answer="", source="ai")
+    db.session.add(log)
+    db.session.commit()
+    return _guard_html(project, fill=items, fill_log=log)
+
+
+@bp.post("/p/<int:project_id>/guard/fill/apply")
+@login_required
+def guard_fill_apply(project_id):
+    project = g.project_for(project_id, "edit")
+    log = db.session.get(QuestionLog, request.form.get("log_id", type=int) or 0)
+    if log is None or log.project_id != project.id or log.kind != "fill":
+        abort(404)
+    items = log.options.get("items", [])
+    done = {int(i) for i in log.answer.split(";") if i}
+    which = request.form.get("index", "all")
+    indexes = [i for i in range(len(items)) if i not in done] if which == "all" else [int(which)]
+    if any(not 0 <= i < len(items) for i in indexes):
+        abort(404)
+    added, skipped = 0, 0
+    for i in indexes:
+        item = items[i]
+        node = project.node_by_key(item["node_key"])
+        if node is None or (item["slot"] or None) not in g.open_labels(project, node):
+            skipped += 1  # already answered elsewhere — never stack a second continuation
+            done.add(i)
+            continue
+        option = Option(label=item["summary"], steps=item["steps"])
+        question = Question(kind="next", node_key=node.key, slot=item["slot"], text=item["summary"], options=[option])
+        q.apply_option(project, node, question, option)
+        done.add(i)
+        added += 1
+    log.answer = ";".join(str(i) for i in sorted(done))[:1000]
+    g.save_version(project, f"AI uzupełniło gałęzie: {added}")
+    db.session.commit()
+    left = [it for i, it in enumerate(items) if i not in done]
+    note = f"Dodano {added}." + (f" Pominięto {skipped} — już mają dalszy ciąg." if skipped else "")
+    resp = make_response(_guard_html(project, fill=items, fill_log=log, fill_note=note, fill_done=done)
+                         if left else _guard_html(project, fill_note=note))
+    resp.headers["HX-Trigger"] = json.dumps({"mapChanged": {"focus": ""}})
+    return resp
 
 
 @bp.post("/p/<int:project_id>/guard/apply")

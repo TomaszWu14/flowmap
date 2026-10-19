@@ -7,7 +7,7 @@ import anthropic
 from flask import current_app
 from pydantic import BaseModel, ValidationError
 
-from .schemas import AiDraft, AiNextQuestion, AiReview, Option, Question, StepSpec
+from .schemas import AiDraft, AiFill, AiNextQuestion, AiReview, Option, Question, StepSpec
 
 PROMPTS = Path(__file__).resolve().parent.parent / "prompts"
 STEP_TYPES = ["user_action", "screen", "automation", "decision", "wait", "integration", "end"]
@@ -86,6 +86,21 @@ REVIEW_TOOL = {
             "problem": {"type": "string"},
             "node_key": {"type": "string"},
             "edge_label": {"type": "string"},
+            "steps": {"type": "array", "items": _STEP},
+        })},
+    }),
+}
+
+
+FILL_TOOL = {
+    "name": "complete_open_branches",
+    "description": "Zwraca propozycje domknięcia otwartych miejsc mapy: dla każdego 1–4 kroki.",
+    "strict": True,
+    "input_schema": _obj({
+        "items": {"type": "array", "items": _obj({
+            "node_key": {"type": "string"},
+            "slot": {"type": "string"},
+            "summary": {"type": "string"},
             "steps": {"type": "array", "items": _STEP},
         })},
     }),
@@ -211,6 +226,26 @@ def draft_map(text: str) -> dict:
                       "inputs": [], "outputs": [], "data": data})
     edges = [{"source": e.source, "target": e.target, "label": e.label, "condition": ""} for e in result.edges]
     return {"nodes": nodes, "edges": edges}
+
+
+def fill_map(project, graph: dict, slots: list[dict]) -> list[dict]:
+    """One AI call proposing steps for every open slot; unknown or duplicated slots are dropped."""
+    prompt = _prompt(
+        "fill",
+        start_sentence=project.start_sentence,
+        graph_json=compact_graph(graph),
+        slots="\n".join(f"- node_key: {s['node_key']} | krok: {s['title']} | slot: {s['slot']}" for s in slots),
+    )
+    result: AiFill = call_tool(prompt, FILL_TOOL, AiFill)
+    wanted = {(s["node_key"], s["slot"]) for s in slots}
+    out, seen = [], set()
+    for item in result.items:
+        key = (item.node_key, item.slot)
+        if key in wanted and key not in seen:
+            seen.add(key)
+            out.append({"node_key": item.node_key, "slot": item.slot, "summary": item.summary,
+                        "steps": [_spec(st).model_dump() for st in item.steps]})
+    return out
 
 
 def review_map(project, graph: dict, issues: list[dict]) -> list[dict]:
