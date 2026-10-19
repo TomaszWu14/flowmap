@@ -208,6 +208,8 @@ details > form, details > div { margin-top: .6rem; display: grid; gap: .6rem; }
 .design-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
 .design-preview { margin: 0; overflow-x: auto; }
 .design-preview pre.mermaid { margin: 0; background: none; }
+:root[data-theme="dark"] .design-preview svg text[fill="#444444"],
+:root[data-theme="dark"] .design-preview svg text[style*="#444444"] { fill: var(--muted) !important; }  /* C4 relation labels are hard-coded dark grey */
 .design-issue summary { cursor: pointer; }
 .design-issue p { margin: .4rem 0 0; }
 @media (max-width: 900px) { .spec-layout { grid-template-columns: minmax(0, 1fr); } .spec-nav { display: flex; overflow-x: auto; position: static; } .spec-nav a { flex: 0 0 auto; } }

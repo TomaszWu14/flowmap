@@ -316,6 +316,11 @@ def to_markdown(meta: dict, graph: dict, spec=None) -> str:
         if needs_error_path(n):
             out.append(f"- Test błędu: „{_md(n['title'])}” kończy się niepowodzeniem — proces obsługuje wyjątek.")
 
+    from ..design.trace import trace_rows  # local: design.trace imports this module
+
+    out += ["", "### Macierz śledzenia", ""]
+    out += [f"- {_md(r['step'])} — {_md('; '.join(r['realized_by'])) or 'brak realizacji'} — scenariusze: "
+            f"{', '.join(map(str, r['tests'])) or 'brak'}" for r in trace_rows(graph, spec)]
     out += ["", "## 8. Otwarte pytania", ""]
     questions = [i["message"] for i in rep["issues"]]
     known = " ".join(questions)

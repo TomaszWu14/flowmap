@@ -95,11 +95,50 @@ def state_diagram(sm, spec: Spec) -> str:
     return "\n".join(out) + "\n"
 
 
+CHANNEL_SYSTEMS = {"email": "Serwer poczty (e-mail)", "sms": "Bramka SMS", "push": "Usługa push"}
+
+
+def _c4(text: str) -> str:
+    """C4 strings: Mermaid's C4 renderer does not decode #quot; entities, so quotes become apostrophes."""
+    return (text or "").replace('"', "'").replace("\n", " ").strip()
+
+
+def c4_context(spec: Spec, title: str = "System") -> str:
+    """C4 level 1: people (roles), the system, external systems (integrations, notification channels)."""
+    uc = {u.actor: u.name for u in spec.use_cases}
+    out = ["C4Context", f"    title Kontekst systemu: {_c4(title)}"]
+    out += [f'    Person(p{i}, "{_c4(r.name)}", "{_c4(r.description)}")' for i, r in enumerate(spec.roles)]
+    out.append(f'    System(sys, "{_c4(title)}", "Aplikacja zaprojektowana z mapy procesu")')
+    out += [f'    System_Ext(x{i}, "{_c4(x.name)}", "System zewnętrzny")' for i, x in enumerate(spec.integrations)]
+    channels = list(dict.fromkeys(n.channel for n in spec.notifications if n.channel in CHANNEL_SYSTEMS))
+    out += [f'    System_Ext(ch_{c}, "{CHANNEL_SYSTEMS[c]}", "Kanał powiadomień")' for c in channels]
+    out += [f'    Rel(p{i}, sys, "{_c4(uc.get(r.key, "Korzysta"))}")' for i, r in enumerate(spec.roles)]
+    for i, x in enumerate(spec.integrations):
+        data = _c4(", ".join(x.data)) or "Wymiana danych"
+        if x.direction == "both":
+            out.append(f'    BiRel(sys, x{i}, "{data}")')
+        elif x.direction == "in":
+            out.append(f'    Rel(x{i}, sys, "{data}")')
+        else:
+            out.append(f'    Rel(sys, x{i}, "{data}")')
+    out += [f'    Rel(sys, ch_{c}, "Powiadomienia")' for c in channels]
+    # Labels sit on the line midpoint and collide with neighbours: nudge person labels apart, integration labels up.
+    out += [f'    UpdateRelStyle(p{i}, sys, $offsetX="{-130 if i % 2 == 0 else 20}", $offsetY="-10")'
+            for i in range(len(spec.roles))]
+    for i, x in enumerate(spec.integrations):
+        src, dst = (f"x{i}", "sys") if x.direction == "in" else ("sys", f"x{i}")
+        out.append(f'    UpdateRelStyle({src}, {dst}, $offsetX="-60", $offsetY="-45")')
+    # Rows of at most 3 shapes keep the diagram inside the card (Mermaid's default of 4 pushes the system off-screen).
+    out.append(f'    UpdateLayoutConfig($c4ShapeInRow="{min(3, max(2, len(spec.roles)))}", $c4BoundaryInRow="1")')
+    return "\n".join(out) + "\n"
+
+
 def uml_md(meta: dict, spec: Spec) -> str:
     roles = {r.key: r.name for r in spec.roles}
     names = {u.key: u.name for u in spec.use_cases}
     out = [f"# Projekt aplikacji (UML): {_md(meta['name'])}", "",
            "Diagramy wygenerowane z mapy procesu. Uwagi strażnika UML są na końcu i w `OPEN_QUESTIONS.md`.", "",
+           "## Kontekst systemu (C4)", "", "```mermaid", c4_context(spec, meta["name"]).rstrip(), "```", "",
            "## Przypadki użycia", "", "```mermaid", use_case_diagram(spec, meta["name"]).rstrip(), "```", ""]
     for u in spec.use_cases:
         out += [f"### {_md(u.name)}", "", f"- Aktor: {_md(roles.get(u.actor, 'System'))}",

@@ -42,6 +42,14 @@
           {% for w in r.rows %}<tr><td>{{ w.condition }}</td><td>{{ w.result }}</td></tr>{% endfor %}</table></div>
         {% else %}<p class="muted">Brak tabel decyzyjnych — dodaj bramkę na mapie albo regułę w specyfikacji.</p>{% endfor %}
       {% endif %}
+      {% if section == 'trace' %}
+        <div class="card table-wrap"><table class="versions trace-table">
+          <tr><th>Krok</th><th>Aktor</th><th>Realizacja</th><th title="Przypadek użycia (use case)">Przypadek użycia</th><th>Scenariusze</th></tr>
+          {% for r in trace %}<tr><td>{{ r.step }}</td><td>{{ r.actor }}</td>
+            <td>{{ r.realized_by|join('; ') if r.realized_by else '—' }}</td><td>{{ r.use_case or '—' }}</td>
+            <td>{{ r.tests|join(', ') if r.tests else '—' }}</td></tr>{% endfor %}
+        </table></div>
+      {% endif %}
     </div>
   </section>
 </div>

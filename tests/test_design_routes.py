@@ -67,3 +67,11 @@ def test_states_and_rules_sections(auth_client):
     assert "stateDiagram-v2" in auth_client.get(f"/p/{p.id}/projekt-aplikacji?sekcja=states").get_data(as_text=True)
     html = auth_client.get(f"/p/{p.id}/projekt-aplikacji?sekcja=rules").get_data(as_text=True)
     assert "Reguły" in html and ("decision-table" in html or "Brak tabel decyzyjnych" in html)
+
+
+def test_c4_and_trace_sections(auth_client):
+    p = new_project(auth_client)
+    play_to_end(auth_client, p)
+    assert "C4Context" in auth_client.get(f"/p/{p.id}/projekt-aplikacji?sekcja=c4").get_data(as_text=True)
+    html = auth_client.get(f"/p/{p.id}/projekt-aplikacji?sekcja=trace").get_data(as_text=True)
+    assert "trace-table" in html and "Śledzenie" in html
