@@ -13,7 +13,7 @@
     <div class="row" style="margin:.6rem 0">
       <code class="code-inline" id="share-link">{{ link }}</code>
       <button class="btn small primary" type="button" data-copy="share-link">Kopiuj</button>
-      <a class="btn small" href="{{ link }}" target="_blank" rel="noopener">Otwórz</a>
+      <a class="btn small" href="{{ link }}" target="_blank" rel="noopener">Otwórz</a> {# nosemgrep: var-in-href — URL built by url_for() #}
     </div>
     <div class="row">
       <form method="post" action="{{ url_for('share.regenerate_link', project_id=project.id) }}"
@@ -47,7 +47,7 @@
         <form method="post" action="{{ url_for('share.member_role', project_id=project.id, member_id=m.id) }}" class="row">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <select name="role" aria-label="Rola {{ m.user.email }}" style="width:auto;min-height:32px">
-            {% for r in ('editor', 'viewer') %}<option value="{{ r }}" {{ 'selected' if m.role == r }}>{{ role_labels[r] }}</option>{% endfor %}
+            {% for r in ('editor', 'viewer') %}<option value="{{ r }}" {{ 'selected' if m.role == r }}>{{ role_labels[r] }}</option>{% endfor %} {# nosemgrep: unquoted-attribute-var — constant boolean attribute word, not user data #}
           </select>
           <button class="btn small" type="submit">Zmień</button>
         </form>

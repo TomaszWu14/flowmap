@@ -40,6 +40,6 @@
 {% endif %}
 {% endblock %}
 {% block scripts %}
-<script src="{{ url_for('static', filename='vendor/mermaid.min.js') }}"></script>
-<script src="{{ url_for('static', filename='design.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/mermaid.min.js') }}"></script> {# nosemgrep: var-in-script-tag — src from url_for(); CSP script-src 'self' blocks inline scripts #}
+<script src="{{ url_for('static', filename='design.js') }}"></script> {# nosemgrep: var-in-script-tag — src from url_for(); CSP script-src 'self' blocks inline scripts #}
 {% endblock %}

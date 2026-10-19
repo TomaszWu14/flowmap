@@ -103,6 +103,7 @@ def reset_link(user_id):
     user = db.session.get(User, user_id)
     if user is None:
         abort(404)
+    # nosemgrep: flask-url-for-external-true — host from proxy (Traefik); fixed public URL: open decision
     link = url_for("auth.reset_password", token=make_reset_token(user, 24), _external=True)
     audit.log("password_reset_requested", f"{user.email} (link od admina)")
     db.session.commit()

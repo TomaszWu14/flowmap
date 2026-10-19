@@ -23,6 +23,7 @@
     const id = key + color;
     if (!iconCache[id]) {
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" `
+        // nosemgrep: html-in-template-string — bundled icon SVG (icons.json) as a data: URI, colour from code
         + `stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
       iconCache[id] = "data:image/svg+xml;utf8," + encodeURIComponent(svg);
     }
@@ -424,6 +425,7 @@
     toggle.type = "button";
     toggle.className = "legend-toggle";
     const paint = () => {
+      // nosemgrep: insecure-document-method, insecure-innerhtml — restores our own server-rendered legend or clears it
       legend.innerHTML = colorMode === "role" ? "" : typeLegend;
       if (colorMode === "role") {
         roles().forEach((r) => {

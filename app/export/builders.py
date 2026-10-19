@@ -1,7 +1,7 @@
 """Exports built from a graph dict: Markdown spec, Mermaid, BPMN 2.0, generator prompt, project JSON."""
 
 import re
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET  # nosemgrep: use-defused-xml — only builds XML, never parses input
 from collections import deque
 
 from pydantic import BaseModel, Field, ValidationError, field_validator

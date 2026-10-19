@@ -3,7 +3,7 @@
 {% block content %}
 <div class="page-head">
   <div><h1>Przejdź proces</h1><p class="muted">{{ project.name }}</p></div>
-  <a class="btn" href="{{ back_url }}">← Wróć do mapy</a>
+  <a class="btn" href="{{ back_url }}">← Wróć do mapy</a> {# nosemgrep: var-in-href — URL built by url_for() #}
 </div>
 
 {% if not role %}
@@ -14,7 +14,7 @@
     <label>Rola
       <select name="role">{% for a in actors %}<option>{{ a }}</option>{% endfor %}</select>
     </label>
-    <button class="btn primary" type="submit" {{ 'disabled' if not actors }}>Start</button>
+    <button class="btn primary" type="submit" {{ 'disabled' if not actors }}>Start</button> {# nosemgrep: unquoted-attribute-var — constant boolean attribute word, not user data #}
   </form>
   {% if not actors %}<p class="field-error">Mapa nie ma jeszcze żadnych ról.</p>{% endif %}
 </div>
@@ -34,11 +34,11 @@
         {% if state.finished %}
           {% if state.dead_end %}<div class="alert error">Ślepy zaułek — po tym kroku nic się nie dzieje.</div>
           {% elif n.type == 'end' %}<div class="alert success">Koniec procesu.</div>{% endif %}
-          <a class="btn" href="{{ sim_url(role=role) }}">Zacznij od nowa</a>
+          <a class="btn" href="{{ sim_url(role=role) }}">Zacznij od nowa</a> {# nosemgrep: var-in-href — URL built by url_for() #}
         {% else %}
           {% for c in state.choices %}
             <a class="btn {{ 'primary' if loop.first and not c.error }} {{ 'danger' if c.error }}"
-               href="{{ sim_url(role=role, path=state.path_str ~ ',' ~ c.target) }}">
+               href="{{ sim_url(role=role, path=state.path_str ~ ',' ~ c.target) }}"> {# nosemgrep: var-in-href — URL built by url_for() #}
               {{ c.label }}{% if state.choices|length > 1 %} → {{ c.title }}{% endif %}</a>
           {% endfor %}
         {% endif %}
@@ -64,7 +64,7 @@
     <ol class="trail">
       {% for t in state.trail %}<li class="t-{{ t.type }}">{{ t.title }} <span class="muted">· {{ t.actor or '—' }}</span></li>{% endfor %}
     </ol>
-    <p style="margin-top:1rem"><a href="{{ sim_url() }}">Zmień rolę</a></p>
+    <p style="margin-top:1rem"><a href="{{ sim_url() }}">Zmień rolę</a></p> {# nosemgrep: var-in-href — URL built by url_for() #}
   </aside>
 </div>
 {% endif %}

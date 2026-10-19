@@ -85,6 +85,7 @@
       svg.setAttribute("stroke", "currentColor");
       svg.setAttribute("stroke-width", "2");
       svg.setAttribute("class", "picto");
+      // nosemgrep: insecure-document-method, insecure-innerhtml — static bundled icon SVG, not user content
       svg.innerHTML = body;
       chip.prepend(svg, " ");
     }
@@ -308,6 +309,7 @@
     const t = ev.target;
     if (!card || (t && (t.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName)))) return;
     const keys = { " ": toggle, ArrowRight: next, ArrowLeft: back, Escape: close };
+    // nosemgrep: unsafe-dynamic-method — key picks a function from a fixed key map
     if (keys[ev.key]) { ev.preventDefault(); keys[ev.key](); }
   });
 })();

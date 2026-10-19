@@ -1,0 +1,4 @@
+# Wyjątki Trivy. Każdy wpis: ID, uzasadnienie i data przeglądu.
+# Format:
+#   <ID>    # powód; przegląd: RRRR-MM-DD
+# Brak wyjątków (2026-10-19).

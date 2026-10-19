@@ -47,7 +47,7 @@
     </form>
     <p class="kbd-hint">Klawiatura: <kbd>1</kbd>–<kbd>{{ question.options|length }}</kbd> wybór, <kbd>I</kbd> inne,
       <kbd>Ctrl</kbd>+<kbd>Z</kbd> cofnij, <kbd>/</kbd> szukaj</p>
-    <details class="other" {{ 'open' if error }}>
+    <details class="other" {{ 'open' if error }}> {# nosemgrep: unquoted-attribute-var — constant boolean attribute word, not user data #}
       <summary>Inne — wpiszę sam</summary>
       <form hx-post="{{ answer_url }}" hx-target="#panel-body">
         <input type="hidden" name="log_id" value="{{ log.id }}">
@@ -116,7 +116,7 @@
         {% if node.type != 'start' %}
         <label>Typ
           <select name="type">
-            {% for t in node_types if t != 'start' %}<option value="{{ t }}" {{ 'selected' if t == node.type }}>{{ type_labels[t] }}</option>{% endfor %}
+            {% for t in node_types if t != 'start' %}<option value="{{ t }}" {{ 'selected' if t == node.type }}>{{ type_labels[t] }}</option>{% endfor %} {# nosemgrep: unquoted-attribute-var — constant boolean attribute word, not user data #}
           </select>
         </label>
         {% endif %}
@@ -126,10 +126,10 @@
         <fieldset class="picto-picker">
           <legend>Piktogram <span class="muted">— co dzieje się w tym kroku</span></legend>
           <label class="picto-opt" title="Automatycznie z treści kroku">
-            <input type="radio" name="icon" value="" {{ 'checked' if not chosen }}><span>Auto</span></label>
+            <input type="radio" name="icon" value="" {{ 'checked' if not chosen }}><span>Auto</span></label> {# nosemgrep: unquoted-attribute-var — constant boolean attribute word, not user data #}
           {% for key, meta in pictograms.items() if key not in ('play', 'square') %}
           <label class="picto-opt" title="{{ meta[0] }}">
-            <input type="radio" name="icon" value="{{ key }}" {{ 'checked' if chosen == key }}>
+            <input type="radio" name="icon" value="{{ key }}" {{ 'checked' if chosen == key }}> {# nosemgrep: unquoted-attribute-var — constant boolean attribute word, not user data #}
             <span>{{ pictogram_svg(key, 20) }}<span class="sr-only">{{ meta[0] }}</span></span></label>
           {% endfor %}
         </fieldset>

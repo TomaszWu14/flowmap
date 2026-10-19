@@ -57,6 +57,7 @@ def _cell(value: str) -> str:
 
 def _csv(rows: list[list[str]]) -> str:
     buf = io.StringIO()
+    # nosemgrep: use-defusedcsv — _cell() neutralises spreadsheet formulas
     csv.writer(buf, lineterminator="\n").writerows([[_cell(c) for c in row] for row in rows])
     return buf.getvalue()
 

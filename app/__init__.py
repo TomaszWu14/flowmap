@@ -90,6 +90,13 @@ def create_app(config_class: type = Config) -> Flask:
             "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; "
             "script-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'",
         )
+        resp.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=()")
+        resp.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+        if resp.mimetype == "application/json":
+            # map/project data must not land in browser or proxy caches; routes with their own policy keep it
+            resp.headers.setdefault("Cache-Control", "no-store")
+        if app.config["SESSION_COOKIE_SECURE"]:  # served over HTTPS (COOKIE_SECURE, on in production)
+            resp.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
         return resp
 
     @app.cli.command("create-user")
@@ -105,6 +112,7 @@ def create_app(config_class: type = Config) -> Flask:
             raise click.ClickException("Użytkownik o tym adresie już istnieje.")
         user = User(email=email, is_admin=admin)
         try:
+            # nosemgrep: unvalidated-password — User.set_password() enforces the minimum length
             user.set_password(password)
         except ValueError as exc:
             raise click.ClickException(str(exc)) from exc
@@ -138,6 +146,7 @@ def create_app(config_class: type = Config) -> Flask:
         if user is None:
             raise click.ClickException("Nie ma konta o tym adresie.")
         try:
+            # nosemgrep: unvalidated-password — User.set_password() enforces the minimum length
             user.set_password(password)
         except ValueError as exc:
             raise click.ClickException(str(exc)) from exc

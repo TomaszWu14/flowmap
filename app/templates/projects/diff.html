@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Porównanie wersji — {{ project.name }}{% endblock %}
 {% block head %}
-<script src="{{ url_for('static', filename='vendor/cytoscape.min.js') }}" defer></script>
-<script src="{{ url_for('static', filename='vendor/dagre.min.js') }}" defer></script>
-<script src="{{ url_for('static', filename='vendor/cytoscape-dagre.js') }}" defer></script>
-<script src="{{ url_for('static', filename='map.js') }}" defer></script>
+<script src="{{ url_for('static', filename='vendor/cytoscape.min.js') }}" defer></script> {# nosemgrep: var-in-script-tag — src from url_for(); CSP script-src 'self' blocks inline scripts #}
+<script src="{{ url_for('static', filename='vendor/dagre.min.js') }}" defer></script> {# nosemgrep: var-in-script-tag — src from url_for(); CSP script-src 'self' blocks inline scripts #}
+<script src="{{ url_for('static', filename='vendor/cytoscape-dagre.js') }}" defer></script> {# nosemgrep: var-in-script-tag — src from url_for(); CSP script-src 'self' blocks inline scripts #}
+<script src="{{ url_for('static', filename='map.js') }}" defer></script> {# nosemgrep: var-in-script-tag — src from url_for(); CSP script-src 'self' blocks inline scripts #}
 {% endblock %}
 {% block content %}
 <div class="page-head">
@@ -16,7 +16,7 @@
   {% for field, current, label in [('od', old, 'Starsza'), ('do', new, 'Nowsza')] %}
   <label style="flex:1;min-width:220px">{{ label }}
     <select name="{{ field }}">
-      {% for v in versions %}<option value="{{ v.id }}" {{ 'selected' if v.id == current.id }}>#{{ v.id }} · {{ v.created_at.strftime('%d.%m %H:%M') }} · {{ v.description|truncate(60) }}</option>{% endfor %}
+      {% for v in versions %}<option value="{{ v.id }}" {{ 'selected' if v.id == current.id }}>#{{ v.id }} · {{ v.created_at.strftime('%d.%m %H:%M') }} · {{ v.description|truncate(60) }}</option>{% endfor %} {# nosemgrep: unquoted-attribute-var — constant boolean attribute word, not user data #}
     </select>
   </label>
   {% endfor %}
