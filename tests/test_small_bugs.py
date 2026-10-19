@@ -53,3 +53,15 @@ def test_ai_gate_explains_admin_switch_and_limit(auth_client, app):
     db.session.commit()
     html = auth_client.post(f"/p/{p.id}/guard/review").get_data(as_text=True)
     assert "limit" in html and User.query.first() is not None
+
+
+def test_unknown_export_kind_is_polish_404(auth_client):
+    p = new_project(auth_client)
+    r = auth_client.get(f"/p/{p.id}/eksport/nieznany.xyz")
+    assert r.status_code == 404 and "Nieznany format eksportu" in r.get_data(as_text=True)
+
+
+def test_share_settings_role_options_from_labels(auth_client):
+    p = new_project(auth_client)
+    html = auth_client.get(f"/p/{p.id}/udostepnianie").get_data(as_text=True)
+    assert '<option value="editor">edytor</option>' in html and '<option value="viewer">podgląd</option>' in html

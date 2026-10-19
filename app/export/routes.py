@@ -1,6 +1,6 @@
 import json
 
-from flask import Blueprint, Response, flash, redirect, render_template, request, url_for
+from flask import Blueprint, Response, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from pydantic import ValidationError
 
@@ -64,7 +64,7 @@ def download(project_id, kind):
         return _download(tasks.to_linear_csv(tasks.build_tasks(meta, graph)), kind, "text/csv")
     if kind == "zadania-github.jsonl":
         return _download(tasks.to_github_json(tasks.build_tasks(meta, graph)), kind, "application/x-ndjson")
-    return render_template("error.html", code=404, message="Nieznany format eksportu."), 404
+    abort(404, "Nieznany format eksportu.")
 
 
 def _clean_data(data: dict) -> dict:
