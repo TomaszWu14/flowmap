@@ -74,3 +74,9 @@ def test_score_is_clamped_and_weighted():
 def test_all_builtin_templates_are_complete():
     for key in TEMPLATES:
         assert report(full_graph(key))["score"] == 100, key
+
+
+def test_step_repeating_previous_one_is_reported():
+    g = {"nodes": [node("s", "start"), node("a", title="Wysłanie e-mail"), node("b", title="wysłanie e-mail "),
+                   node("e", "end")], "edges": [edge("s", "a"), edge("a", "b"), edge("b", "e")]}
+    assert codes(g) == ["duplicate_step"] and check(g)[0]["node_key"] == "b"

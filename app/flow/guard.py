@@ -5,6 +5,7 @@ from ..ai.rules import needs_error_path
 WEIGHTS = {
     "no_start": 25, "no_end": 25, "dead_end": 10, "open_branch": 8, "decision_exits": 10,
     "missing_actor": 3, "missing_error_path": 8, "unreachable": 10, "open_comment": 2,
+    "duplicate_step": 5,
 }
 
 
@@ -39,6 +40,12 @@ def check(graph: dict) -> list[dict]:
         issues.append(_issue("no_end", "Proces nie ma żadnego końca (węzła „Koniec”)."))
 
     seen = reachable(graph, starts)
+    by_key = {n["key"]: n for n in nodes}
+    for e in graph["edges"]:
+        a, b = by_key.get(e["source"]), by_key.get(e["target"])
+        same = a and b and (a["type"], a["title"].strip().lower()) == (b["type"], b["title"].strip().lower())
+        if same and a["key"] != b["key"]:
+            issues.append(_issue("duplicate_step", f"Krok „{b['title']}” powtarza poprzedni krok.", b["key"]))
     for n in nodes:
         key, title, edges = n["key"], n["title"], out.get(n["key"], [])
         if n["type"] != "end" and not edges:

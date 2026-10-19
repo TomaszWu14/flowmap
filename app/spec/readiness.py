@@ -5,7 +5,7 @@ from .schema import SECTIONS, Spec
 WEIGHTS = {"no_identifier": 10, "enum_without_values": 3, "bad_relation": 8, "screen_without_role": 5,
            "role_without_permissions": 5, "states_without_initial_or_final": 8,
            "notification_without_recipient": 3, "integration_without_error": 5, "stale_item": 2,
-           "open_proposal": 1}
+           "open_proposal": 1, "duplicate_item": 3}
 
 
 def _i(code, message, key=""):
@@ -43,7 +43,13 @@ def readiness(spec: Spec) -> dict:
         if not i.on_error:
             issues.append(_i("integration_without_error", f'Integracja „{i.name}” nie ma obsługi błędu.', i.key))
     for section in SECTIONS:
+        labels = set()
         for item in getattr(spec, section):
+            label = (getattr(item, "name", "") or getattr(item, "trigger", "") or getattr(item, "text", ""))
+            label = label.strip().lower()
+            if label and label in labels:
+                issues.append(_i("duplicate_item", "Element powtarza inny w tej sekcji — usuń albo scal.", item.key))
+            labels.add(label)
             if item.stale:
                 issues.append(_i("stale_item", "Element nie ma już odpowiednika na mapie.", item.key))
     issues += [_i("open_proposal", f"Propozycja AI czeka: {p.summary}", p.target_key) for p in spec.proposals]
