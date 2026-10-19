@@ -237,6 +237,9 @@ def to_markdown(meta: dict, graph: dict, spec=None) -> str:
     out = [f"# Specyfikacja: {_md(meta['name'])}", "",
            f"> Wygenerowano w FlowMap. Kompletność mapy: **{rep['score']}/100**.", "",
            "## 1. Opis procesu", "", f"Zdarzenie startowe: „{_md(meta['start_sentence'])}”.", ""]
+    if spec.vision.must or spec.vision.should:
+        out += ["### Zakres MVP", "", f"- Must: {_md(', '.join(spec.vision.must)) or '—'}",
+                f"- Should: {_md(', '.join(spec.vision.should)) or '—'}", ""]
     for i, n in enumerate(nodes, 1):
         actor = f" — *{_md(n['actor'])}*" if n.get("actor") else ""
         out.append(f"{i}. **{_md(n['title'])}** ({NODE_TYPE_LABELS[n['type']]}){actor}")

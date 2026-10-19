@@ -31,6 +31,24 @@ def _img(att) -> str:
     return f"![{_md(att.caption or att.filename)}]({image_path(att)})"
 
 
+MOSCOW = (("must", "Must — musi być"), ("should", "Should — powinno być"), ("could", "Could — może być"),
+          ("wont", "Won't — nie w tej wersji"))
+
+
+def vision_md(meta, spec: Spec) -> str:
+    v = spec.vision
+
+    def bullets(items):
+        return [f"- {_md(x)}" for x in items] or ["- do uzupełnienia"]
+
+    out = [f"# Wizja i zakres MVP: {_md(meta['name'])}", "", "## Problem", "", _md(v.problem) or "do uzupełnienia",
+           "", "## Cele", "", *bullets(v.goals), "", "## Mierniki sukcesu", "", *bullets(v.metrics), "",
+           "## Zakres MVP (MoSCoW)", ""]
+    for f, label in MOSCOW:
+        out += [f"### {label}", "", *bullets(getattr(v, f)), ""]
+    return "\n".join(out)
+
+
 def _name(spec: Spec, key: str) -> str:
     _sec, item = spec.find(key)
     return getattr(item, "name", key) if item else key
@@ -39,7 +57,8 @@ def _name(spec: Spec, key: str) -> str:
 def claude_md(meta, spec: Spec) -> str:
     out = [f"# {_md(meta['name'])} — instrukcja dla Claude Code", "",
            f"Proces: „{_md(meta['start_sentence'])}”. Specyfikacja: `SPEC.md`, model danych: `DATA_MODEL.md`, "
-           "przypadki użycia i diagramy UML: `UML.md`, testy akceptacyjne: `ACCEPTANCE.md`, "
+           "przypadki użycia i diagramy UML: `UML.md`, zakres i mierniki: `VISION.md`, "
+           "testy akceptacyjne: `ACCEPTANCE.md`, "
            "wątpliwości: `OPEN_QUESTIONS.md`.", "",
            f"Stos: {_md(spec.stack) if spec.stack else 'dobierz prosty, popularny stos i uzasadnij w README'}.", "",
            "## Kolejność budowy", "",
@@ -53,6 +72,7 @@ def claude_md(meta, spec: Spec) -> str:
            "## Definition of Done", "",
            "- Wszystkie scenariusze z `ACCEPTANCE.md` mają testy i przechodzą.",
            "- Uprawnienia zgodne z macierzą; brak dostępu = 403/404.",
+           "- Buduj tylko zakres Must i Should z `VISION.md`; Could — jeśli zostanie czas; Won't — nie buduj.",
            "- Nie wymyślaj funkcji spoza specyfikacji. Niejasne rzeczy rozstrzygnij najprostszym założeniem "
            "i dopisz do `OPEN_QUESTIONS.md`."]
     if spec.stack:
@@ -161,7 +181,7 @@ def build_files(meta: dict, graph: dict, spec: Spec, open_comments: list[str],
     data = {"format": FORMAT, "project": meta, "nodes": graph["nodes"], "edges": graph["edges"],
             "spec": spec.model_dump(mode="json")}
     return {"CLAUDE.md": claude_md(meta, spec), "SPEC.md": spec_md(meta, graph, spec, images),
-            "DATA_MODEL.md": data_model_md(spec), "UML.md": uml_md(meta, spec),
+            "DATA_MODEL.md": data_model_md(spec), "UML.md": uml_md(meta, spec), "VISION.md": vision_md(meta, spec),
             "ACCEPTANCE.md": acceptance_md(graph, spec),
             "OPEN_QUESTIONS.md": open_questions_md(graph, spec, open_comments),
             "flowmap.json": json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n",

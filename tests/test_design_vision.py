@@ -87,3 +87,13 @@ def test_review_can_add_alternative_and_rule_row():
     uc = next(u for u in spec.use_cases if u.key == "uc:klient")
     assert uc.alternatives[-1].steps == ["Anulowanie", "Zwolnienie terminu"] and uc.source == "ai"
     assert next(r for r in spec.rules if r.key == "rule:prepay").rows[-1].condition == "klient VIP"
+
+
+def test_vision_md_and_claude_md():
+    from app.export.builders import to_markdown
+    from app.spec.package import build_files
+    g = full_graph("booking")
+    f = build_files(META, g, derive(g, META), [])
+    assert "# Wizja i zakres MVP: Salon" in f["VISION.md"] and "## Zakres MVP (MoSCoW)" in f["VISION.md"]
+    assert "VISION.md" in f["CLAUDE.md"] and "Must" in f["CLAUDE.md"]
+    assert "### Zakres MVP" in to_markdown(META, g)

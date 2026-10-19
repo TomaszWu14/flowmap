@@ -10,7 +10,8 @@ from tests.test_flow import play_to_end
 from tests.test_projects import new_project
 
 META = {"name": "Salon", "start_sentence": "Klient chce umówić wizytę"}
-FILES = {"CLAUDE.md", "SPEC.md", "DATA_MODEL.md", "ACCEPTANCE.md", "OPEN_QUESTIONS.md", "flowmap.json", "UML.md"}
+FILES = {"CLAUDE.md", "SPEC.md", "DATA_MODEL.md", "ACCEPTANCE.md", "OPEN_QUESTIONS.md", "flowmap.json", "UML.md",
+         "VISION.md"}
 
 
 def files_for(graph=None, spec=None):
