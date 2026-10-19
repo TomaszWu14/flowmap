@@ -66,3 +66,13 @@ def test_flow_player_is_loaded_on_every_map(auth_client, client):
     token = Project.query.get(p.id).share_token
     assert "player.js" in auth_client.get(f"/s/{token}").get_data(as_text=True)
     assert "player.js" in auth_client.get("/przyklad").get_data(as_text=True)
+
+
+def test_destructive_map_change_sends_undo_toast(auth_client):
+    import json
+    p = new_project(auth_client)
+    answer_first_tile(auth_client, p)
+    node = next(n for n in Project.query.get(p.id).nodes if n.type != "start")
+    r = auth_client.post(f"/p/{p.id}/node/{node.key}/delete")
+    events = json.loads(r.headers["HX-Trigger"])
+    assert events["toast"]["undo"] is True and node.title in events["toast"]["message"] and "mapChanged" in events

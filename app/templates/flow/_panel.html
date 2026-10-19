@@ -52,6 +52,7 @@
         <input type="hidden" name="other" value="1">
         {% if question.kind in ('next', 'error') %}
           <label>Nazwa kroku <textarea name="text" required maxlength="4000" rows="2"
+            data-draft="other-{{ project.id }}-{{ node.key }}-{{ question.kind }}-{{ question.slot }}"
             placeholder="np. Pracownik akceptuje wniosek"></textarea></label>
           <p class="field-help">Kilka kroków naraz? Wpisz każdy w osobnej linii — typy i role dobiorę sam.</p>
           <label>Typ kroku

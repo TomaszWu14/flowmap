@@ -37,6 +37,7 @@
         <a href="{{ url_for('export.example') }}">Przykład</a>
         <a href="{{ url_for('auth.login') }}">Zaloguj</a>
       {% endif %}
+      <span class="save-status" id="save-status" role="status" aria-live="polite"></span>
       <button class="linkish" type="button" data-theme-toggle aria-label="Przełącz tryb jasny/ciemny">◐</button>
     </nav>
   </header>
@@ -47,6 +48,7 @@
       </div>
     {% endif %}
   {% endwith %}
+  <div class="toasts" id="toasts" aria-live="polite"></div>
   {% block body %}<main class="page">{% block content %}{% endblock %}</main>{% endblock %}
   {% block scripts %}{% endblock %}
 </body>

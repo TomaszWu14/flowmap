@@ -1,4 +1,4 @@
-// Small global helpers: theme toggle, bottom sheet, copy buttons, confirm before destructive submits.
+// Global helpers: theme, bottom sheet, copy, confirm, toasts with Undo, save status, drafts, panel resize.
 (function () {
   const root = document.documentElement;
   try {
@@ -39,4 +39,113 @@
       }
     }
   });
+
+  // --- toasts (server sends HX-Trigger {"toast": {"message", "undo"}}) -------------------
+  function toast(message, opts = {}) {
+    const box = document.getElementById("toasts");
+    if (!box) return;
+    const t = document.createElement("div");
+    t.className = "toast" + (opts.error ? " error" : "");
+    t.setAttribute("role", opts.error ? "alert" : "status");
+    const text = document.createElement("span");
+    text.textContent = message;
+    t.append(text);
+    const undoBtn = document.getElementById("btn-undo");
+    if (opts.undo && undoBtn) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "btn small";
+      b.textContent = "Cofnij";
+      b.addEventListener("click", () => { undoBtn.click(); t.remove(); });
+      t.append(b);
+    }
+    const x = document.createElement("button");
+    x.type = "button";
+    x.className = "toast-close";
+    x.setAttribute("aria-label", "Zamknij");
+    x.textContent = "×";
+    x.addEventListener("click", () => t.remove());
+    t.append(x);
+    box.append(t);
+    while (box.children.length > 3) box.firstElementChild.remove();
+    setTimeout(() => t.remove(), opts.error ? 9000 : 6000);
+  }
+  window.flowToast = toast;
+  document.body.addEventListener("toast", (ev) => toast(ev.detail.message, { undo: ev.detail.undo }));
+
+  // --- save status + connection errors for every HTMX request ---------------------------
+  const status = document.getElementById("save-status");
+  let statusTimer = null;
+  function setStatus(text, cls) {
+    if (!status) return;
+    clearTimeout(statusTimer);
+    status.textContent = text;
+    status.className = "save-status " + (cls || "");
+    if (cls === "ok") statusTimer = setTimeout(() => { status.textContent = ""; }, 2500);
+  }
+  const writes = (ev) => (ev.detail.requestConfig || {}).verb !== "get";
+  document.body.addEventListener("htmx:beforeRequest", (ev) => { if (writes(ev)) setStatus("Zapisywanie…", "busy"); });
+  document.body.addEventListener("htmx:afterRequest", (ev) => {
+    if (writes(ev) && ev.detail.successful) setStatus("Zapisano ✓", "ok");
+  });
+  document.body.addEventListener("htmx:responseError", (ev) => {
+    setStatus("Nie zapisano", "err");
+    const code = ev.detail.xhr.status;
+    toast(code === 403 ? "Nie masz uprawnień do tej zmiany." : code === 404
+      ? "Tego elementu już nie ma — odśwież stronę." : `Serwer zwrócił błąd (${code}). Spróbuj ponownie.`, { error: true });
+  });
+  document.body.addEventListener("htmx:sendError", () => {
+    setStatus("Brak połączenia", "err");
+    toast("Brak połączenia z serwerem — zmiana nie została zapisana. Sprawdź internet i spróbuj ponownie.", { error: true });
+  });
+
+  // --- drafts of free-text answers survive panel reloads (per project, step and question) ---
+  function restoreDrafts(root) {
+    root.querySelectorAll("[data-draft]").forEach((field) => {
+      const key = "fm-draft:" + field.dataset.draft;
+      try {
+        const saved = localStorage.getItem(key);
+        if (saved && !field.value) {
+          field.value = saved;
+          const details = field.closest("details");
+          if (details) details.open = true;
+        }
+      } catch (e) { /* storage blocked */ }
+      field.addEventListener("input", () => {
+        try { field.value ? localStorage.setItem(key, field.value) : localStorage.removeItem(key); } catch (e) { /* ignore */ }
+      });
+      const form = field.form;
+      if (form) form.addEventListener("htmx:afterRequest", (ev) => {
+        if (ev.detail.successful) try { localStorage.removeItem(key); } catch (e) { /* ignore */ }
+      });
+    });
+  }
+  restoreDrafts(document);
+  document.body.addEventListener("htmx:afterSwap", (ev) => restoreDrafts(ev.detail.target));
+
+  // --- resizable question panel (desktop) --------------------------------------------------
+  const handle = document.querySelector(".panel-resize");
+  const workspace = document.querySelector(".workspace");
+  if (handle && workspace) {
+    const setWidth = (px) => {
+      const w = Math.round(Math.min(Math.max(px, 300), window.innerWidth * 0.6));
+      workspace.style.setProperty("--panel-w", w + "px");
+      try { localStorage.setItem("fm-panel-w", String(w)); } catch (e) { /* ignore */ }
+      window.dispatchEvent(new Event("resize"));  // Cytoscape re-measures its container
+    };
+    try { const saved = Number(localStorage.getItem("fm-panel-w")); if (saved) setWidth(saved); } catch (e) { /* ignore */ }
+    handle.addEventListener("pointerdown", (ev) => {
+      ev.preventDefault();
+      handle.setPointerCapture(ev.pointerId);
+      const move = (e) => setWidth(window.innerWidth - e.clientX);
+      const up = () => { handle.removeEventListener("pointermove", move); handle.removeEventListener("pointerup", up); };
+      handle.addEventListener("pointermove", move);
+      handle.addEventListener("pointerup", up);
+    });
+    handle.addEventListener("keydown", (ev) => {
+      const now = parseInt(getComputedStyle(workspace).getPropertyValue("--panel-w")) || 400;
+      if (ev.key === "ArrowLeft") { ev.preventDefault(); setWidth(now + 30); }
+      if (ev.key === "ArrowRight") { ev.preventDefault(); setWidth(now - 30); }
+    });
+  }
 })();
