@@ -12,6 +12,7 @@
   let selected = null;
   let lastData = { nodes: [], edges: [] };
   const MIN_READABLE_ZOOM = 0.8;
+  const LANE_H = 150;
 
   // Pictograms (Lucide SVG bodies from /static/icons.json), tinted per node and theme.
   let ICON_BODIES = {};
@@ -78,6 +79,18 @@
       { selector: "node.token", style: { "shape": "ellipse", "width": 18, "height": 18, "background-color": css("--accent"),
         "border-width": 3, "border-color": css("--surface"), "label": "", "events": "no", "z-index": 99 } },
       { selector: "node.focus", style: { "overlay-color": css("--accent"), "overlay-opacity": 0.16, "overlay-padding": 6 } },
+      { selector: "node.lane", style: { "shape": "rectangle", "background-color": css("--surface"),
+        "background-opacity": 0.6, "border-width": 1, "border-color": css("--line"), "padding": 0, "label": "",
+        "background-image": "none", "events": "no" } },
+      { selector: "node.lane-odd", style: { "background-color": css("--surface-2") } },
+      { selector: "node.lane-head", style: { "shape": "rectangle", "width": 150, "height": LANE_H - 2,
+        "background-color": css("--surface"), "border-width": 0, "label": "data(label)", "font-size": 12,
+        "font-weight": "bold", "color": css("--ink"), "text-valign": "center", "text-halign": "center",
+        "text-margin-x": 0, "text-margin-y": 18, "text-wrap": "wrap", "text-max-width": 132,
+        "background-image": (n) => iconUri(n.data("icon"), css("--ink")), "background-width": 26,
+        "background-height": 26, "background-position-x": "50%", "background-position-y": "26%" } },
+      { selector: "node.lane-anchor", style: { "width": 1, "height": LANE_H - 2, "opacity": 0, "events": "no",
+        "label": "", "background-image": "none" } },
       { selector: "edge", style: {
         "width": 1.6, "line-color": css("--muted"), "target-arrow-color": css("--muted"), "target-arrow-shape": "triangle",
         "curve-style": "bezier", "label": "data(label)", "font-size": 10, "color": css("--ink"),
@@ -86,6 +99,7 @@
       { selector: "edge[condition='error']", style: {
         "line-style": "dashed", "line-color": css("--danger"), "target-arrow-color": css("--danger"),
       } },
+      { selector: "edge.taxi", style: { "curve-style": "taxi", "taxi-direction": "horizontal", "taxi-turn": 40 } },
     ];
   }
 
@@ -96,6 +110,17 @@
   document.addEventListener("themeChanged", () => cy.style(style()));
 
   function elements(data) {
+    const lanes = lanesOn(data) ? data.lanes.order : null;
+    const laneNodes = [];
+    if (lanes) {
+      lanes.forEach((role, i) => {
+        const id = "lane-" + i;
+        laneNodes.push({ group: "nodes", data: { id, type: "lane" }, classes: "lane-el lane" + (i % 2 ? " lane-odd" : "") },
+          { group: "nodes", data: { id: "lanehead-" + i, parent: id, type: "lane-head", role,
+            label: role || "Bez przypisanej roli", icon: data.lanes.icons[role] || "briefcase" }, classes: "lane-el lane-head" },
+          { group: "nodes", data: { id: "laneend-" + i, parent: id, type: "lane-anchor" }, classes: "lane-el lane-anchor" });
+      });
+    }
     const nodes = data.nodes.map((n) => {
       const classes = [n.pending ? "pending" : "", n.issues.length ? "issue" : "",
         n.diff ? "diff-" + n.diff : ""].join(" ").trim();
@@ -103,13 +128,15 @@
       const item = { group: "nodes", data: { id: n.key, type: n.type, actor: n.actor || "", icon: n.icon || "", label: label },
         classes: classes };
       if (n.x !== null && n.y !== null) item.position = { x: n.x, y: n.y };
+      if (lanes) item.data.parent = "lane-" + Math.max(0, lanes.indexOf(n.lane || ""));
       return item;
     });
     const edges = data.edges.map((e, i) => ({
       group: "edges",
       data: { id: "e" + i, source: e.source, target: e.target, label: e.label || "", condition: e.condition || "" },
+      classes: lanes ? "taxi" : "",
     }));
-    return nodes.concat(edges);
+    return laneNodes.concat(nodes, edges);
   }
 
   function updateChrome(data) {
@@ -164,17 +191,129 @@
   const iconsReady = fetch(cfg.iconsUrl || "/static/icons.json").then((r) => (r.ok ? r.json() : {}))
     .then((b) => { ICON_BODIES = b; }).catch(() => {});
 
+  // --- swimlanes: one lane per workstation, steps left to right ---------------------------
+  let viewPref = null, viewChanged = false;
+  try { viewPref = localStorage.getItem("fm-view"); } catch (e) { /* ignore */ }
+  function lanesOn(data) {
+    const order = (data && data.lanes && data.lanes.order) || [];
+    return viewPref ? viewPref === "lanes" : order.length >= 2;
+  }
+
+  function layoutLanes(data, animate) {
+    const steps = cy.nodes().not(".lane-el");
+    steps.layout({ name: window.cytoscapeDagre ? "dagre" : "breadthfirst", rankDir: "LR", nodeSep: 30,
+      rankSep: 80, fit: false, animate: false }).run();
+    const order = data.lanes.order;
+    const laneOf = (n) => Math.max(0, order.indexOf((data.nodes.find((x) => x.key === n.id()) || {}).lane || ""));
+    const xs = {};
+    steps.forEach((n) => { xs[n.id()] = n.position("x"); });
+    const byLane = {};
+    steps.forEach((n) => { (byLane[laneOf(n)] = byLane[laneOf(n)] || []).push(n); });
+    Object.values(byLane).forEach((ns) => {  // no two steps of one lane on top of each other
+      ns.sort((a, b) => xs[a.id()] - xs[b.id()]);
+      let last = -Infinity;
+      ns.forEach((n) => { xs[n.id()] = Math.max(xs[n.id()], last + 205); last = xs[n.id()]; });
+    });
+    const minX = Math.min(...Object.values(xs)), maxX = Math.max(...Object.values(xs));
+    steps.forEach((n) => {
+      const target = { x: xs[n.id()], y: laneOf(n) * LANE_H + LANE_H / 2 };
+      if (animate && prev[n.id()]) {
+        n.position(prev[n.id()]);
+        n.animate({ position: target }, { duration: 320, easing: "ease-out-cubic" });
+      } else {
+        n.position(target);
+      }
+    });
+    order.forEach((_, i) => {
+      cy.getElementById("lanehead-" + i).position({ x: minX - 210, y: i * LANE_H + LANE_H / 2 });
+      cy.getElementById("laneend-" + i).position({ x: maxX + 120, y: i * LANE_H + LANE_H / 2 });
+    });
+  }
+
+  const LANE_CHOICES = { briefcase: "Biuro", warehouse: "Magazyn", truck: "Transport", user: "Klient / osoba",
+    users: "Zespół", server: "System", bot: "Automat" };
+  const menu = document.createElement("div");
+  menu.className = "lane-menu";
+  menu.hidden = true;
+  el.parentElement.append(menu);
+  async function saveLane(body) {
+    const res = await fetch(cfg.lanesUrl, { method: "POST", body: JSON.stringify(body),
+      headers: { "Content-Type": "application/json", "X-CSRFToken": csrf } });
+    menu.hidden = true;
+    if (!res.ok && window.flowToast) window.flowToast("Nie udało się zapisać toru.", { error: true });
+    load();
+  }
+  function laneMenu(head) {
+    if (!cfg.lanesUrl) return;
+    const role = head.data("role");
+    menu.replaceChildren();
+    const title = document.createElement("strong");
+    title.textContent = head.data("label");
+    menu.append(title);
+    const icons = document.createElement("div");
+    icons.className = "lane-menu-icons";
+    Object.entries(LANE_CHOICES).forEach(([key, name]) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "btn small" + (key === head.data("icon") ? " primary" : "");
+      b.title = name;
+      b.setAttribute("aria-label", "Ikona stanowiska: " + name);
+      const img = document.createElement("img");
+      img.src = iconUri(key, key === head.data("icon") ? "#ffffff" : css("--ink"));
+      img.alt = "";
+      img.width = img.height = 18;
+      b.append(img);
+      b.addEventListener("click", () => saveLane({ role, icon: key }));
+      icons.append(b);
+    });
+    menu.append(icons);
+    const row = document.createElement("div");
+    row.className = "row";
+    [["↑ Wyżej", -1], ["↓ Niżej", 1]].forEach(([label, move]) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "btn small";
+      b.textContent = label;
+      b.addEventListener("click", () => saveLane({ role, move }));
+      row.append(b);
+    });
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "btn small";
+    close.textContent = "Zamknij";
+    close.addEventListener("click", () => { menu.hidden = true; });
+    row.append(close);
+    menu.append(row);
+    const p = head.renderedPosition();
+    menu.style.left = Math.max(8, p.x + 90) + "px";
+    menu.style.top = Math.max(60, p.y - 40) + "px";
+    menu.hidden = false;
+  }
+  cy.on("viewport", () => { menu.hidden = true; });
+
   async function load(focus) {
     await iconsReady;
     const res = await fetch(cfg.graphUrl, { headers: { Accept: "application/json" } });
     if (!res.ok) return;
     const data = await res.json();
-    cy.nodes().not(".token").forEach((n) => { prev[n.id()] = { ...n.position() }; });
+    cy.nodes().not(".token, .lane-el").forEach((n) => { prev[n.id()] = { ...n.position() }; });
     const allPositioned = data.nodes.every((n) => n.x !== null && n.y !== null);
-    const stable = !firstLoad && !forceLayout && data.nodes.some((n) => prev[n.key]);
+    const inLanes = lanesOn(data);
+    const refit = firstLoad || forceLayout || viewChanged;
+    const stable = !inLanes && !refit && data.nodes.some((n) => prev[n.key]);
     cy.elements().remove();
     cy.add(elements(data));
-    if (stable) {
+    if (inLanes) {
+      layoutLanes(data, !refit);
+      if (refit) {
+        cy.fit(cy.elements(), 40);
+        if (cy.zoom() < MIN_READABLE_ZOOM) {  // big map: stay readable, start at the lane headers (top-left)
+          cy.zoom(MIN_READABLE_ZOOM);
+          const bb = cy.elements().boundingBox();
+          cy.pan({ x: 16 - bb.x1 * MIN_READABLE_ZOOM, y: 16 - bb.y1 * MIN_READABLE_ZOOM });
+        }
+      }
+    } else if (stable) {
       const { placed, parents } = placeNew(data);
       cy.nodes().forEach((n) => {
         const target = placed[n.id()];
@@ -194,7 +333,7 @@
         fit: true, padding: 60, directed: true, animate, animationDuration: 450 }).run();
     }
     if (focus !== undefined) selected = focus || null;
-    if (!stable && !forceLayout) {
+    if (!stable && !inLanes && !forceLayout) {
       if (cy.zoom() > 1.2) { cy.zoom(1.2); cy.center(); }
       if (cy.zoom() < MIN_READABLE_ZOOM) {
         // Whole map would shrink labels below ~9 px: stay readable, center on the step in focus.
@@ -212,6 +351,9 @@
       }
     }
     firstLoad = false;
+    viewChanged = false;
+    cy.nodes(".lane-el").ungrabify();
+    if (inLanes) cy.nodes().ungrabify();  // positions come from the lanes layout
     forceLayout = false;
     for (const k of Object.keys(prev)) delete prev[k];
     updateChrome(data);
@@ -298,6 +440,24 @@
   // --- full screen (button + F) ------------------------------------------------------------
   const wrapEl = el.closest(".map-wrap");
   const bar = wrapEl && wrapEl.querySelector(".map-toolbar");
+  if (bar) {
+    const view = document.createElement("button");
+    view.type = "button";
+    view.className = "btn small";
+    const label = () => {
+      const on = lanesOn(lastData);
+      view.textContent = on ? "↧ Przepływ" : "▤ Tory";
+      view.title = on ? "Widok przepływu (kroki z góry na dół)" : "Widok torów: pas dla każdego stanowiska pracy";
+    };
+    view.addEventListener("click", () => {
+      viewPref = lanesOn(lastData) ? "flow" : "lanes";
+      try { localStorage.setItem("fm-view", viewPref); } catch (e) { /* ignore */ }
+      viewChanged = true;
+      load();
+    });
+    bar.insertBefore(view, bar.children[2] || null);
+    document.addEventListener("flowmap:loaded", label);
+  }
   if (wrapEl && bar && wrapEl.requestFullscreen) {
     const fs = document.createElement("button");
     fs.type = "button";
@@ -328,7 +488,11 @@
     if (panel) panel.classList.remove("collapsed");
   }
 
-  cy.on("tap", "node", (ev) => openNode(ev.target));
+  cy.on("tap", "node", (ev) => {
+    if (ev.target.hasClass("lane-head")) return laneMenu(ev.target);
+    if (ev.target.hasClass("lane-el")) return;
+    openNode(ev.target);
+  });
 
   // Search: highlight matching steps, Enter jumps to the next one and opens it.
   const search = document.getElementById("map-search");
@@ -337,10 +501,10 @@
   function runSearch() {
     const q = fold(search.value.trim());
     cy.nodes().removeClass("match dim");
-    matches = q ? cy.nodes().filter((n) => fold(n.data("label")).includes(q)).toArray() : [];
+    matches = q ? cy.nodes().not(".lane-el").filter((n) => fold(n.data("label")).includes(q)).toArray() : [];
     current = -1;
     if (q) {
-      cy.nodes().addClass("dim");
+      cy.nodes().not(".lane-el").addClass("dim");
       matches.forEach((n) => n.removeClass("dim").addClass("match"));
     }
     const count = document.getElementById("map-search-count");
@@ -403,6 +567,7 @@
 
   if (!readOnly && cfg.positionsUrl) {
     cy.on("dragfree", "node", () => {
+      if (lanesOn(lastData)) return;
       const pos = {};
       cy.nodes().forEach((n) => { pos[n.id()] = [Math.round(n.position("x")), Math.round(n.position("y"))]; });
       fetch(cfg.positionsUrl, {

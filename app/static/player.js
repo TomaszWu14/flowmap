@@ -53,7 +53,8 @@
   function highlight() {
     const cy = fm().cy;
     cy.batch(() => {
-      cy.elements().removeClass("play-current play-visited play-edge").addClass("play-dim");
+      cy.elements().removeClass("play-current play-visited play-edge");
+      cy.elements().not(".lane-el").addClass("play-dim");
       path.forEach((key, i) => {
         cy.getElementById(key).removeClass("play-dim").addClass("play-visited");
         if (i) cy.edges(`[source = "${path[i - 1]}"][target = "${key}"]`).removeClass("play-dim").addClass("play-edge");
@@ -63,6 +64,7 @@
   }
 
   function render(message) {
+    if (!card) return;  // closed meanwhile (e.g. Esc during a token animation)
     const { by, out } = graph();
     const n = by[path[path.length - 1]];
     const outs = out[n.key] || [];
@@ -200,6 +202,7 @@
       step: () => place(token),
       complete: () => {
         cy.remove("#__token");
+        if (!card) return;
         path.push(edge.target);
         playing = keepPlaying;
         show();

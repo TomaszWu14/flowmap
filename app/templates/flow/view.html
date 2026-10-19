@@ -46,7 +46,8 @@
       <div id="map"
            data-graph-url="{{ url_for('flow.graph_json', project_id=project.id) }}"
            data-panel-url="{{ url_for('flow.panel', project_id=project.id) }}"
-           {% if not project.can_edit %}data-readonly="1"{% else %}data-positions-url="{{ url_for('flow.positions', project_id=project.id) }}"{% endif %}></div>
+           {% if not project.can_edit %}data-readonly="1"{% else %}data-positions-url="{{ url_for('flow.positions', project_id=project.id) }}"
+           data-lanes-url="{{ url_for('flow.lanes', project_id=project.id) }}"{% endif %}></div>
       <div class="legend" aria-hidden="true">
         <span><i style="--c:var(--t-screen)"></i>Ekran</span><span><i style="--c:var(--t-user_action)"></i>Działanie</span>
         <span><i style="--c:var(--t-automation)"></i>Automatyzacja</span><span><i style="--c:var(--t-decision)"></i>Decyzja</span>

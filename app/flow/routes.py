@@ -10,6 +10,7 @@ from ..extensions import db
 from ..models import NODE_TYPE_LABELS, NODE_TYPES, QuestionLog
 from . import graph as g
 from . import guard
+from . import lanes as lanes_mod
 from . import questions as q
 from .pictograms import PICTOGRAMS, icon_for
 from .simulate import simulation_state
@@ -17,7 +18,8 @@ from .simulate import simulation_state
 bp = Blueprint("flow", __name__)
 
 
-def graph_payload(graph: dict, pending: set[str] | None = None, comments: dict[str, int] | None = None) -> dict:
+def graph_payload(graph: dict, pending: set[str] | None = None, comments: dict[str, int] | None = None,
+                  display: dict | None = None) -> dict:
     report = guard.report(graph, comments)
     by_node: dict[str, list[str]] = {}
     for issue in report["issues"]:
@@ -30,7 +32,11 @@ def graph_payload(graph: dict, pending: set[str] | None = None, comments: dict[s
         n["type_label"] = NODE_TYPE_LABELS[n["type"]]
         n["icon"] = icon_for(n)
         n["icon_label"] = PICTOGRAMS[n["icon"]][0] if n["icon"] else ""
-    return {"nodes": graph["nodes"], "edges": graph["edges"], **report}
+    lanes = lanes_mod.lanes_info(graph, display)
+    for n in graph["nodes"]:
+        n["lane"] = lanes["of"].get(n["key"], "")
+    lanes.pop("of")
+    return {"nodes": graph["nodes"], "edges": graph["edges"], "lanes": lanes, **report}
 
 
 def render_panel(project, node=None, kind=None, slot=None, error=None, focus_changed=True, status=200):
@@ -100,7 +106,7 @@ def view(project_id):
 def graph_json(project_id):
     project = g.project_for(project_id, "view")
     pending = {n.key for n in q.pending_nodes(project)}
-    payload = graph_payload(project.graph(), pending, open_comment_counts(project))
+    payload = graph_payload(project.graph(), pending, open_comment_counts(project), project.display)
     payload.update(can_undo=g.can_undo(project), can_redo=g.can_redo(project), status=project.status)
     return jsonify(payload)
 
@@ -293,6 +299,25 @@ def positions(project_id):
     return {"ok": True}
 
 
+@bp.post("/p/<int:project_id>/lanes")
+@login_required
+def lanes(project_id):
+    """Change a swimlane's workstation icon or move it up/down. JSON: {role, icon} or {role, move: -1|1}."""
+    project = g.project_for(project_id, "edit")
+    data = request.get_json(silent=True) or {}
+    role = data.get("role")
+    move = data.get("move", 0)
+    order = lanes_mod.lanes_info(project.graph(), project.display)["order"]
+    if not isinstance(role, str) or role not in order or move not in (-1, 0, 1):
+        abort(400)
+    try:
+        project.display = lanes_mod.update(project.display, role, icon=data.get("icon"), move=move, order=order)
+    except ValueError as exc:
+        abort(400, str(exc))
+    db.session.commit()
+    return {"ok": True}
+
+
 @bp.post("/p/<int:project_id>/layout")
 @login_required
 def reset_layout(project_id):
@@ -316,6 +341,7 @@ def guard_panel(project_id):
 def _guard_html(project, **kw):
     """Guard panel: score, open questions, problems with fixes, AI review and AI fill sections."""
     ctx = {"suggestions": None, "log": None, "fill": None, "fill_log": None, "error": None} | kw
+    ctx["handoffs"] = lanes_mod.lanes_info(project.graph(), project.display)["handoffs"]
     report = guard.report(project.graph(), open_comment_counts(project))
     return render_template("flow/_guard.html", project=project, report=report, ai=ai_enabled(),
                            titles={n.key: n.title for n in project.nodes}, todo=open_questions(project), **ctx)

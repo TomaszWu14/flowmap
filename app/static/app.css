@@ -313,3 +313,8 @@ kbd { font: inherit; font-size: .75rem; border: 1px solid var(--line); border-bo
   font-size: .8rem; font-weight: 600; }
 .picto-opt input:checked + span { border-color: var(--accent); background: var(--accent); color: #fff; }
 .picto-opt input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.lane-menu { position: absolute; z-index: 8; background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: var(--shadow); padding: .6rem .7rem; display: grid; gap: .5rem; max-width: 300px; }
+.lane-menu-icons { display: flex; flex-wrap: wrap; gap: .3rem; }
+.lane-menu-icons .btn { padding: .3rem .4rem; }
+.lane-menu[hidden] { display: none; }
