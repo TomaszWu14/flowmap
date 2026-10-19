@@ -1,21 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Projekty{% if shared %}
-<h2 style="margin-top:2rem">Udostępnione dla mnie</h2>
-<div class="grid-cards">
-  {% for m in shared %}{% set p = m.project %}
-  <article class="card project-card">
-    <h2><a href="{{ url_for('flow.view', project_id=p.id) }}">{{ p.name }}</a></h2>
-    <p class="muted">„{{ p.start_sentence }}”</p>
-    <div class="row">
-      <span class="badge {{ 'ok' if m.role == 'editor' }}">{{ role_labels[m.role] }}</span>
-      <span class="badge">właściciel: {{ p.owner.email }}</span>
-      <span class="badge">{{ p.nodes|length }} kroków</span>
-    </div>
-  </article>
-  {% endfor %}
-</div>
-{% endif %}
-{% endblock %}
+{% block title %}Projekty{% endblock %}
 {% block content %}
 <div class="page-head">
   <div><h1>Twoje projekty</h1><p class="muted">Każdy projekt to jedna mapa procesu.</p></div>
@@ -35,9 +19,16 @@
     <div class="row">
       <span class="badge">{{ 'szybki' if p.mode == 'quick' else 'dokładny' }}</span>
       {% if p.status == 'complete' %}<span class="badge ok">✓ gotowa mapa</span>{% else %}<span class="badge">w toku</span>{% endif %}
-      <span class="badge">{{ p.nodes|length }} kroków</span>
+      <span class="badge">{{ p.nodes|length|kroki }}</span>
     </div>
-    <p class="muted" style="font-size:.8rem;margin:.6rem 0 0">Zmieniono {{ p.updated_at.strftime('%d.%m.%Y %H:%M') }}</p>
+    <div class="row" style="justify-content:space-between;margin-top:.6rem">
+      <p class="muted" style="font-size:.8rem;margin:0">Zmieniono {{ p.updated_at.strftime('%d.%m.%Y %H:%M') }}</p>
+      <form method="post" action="{{ url_for('projects.delete', project_id=p.id) }}"
+            data-confirm="Usunąć projekt „{{ p.name }}”? Tego nie da się cofnąć.">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn small danger" type="submit" aria-label="Usuń projekt {{ p.name }}">Usuń</button>
+      </form>
+    </div>
   </article>
   {% endfor %}
 </div>
@@ -58,7 +49,7 @@
     <div class="row">
       <span class="badge {{ 'ok' if m.role == 'editor' }}">{{ role_labels[m.role] }}</span>
       <span class="badge">właściciel: {{ p.owner.email }}</span>
-      <span class="badge">{{ p.nodes|length }} kroków</span>
+      <span class="badge">{{ p.nodes|length|kroki }}</span>
     </div>
   </article>
   {% endfor %}

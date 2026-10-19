@@ -1,10 +1,15 @@
-// Small global helpers: theme toggle, bottom sheet, copy buttons.
+// Small global helpers: theme toggle, bottom sheet, copy buttons, confirm before destructive submits.
 (function () {
   const root = document.documentElement;
   try {
     const saved = localStorage.getItem("theme");
     if (saved) root.dataset.theme = saved;
   } catch (e) { /* storage blocked */ }
+
+  document.addEventListener("submit", (ev) => {
+    const msg = ev.target.dataset && ev.target.dataset.confirm;
+    if (msg && !window.confirm(msg)) ev.preventDefault();
+  });
 
   document.addEventListener("click", (ev) => {
     const themeBtn = ev.target.closest("[data-theme-toggle]");
