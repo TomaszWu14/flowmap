@@ -86,6 +86,13 @@
     head.append(chip, el("span", "muted", `Krok ${path.length}${n.actor ? " · " + n.actor : ""}`
       + (n.icon_label ? " · " + n.icon_label : "")));
     card.append(head, el("strong", "player-title", n.title));
+    if (n.image_url) {
+      const img = el("img", "player-img");
+      img.src = n.image_url;
+      img.alt = `Grafika kroku „${n.title}”`;
+      img.addEventListener("load", () => place(anchor()));
+      card.append(img);
+    }
     narrate(n, outs, by).forEach((line) => card.append(el("p", "player-line", line)));
     if (message) card.append(el("div", "alert info", message));
     if (choices) {

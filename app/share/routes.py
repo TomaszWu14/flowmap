@@ -9,7 +9,7 @@ from .. import audit
 from ..export import builders
 from ..extensions import db
 from ..flow import graph as g
-from ..flow.routes import graph_payload, render_simulation
+from ..flow.routes import add_images, graph_payload, render_simulation
 from ..models import Project, ProjectMember, User
 
 bp = Blueprint("share", __name__)
@@ -124,11 +124,13 @@ def view(token):
 @bp.get("/s/<token>/graph.json")
 def graph_json(token):
     project = _shared(token)
-    return graph_payload(project.graph(), display=project.display)
+    payload = graph_payload(project.graph(), display=project.display)
+    return add_images(payload, project, lambda att: url_for("media.show_shared", token=token, att_id=att))
 
 
 @bp.get("/s/<token>/symulacja")
 def simulate(token):
     project = _shared(token)
     return render_simulation(project, url_for("share.view", token=token),
-                             lambda **kw: url_for("share.simulate", token=token, **kw))
+                             lambda **kw: url_for("share.simulate", token=token, **kw),
+                             lambda att: url_for("media.show_shared", token=token, att_id=att))

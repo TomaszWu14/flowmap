@@ -14,6 +14,7 @@
 <div class="grid-cards">
   {% for p in projects %}
   <article class="card project-card">
+    {% if covers.get(p.id) %}<img class="project-cover" src="{{ url_for('media.show', project_id=p.id, att_id=covers[p.id]) }}" alt="" loading="lazy">{% endif %}
     <h2><a href="{{ url_for('flow.view', project_id=p.id) }}">{{ p.name }}</a></h2>
     <p class="muted">„{{ p.start_sentence }}”</p>
     <div class="row">
@@ -44,6 +45,7 @@
 <div class="grid-cards">
   {% for m in shared %}{% set p = m.project %}
   <article class="card project-card">
+    {% if covers.get(p.id) %}<img class="project-cover" src="{{ url_for('media.show', project_id=p.id, att_id=covers[p.id]) }}" alt="" loading="lazy">{% endif %}
     <h2><a href="{{ url_for('flow.view', project_id=p.id) }}">{{ p.name }}</a></h2>
     <p class="muted">„{{ p.start_sentence }}”</p>
     <div class="row">

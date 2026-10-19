@@ -79,6 +79,10 @@
     <p class="muted">Ten krok jest kompletny. Możesz go zmienić albo rozbudować:</p>
   {% endif %}
 
+<section class="step-images" aria-label="Grafiki kroku">
+  <h3>Grafiki</h3>
+  {% with node_key=node.key, images=step_images, error=none %}{% include "media/_gallery.html" %}{% endwith %}
+</section>
 <section id="comments" class="comments" hx-get="{{ url_for('comments.list_comments', project_id=project.id, key=node.key) }}" hx-trigger="load"></section>
   <section aria-label="Akcje kroku" style="margin-top:1rem">
     {% if node.type != 'end' %}

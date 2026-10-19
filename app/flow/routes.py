@@ -57,6 +57,7 @@ def render_panel(project, node=None, kind=None, slot=None, error=None, focus_cha
     html = render_template(
         "flow/_panel.html", project=project, node=node, log=log, question=question, error=error,
         node_types=NODE_TYPES, others=others, remaining=remaining,
+        step_images=_step_images(project, node),
         outgoing=g.outgoing(project, node) if node else [],
     )
     resp = make_response(html, status)
@@ -87,6 +88,12 @@ def with_toast(resp, message: str, undo: bool = True):
     return resp
 
 
+def _step_images(project, node):
+    from ..media.routes import images_of
+
+    return images_of(project, node.key) if node is not None else []
+
+
 def _changed(project, description: str, node=None, toast: bool = False, **kw):
     g.save_version(project, description)
     db.session.commit()
@@ -108,6 +115,7 @@ def graph_json(project_id):
     pending = {n.key for n in q.pending_nodes(project)}
     payload = graph_payload(project.graph(), pending, open_comment_counts(project), project.display)
     payload.update(can_undo=g.can_undo(project), can_redo=g.can_redo(project), status=project.status)
+    add_images(payload, project, lambda att: url_for("media.show", project_id=project.id, att_id=att))
     return jsonify(payload)
 
 
@@ -521,15 +529,34 @@ def guard_apply(project_id):
 def simulate(project_id):
     project = g.project_for(project_id, "view")
     return render_simulation(project, url_for("flow.view", project_id=project.id),
-                             lambda **kw: url_for("flow.simulate", project_id=project.id, **kw))
+                             lambda **kw: url_for("flow.simulate", project_id=project.id, **kw),
+                             lambda att: url_for("media.show", project_id=project.id, att_id=att))
 
 
-def render_simulation(project, back_url, sim_url):
+def add_images(payload: dict, project, url) -> dict:
+    """Image count and the first image's URL per step (map badge, tooltip, playback)."""
+    from ..media.routes import image_counts
+
+    counts = image_counts(project)
+    for n in payload["nodes"]:
+        count, first = counts.get(n["key"], (0, None))
+        n["images"] = count
+        n["image_url"] = url(first) if first else ""
+    return payload
+
+
+def render_simulation(project, back_url, sim_url, image_url=None):
     """Shared by the owner view and the public share link."""
     graph = project.graph()
     role = request.args.get("role")
     path = [k for k in (request.args.get("path") or "").split(",") if k]
     state = simulation_state(graph, role, path) if role else None
     actors = sorted({n["actor"] for n in graph["nodes"] if n["actor"]})
+    shot = ""
+    if state and state.get("node") and image_url:
+        from ..media.routes import image_counts
+
+        first = image_counts(project).get(state["node"]["key"], (0, None))[1]
+        shot = image_url(first) if first else ""
     return render_template("flow/simulate.html", project=project, actors=actors, role=role, state=state,
-                           back_url=back_url, sim_url=sim_url)
+                           back_url=back_url, sim_url=sim_url, shot=shot)
