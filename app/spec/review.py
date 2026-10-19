@@ -8,14 +8,29 @@ from pydantic import BaseModel
 from pydantic import Field as PField
 
 from ..ai.client import _obj, _prompt, call_tool, compact_graph
-from .schema import Field, Nfr, Notification, Proposal, Relation, Spec, Status, Transition, new_key
+from .schema import (
+    VISION_FIELDS,
+    Alternative,
+    Field,
+    Nfr,
+    Notification,
+    Proposal,
+    Relation,
+    RuleRow,
+    Spec,
+    Status,
+    Transition,
+    new_key,
+)
 
 KINDS = ["set_field_type", "add_field", "add_relation", "add_status", "add_transition", "set_permission",
-         "add_notification", "add_nfr", "other_note"]
-KIND_SECTIONS = {"set_field_type": ("entities",), "add_field": ("entities",), "add_relation": ("entities",),
+         "add_notification", "add_nfr", "other_note", "add_alternative", "add_rule_row"]
+KIND_SECTIONS = {"add_alternative": ("use_cases",), "add_rule_row": ("rules",),
+                 "set_field_type": ("entities",), "add_field": ("entities",), "add_relation": ("entities",),
                  "add_status": ("states",), "add_transition": ("states",), "set_permission": ("roles",)}
 PATCH_KEYS = ["field", "type", "name", "required", "to_entity", "kind", "label", "final", "from", "to", "entity",
-              "read", "create", "update", "delete", "trigger", "channel", "recipient_role", "category", "text"]
+              "read", "create", "update", "delete", "trigger", "channel", "recipient_role", "category", "text",
+              "condition", "result"]
 _PATCH = _obj({k: ({"type": "boolean"} if k in ("required", "final") else {"type": "string"}) for k in PATCH_KEYS})
 TOOL = {
     "name": "propose_spec_changes", "strict": True,
@@ -28,7 +43,7 @@ TOOL = {
 
 class _AiProposal(BaseModel):
     kind: Literal["set_field_type", "add_field", "add_relation", "add_status", "add_transition", "set_permission",
-                  "add_notification", "add_nfr", "other_note"]
+                  "add_notification", "add_nfr", "other_note", "add_alternative", "add_rule_row"]
     target_key: str = ""
     summary: str = PField(min_length=1, max_length=300)
     patch: dict
@@ -51,7 +66,14 @@ def apply_proposal(spec: Spec, proposal: Proposal) -> Spec:
     """Apply an accepted proposal. Raises ValueError (Polish) when its target no longer exists or patch is bad."""
     spec = spec.model_copy(deep=True)
     p, kind = proposal.patch, proposal.kind
-    if kind in ("add_nfr", "other_note"):
+    if kind == "set_vision":
+        for f in VISION_FIELDS:
+            if f in p:
+                value = p[f] if f == "problem" else [x.strip() for x in str(p[f]).splitlines() if x.strip()]
+                setattr(spec.vision, f, value)
+                if f not in spec.vision.manual:
+                    spec.vision.manual.append(f)
+    elif kind in ("add_nfr", "other_note"):
         spec.nfr.append(Nfr(key=new_key("nfr"), source="ai", category=p.get("category", "other"),
                             text=p.get("text") or proposal.summary))
     elif kind == "add_notification":
@@ -83,6 +105,11 @@ def apply_proposal(spec: Spec, proposal: Proposal) -> Spec:
             if from_name not in {s.name for s in item.statuses} or to_name not in {s.name for s in item.statuses}:
                 raise ValueError("Propozycja jest nieaktualna — nie ma takiego statusu.")
             item.transitions.append(Transition(from_status=from_name, to_status=to_name))
+        elif kind == "add_alternative":
+            item.alternatives.append(Alternative(condition=p.get("condition") or proposal.summary,
+                                                 steps=[s.strip() for s in p.get("text", "").split(";") if s.strip()]))
+        elif kind == "add_rule_row":
+            item.rows.append(RuleRow(condition=p.get("condition") or proposal.summary, result=p.get("result") or "—"))
         elif kind == "set_permission":
             entity_key = p.get("entity", "")
             if not any(e.key == entity_key for e in spec.entities):

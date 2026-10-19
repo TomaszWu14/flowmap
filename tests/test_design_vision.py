@@ -52,3 +52,38 @@ def test_vision_section_edit_marks_manual(auth_client):
 def test_viewer_cannot_edit_vision(team):  # noqa: F811
     p = team["project"]
     assert team["viewer"].post(f"/p/{p.id}/projekt-aplikacji/wizja", data={"problem": "x"}).status_code in (403, 404)
+
+
+VISION_OK = {"problem": "Klienci dzwonią, recepcja gubi zapisy", "goals": ["Rezerwacja online 24/7"],
+             "metrics": ["80% rezerwacji online w 3 miesiące"], "must": ["Wybór terminu"], "should": [],
+             "could": ["Przypomnienie SMS"], "wont": ["Program lojalnościowy"]}
+
+
+def test_vision_ai_creates_proposal_then_accept(auth_client, app, monkeypatch):
+    from tests.test_spec_review import fake
+    calls = fake(monkeypatch, app, VISION_OK)
+    p = new_project(auth_client)
+    auth_client.post(f"/p/{p.id}/projekt-aplikacji/wizja/ai")
+    assert len(calls) == 1 and calls[0]["tools"][0]["name"] == "draft_vision"
+    spec = load_spec(Project.query.get(p.id).spec)
+    prop = next(x for x in spec.proposals if x.kind == "set_vision")
+    html = auth_client.get(f"/p/{p.id}/projekt-aplikacji?sekcja=vision").get_data(as_text=True)
+    assert "Program lojalnościowy" in html and "Uzupełnij z AI" in html
+    r = auth_client.post(f"/p/{p.id}/specyfikacja/propozycje/{prop.id}/accept", data={"back": "vision"})
+    assert r.headers["Location"].endswith("sekcja=vision")
+    v = load_spec(Project.query.get(p.id).spec).vision
+    assert v.wont == ["Program lojalnościowy"] and set(v.manual) == set(VISION_OK)
+
+
+def test_review_can_add_alternative_and_rule_row():
+    from app.spec.review import apply_proposal
+    from app.spec.schema import Proposal
+    spec = derive(full_graph("booking"), META)
+    alt = Proposal(id="a", kind="add_alternative", target_key="uc:klient", summary="Klient rezygnuje",
+                   patch={"condition": "Klient rezygnuje przy płatności", "text": "Anulowanie; Zwolnienie terminu"})
+    row = Proposal(id="b", kind="add_rule_row", target_key="rule:prepay", summary="VIP bez przedpłaty",
+                   patch={"condition": "klient VIP", "result": "Wysłanie potwierdzenia rezerwacji"})
+    spec = apply_proposal(apply_proposal(spec, alt), row)
+    uc = next(u for u in spec.use_cases if u.key == "uc:klient")
+    assert uc.alternatives[-1].steps == ["Anulowanie", "Zwolnienie terminu"] and uc.source == "ai"
+    assert next(r for r in spec.rules if r.key == "rule:prepay").rows[-1].condition == "klient VIP"

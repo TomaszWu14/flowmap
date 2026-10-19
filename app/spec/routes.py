@@ -212,6 +212,12 @@ def ai_review(project_id):
     return redirect(url_for("spec.view", project_id=project.id))
 
 
+def _back(project):
+    if request.form.get("back") == "vision":
+        return redirect(url_for("design.view", project_id=project.id, sekcja="vision"))
+    return redirect(url_for("spec.view", project_id=project.id))
+
+
 @bp.post("/p/<int:project_id>/specyfikacja/propozycje/<pid>/<action>")
 @login_required
 def proposal_action(project_id, pid, action):
@@ -227,15 +233,15 @@ def proposal_action(project_id, pid, action):
             spec = apply_proposal(spec, proposal)
         except ValidationError:
             flash("Propozycja AI ma niepoprawne dane — odrzuć ją albo popraw element ręcznie.", "error")
-            return redirect(url_for("spec.view", project_id=project.id))
+            return _back(project)
         except ValueError as exc:
             flash(str(exc), "error")
-            return redirect(url_for("spec.view", project_id=project.id))
+            return _back(project)
     project.spec = spec.model_dump(mode="json")
     g.save_version(project, f"Propozycja AI {'zatwierdzona' if action == 'accept' else 'odrzucona'}: "
                             f"{proposal.summary}")
     db.session.commit()
-    return redirect(url_for("spec.view", project_id=project.id))
+    return _back(project)
 
 
 @bp.post("/p/<int:project_id>/specyfikacja/propozycje/wszystkie")

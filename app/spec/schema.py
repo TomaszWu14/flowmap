@@ -24,6 +24,7 @@ KIND_LABELS = {
     "set_field_type": "zmiana typu pola", "add_field": "nowe pole", "add_relation": "nowa relacja",
     "add_status": "nowy status", "add_transition": "nowe przejście", "set_permission": "uprawnienie",
     "add_notification": "powiadomienie", "add_nfr": "wymaganie", "other_note": "uwaga",
+    "add_alternative": "scenariusz alternatywny", "add_rule_row": "wiersz reguły", "set_vision": "wizja i zakres",
 }
 SECTIONS = ("entities", "screens", "roles", "states", "notifications", "integrations", "nfr", "use_cases", "sequences",
             "rules")

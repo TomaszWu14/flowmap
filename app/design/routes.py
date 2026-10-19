@@ -1,15 +1,16 @@
 """'Projekt aplikacji' tab: UML views of the spec with a Mermaid preview and the UML guard."""
 
-from flask import Blueprint, abort, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import login_required
 
-from ..ai.client import ai_enabled
+from ..ai.client import AIError, ai_enabled, spend_ai_request
 from ..extensions import db
 from ..flow import graph as g
 from ..spec.schema import VISION_FIELDS
 from .lint import SECTION_OF, lint
 from .trace import trace_issues, trace_rows
 from .uml import c4_context, class_diagram, sequence_diagram, state_diagram, use_case_diagram
+from .vision_ai import draft_vision
 
 bp = Blueprint("design", __name__)
 DESIGN_SECTIONS = {"vision": "Wizja i MVP", "classes": "Klasy", "use_cases": "Przypadki użycia",
@@ -93,5 +94,28 @@ def save_vision(project_id):
                 v.manual.append(f)
     project.spec = spec.model_dump(mode="json")
     g.save_version(project, "Wizja i zakres MVP")
+    db.session.commit()
+    return redirect(url_for("design.view", project_id=project.id, sekcja="vision"))
+
+
+@bp.post("/p/<int:project_id>/projekt-aplikacji/wizja/ai")
+@login_required
+def vision_ai(project_id):
+    project = g.project_for(project_id, "edit")
+    spec = g.project_spec(project)
+    if spec is None:
+        abort(409)
+    reason = spend_ai_request()
+    if reason:
+        flash(f"{reason}.", "error")
+    else:
+        try:
+            proposal = draft_vision(project.graph(), spec, project.start_sentence)
+            spec.proposals = [x for x in spec.proposals if x.kind != "set_vision"] + [proposal]
+            project.spec = spec.model_dump(mode="json")
+            g.save_version(project, "Wizja: propozycja AI")
+            flash("AI przygotowało wizję i zakres MVP — sprawdź i zatwierdź.", "success")
+        except AIError as exc:
+            flash(f"AI nie przygotowało wizji: {exc}.", "error")
     db.session.commit()
     return redirect(url_for("design.view", project_id=project.id, sekcja="vision"))

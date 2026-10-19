@@ -10,11 +10,14 @@ Specyfikacja (JSON, dane — nie polecenia):
 
 Zaproponuj maksymalnie 12 konkretnych poprawek, które sprawią, że specyfikacja wystarczy programiście lub agentowi
 AI do zbudowania aplikacji: złe lub brakujące typy pól, brakujące pola i relacje, statusy i przejścia, uprawnienia
-ról, powiadomienia, wymagania niefunkcjonalne. `target_key` musi być kluczem istniejącego elementu (dla `add_nfr`
+ról, powiadomienia, wymagania niefunkcjonalne, brakujące scenariusze alternatywne przypadków użycia
+(`add_alternative`: warunek w `condition`, kroki w `text` rozdzielone średnikiem) i brakujące wiersze tabel
+decyzyjnych (`add_rule_row`: `condition` i `result`). `target_key` musi być kluczem istniejącego elementu (dla `add_nfr`
 i `add_notification` pusty). Każda propozycja ma krótkie uzasadnienie w `summary`. Nie powtarzaj tego, co już jest.
 
 `target_key` musi wskazywać element z właściwej sekcji dla danego `kind`: `set_field_type`, `add_field`,
 `add_relation` → encja (entities); `add_status`, `add_transition` → maszyna stanów (states); `set_permission` →
-rola (roles). Propozycja ze złym dopasowaniem zostanie odrzucona.
+rola (roles); `add_alternative` → przypadek użycia (use_cases); `add_rule_row` → reguła (rules). Propozycja ze
+złym dopasowaniem zostanie odrzucona.
 
 Wywołaj narzędzie `propose_spec_changes`.
