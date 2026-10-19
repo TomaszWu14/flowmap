@@ -5,13 +5,14 @@ from flask_login import login_required
 
 from ..flow import graph as g
 from .lint import SECTION_OF, lint
-from .uml import class_diagram, sequence_diagram, state_diagram, use_case_diagram
+from .trace import trace_issues, trace_rows
+from .uml import c4_context, class_diagram, sequence_diagram, state_diagram, use_case_diagram
 
 bp = Blueprint("design", __name__)
 DESIGN_SECTIONS = {"classes": "Klasy", "use_cases": "Przypadki użycia", "sequences": "Sekwencje", "states": "Stany",
-                   "rules": "Reguły"}
+                   "rules": "Reguły", "c4": "Kontekst (C4)", "trace": "Śledzenie"}
 EDIT_SECTION = {"classes": "entities", "use_cases": "use_cases", "sequences": "sequences", "states": "states",
-                "rules": "rules"}
+                "rules": "rules", "c4": "integrations", "trace": "screens"}
 HELP = {"classes": "Diagram klas UML: encje (klasy) z polami i relacjami. Krotność „1 → *” czytaj: "
                    "jeden rekord po lewej ma wiele po prawej.",
         "use_cases": "Diagram przypadków użycia UML: kto (aktor) korzysta z systemu i po co. «include» — przypadek "
@@ -22,12 +23,18 @@ HELP = {"classes": "Diagram klas UML: encje (klasy) z polami i relacjami. Krotno
         "states": "Diagram stanów UML: przez jakie statusy przechodzi rekord. Etykieta przejścia to warunek z bramki "
                   "na mapie; [*] — początek i koniec.",
         "rules": "Tabele decyzyjne (reguły biznesowe): dla każdej decyzji — warunek i wynik. Pełna tabela obejmuje "
-                 "wszystkie przypadki (np. wiersz „inaczej”)."}
+                 "wszystkie przypadki (np. wiersz „inaczej”).",
+        "c4": "Diagram kontekstu C4 (poziom 1): kto korzysta z systemu (osoby = role) i z jakimi systemami "
+              "zewnętrznymi się komunikuje (integracje, kanały powiadomień).",
+        "trace": "Macierz śledzenia wymagań: każdy krok mapy → co go realizuje w specyfikacji → przypadek użycia → "
+                 "scenariusze testów. Luka w wierszu to brakujący ekran albo test."}
 
 
 def _diagrams(section, spec, project) -> list[str]:
-    if section == "rules":
-        return []  # decision tables are tables, rendered in the template
+    if section in ("rules", "trace"):
+        return []  # tables, rendered in the template
+    if section == "c4":
+        return [c4_context(spec, project.name)]
     if section == "states":
         return [state_diagram(sm, spec) for sm in spec.states] or ['flowchart LR\n    EMPTY["Brak statusów"]\n']
     if section == "sequences":
@@ -47,8 +54,12 @@ def view(project_id):
         abort(400)
     spec = g.project_spec(project)
     ctx = {"project": project, "spec": spec, "section": section, "sections": DESIGN_SECTIONS,
-           "help": HELP[section], "edit_section": EDIT_SECTION[section], "diagrams": [], "issues": []}
+           "help": HELP[section], "edit_section": EDIT_SECTION[section], "diagrams": [], "issues": [], "trace": []}
     if spec is not None:
-        ctx.update(diagrams=_diagrams(section, spec, project),
-                   issues=[i for i in lint(spec) if SECTION_OF[i["code"]] == section])
+        graph = project.graph()
+        issues = [i for i in lint(spec) if SECTION_OF[i["code"]] == section]
+        if section == "trace":
+            ctx["trace"] = trace_rows(graph, spec)
+            issues += trace_issues(graph, spec)
+        ctx.update(diagrams=_diagrams(section, spec, project), issues=issues)
     return render_template("design/view.html", **ctx)

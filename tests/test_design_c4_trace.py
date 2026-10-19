@@ -40,3 +40,15 @@ def test_c4_context():
     assert 'System_Ext(x0, "Płatność online"' in out
     assert 'Rel(sys, x0, "Kwota, Metoda płatności, Status płatności")' in out
     assert 'System_Ext(ch_email, "Serwer poczty (e-mail)"' in out and 'Rel(sys, ch_email, "Powiadomienia")' in out
+
+
+def test_documents_include_c4_and_trace():
+    from app.design.uml import uml_md
+    from app.export.builders import to_markdown
+    from app.spec.package import acceptance_md, open_questions_md
+    g, spec = booking()
+    assert "## Kontekst systemu (C4)" in uml_md(META, spec) and "C4Context" in uml_md(META, spec)
+    acc = acceptance_md(g, spec)
+    assert "## Macierz śledzenia" in acc and "| Wybór usługi | Klient | Ekran: Wybór usługi |" in acc
+    assert "Klient podaje dane kontaktowe” nie ma ekranu" in open_questions_md(g, spec, [])
+    assert "### Macierz śledzenia" in to_markdown(META, g)

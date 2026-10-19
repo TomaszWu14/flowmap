@@ -4,6 +4,7 @@ import io
 import json
 import zipfile
 
+from ..design.trace import trace_issues, trace_rows
 from ..design.uml import state_diagram, uml_md
 from ..export.builders import FORMAT, _md, _mm, _test_paths, to_mermaid
 from ..flow.guard import report
@@ -138,11 +139,18 @@ def acceptance_md(graph, spec: Spec) -> str:
         out += [f"### Scenariusz {i}", f"- **Zakładając**, że {_md(steps[0]['title'])}",
                 *[f"- **Gdy** {_md(n['title'])}" for n in steps[1:-1]],
                 f"- **Wtedy** {_md(steps[-1]['title'])}", ""]
+    out += ["## Macierz śledzenia", "", "| Krok | Aktor | Realizacja | Przypadek użycia | Scenariusze |",
+            "|---|---|---|---|---|"]
+    out += [f"| {_md(r['step'])} | {_md(r['actor'])} | {_md('; '.join(r['realized_by'])) or '—'} | "
+            f"{_md(r['use_case']) or '—'} | {', '.join(map(str, r['tests'])) or '—'} |"
+            for r in trace_rows(graph, spec)]
+    out.append("")
     return "\n".join(out) + "\n"
 
 
 def open_questions_md(graph, spec: Spec, open_comments: list[str]) -> str:
     items = [i["message"] for i in report(graph)["issues"]] + [i["message"] for i in readiness(spec)["issues"]]
+    items += [i["message"] for i in trace_issues(graph, spec)]
     items += [f"Komentarz: {c}" for c in open_comments]
     return "# Otwarte pytania\n\n" + ("\n".join(f"- {_md(x)}" for x in items) or "- brak") + "\n"
 

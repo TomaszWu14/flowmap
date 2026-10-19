@@ -130,6 +130,7 @@ def uml_md(meta: dict, spec: Spec) -> str:
     names = {u.key: u.name for u in spec.use_cases}
     out = [f"# Projekt aplikacji (UML): {_md(meta['name'])}", "",
            "Diagramy wygenerowane z mapy procesu. Uwagi strażnika UML są na końcu i w `OPEN_QUESTIONS.md`.", "",
+           "## Kontekst systemu (C4)", "", "```mermaid", c4_context(spec, meta["name"]).rstrip(), "```", "",
            "## Przypadki użycia", "", "```mermaid", use_case_diagram(spec, meta["name"]).rstrip(), "```", ""]
     for u in spec.use_cases:
         out += [f"### {_md(u.name)}", "", f"- Aktor: {_md(roles.get(u.actor, 'System'))}",
