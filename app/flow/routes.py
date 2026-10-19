@@ -70,10 +70,19 @@ def open_questions(project) -> list[dict]:
     return out
 
 
-def _changed(project, description: str, node=None, **kw):
+def with_toast(resp, message: str, undo: bool = True):
+    """Add a "toast" event (shown by app.js, with an Undo button) to the response's HX-Trigger."""
+    events = json.loads(resp.headers.get("HX-Trigger") or "{}")
+    events["toast"] = {"message": message, "undo": undo}
+    resp.headers["HX-Trigger"] = json.dumps(events)
+    return resp
+
+
+def _changed(project, description: str, node=None, toast: bool = False, **kw):
     g.save_version(project, description)
     db.session.commit()
-    return render_panel(project, node, **kw)
+    resp = render_panel(project, node, **kw)
+    return with_toast(resp, description) if toast else resp
 
 
 @bp.get("/p/<int:project_id>")
@@ -178,7 +187,7 @@ def delete_node(project_id, key):
         return render_panel(project, node, error="Nie można usunąć kroku startowego.", focus_changed=False)
     title = node.title
     g.delete_node(project, node)
-    return _changed(project, f"Usunięto krok „{title}”")
+    return _changed(project, f"Usunięto krok „{title}”", toast=True)
 
 
 @bp.post("/p/<int:project_id>/node/<key>/connect")
@@ -194,7 +203,7 @@ def connect_node(project_id, key):
         if label and label not in node.data.get("branches", []):
             g.set_node_data(node, branches=list(node.data.get("branches", [])) + [label])
     g.add_edge(project, node, target, label)
-    return _changed(project, f"Połączono „{node.title}” → „{target.title}”", node)
+    return _changed(project, f"Połączono „{node.title}” → „{target.title}”", node, toast=True)
 
 
 @bp.post("/p/<int:project_id>/node/<key>/end")
@@ -208,7 +217,7 @@ def mark_end(project_id, key):
         return render_panel(project, node, focus_changed=False,
                             error="Ten krok ma kolejne kroki — usuń je albo dodaj koniec jako nowy krok.")
     node.type = "end"
-    return _changed(project, f"Oznaczono „{node.title}” jako koniec", node)
+    return _changed(project, f"Oznaczono „{node.title}” jako koniec", node, toast=True)
 
 
 @bp.post("/p/<int:project_id>/edge/<int:edge_id>/delete")
@@ -221,7 +230,7 @@ def delete_edge(project_id, edge_id):
     source = edge.source
     project.edges.remove(edge)
     db.session.delete(edge)
-    return _changed(project, f"Usunięto połączenie z „{source.title}”", source)
+    return _changed(project, f"Usunięto połączenie z „{source.title}”", source, toast=True)
 
 
 @bp.post("/p/<int:project_id>/edge/<int:edge_id>/insert")
@@ -243,7 +252,8 @@ def insert_on_edge(project_id, edge_id):
     g.add_edge(project, new, target)
     project.edges.remove(edge)
     db.session.delete(edge)
-    return _changed(project, f"Wstawiono „{new.title}” między „{source.title}” a „{target.title}”", new)
+    return _changed(project, f"Wstawiono „{new.title}” między „{source.title}” a „{target.title}”", new,
+                    toast=True)
 
 
 @bp.post("/p/<int:project_id>/undo")
@@ -320,7 +330,7 @@ def _guard_response(project, description: str):
     db.session.commit()
     resp = make_response(_guard_html(project))
     resp.headers["HX-Trigger"] = json.dumps({"mapChanged": {"focus": ""}})
-    return resp
+    return with_toast(resp, description)
 
 
 @bp.post("/p/<int:project_id>/guard/fix")
@@ -448,7 +458,7 @@ def guard_fill_apply(project_id):
     resp = make_response(_guard_html(project, fill=items, fill_log=log, fill_note=note, fill_done=done)
                          if left else _guard_html(project, fill_note=note))
     resp.headers["HX-Trigger"] = json.dumps({"mapChanged": {"focus": ""}})
-    return resp
+    return with_toast(resp, f"AI uzupełniło gałęzie: {added}")
 
 
 @bp.post("/p/<int:project_id>/guard/apply")
@@ -469,7 +479,7 @@ def guard_apply(project_id):
     question = Question(kind="next", node_key=node.key, text=s["problem"], options=[option])
     created = q.apply_option(project, node, question, option)
     log.answer = (log.answer + f"{idx};")[:1000]
-    return _changed(project, f"Dodano wyjątek: {s['problem']}", created[-1] if created else node)
+    return _changed(project, f"Dodano wyjątek: {s['problem']}", created[-1] if created else node, toast=True)
 
 
 # --- simulation -----------------------------------------------------------------
