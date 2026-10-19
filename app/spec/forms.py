@@ -108,4 +108,7 @@ def form_text(section: str, item) -> dict:
                 "statuses": "\n".join(f"{s.name} | {'start' if s.initial else 'koniec' if s.final else '-'}"
                                       for s in item.statuses),
                 "transitions": "\n".join(f"{t.from_status} | {t.to_status}" for t in item.transitions)}
+    if section == "integrations":
+        return {"name": item.name, "direction": item.direction, "data": ", ".join(item.data),
+                "on_error": item.on_error}
     return item.model_dump()

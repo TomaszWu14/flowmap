@@ -1,13 +1,15 @@
 """Technical specification document stored as JSON in Project.spec."""
 
 import secrets
+import typing
 from typing import Literal
 
 from pydantic import BaseModel
 from pydantic import Field as PField
 
-FIELD_TYPES = ("text", "long_text", "integer", "decimal", "money", "boolean", "date", "datetime", "email",
-               "phone", "enum", "file", "reference")
+FieldType = Literal["text", "long_text", "integer", "decimal", "money", "boolean", "date", "datetime", "email",
+                    "phone", "enum", "file", "reference"]
+FIELD_TYPES = typing.get_args(FieldType)
 FIELD_TYPE_LABELS = {
     "text": "tekst", "long_text": "długi tekst", "integer": "liczba całkowita", "decimal": "liczba dziesiętna",
     "money": "kwota", "boolean": "tak/nie", "date": "data", "datetime": "data i godzina", "email": "e-mail",
@@ -18,9 +20,12 @@ CHANNEL_LABELS = {"email": "e-mail", "sms": "SMS", "push": "push", "in_app": "w 
 DIRECTION_LABELS = {"out": "wychodząca", "in": "przychodząca", "both": "dwukierunkowa"}
 NFR_LABELS = {"security": "bezpieczeństwo", "performance": "wydajność", "privacy": "prywatność (RODO)",
               "accessibility": "dostępność", "other": "inne"}
+KIND_LABELS = {
+    "set_field_type": "zmiana typu pola", "add_field": "nowe pole", "add_relation": "nowa relacja",
+    "add_status": "nowy status", "add_transition": "nowe przejście", "set_permission": "uprawnienie",
+    "add_notification": "powiadomienie", "add_nfr": "wymaganie", "other_note": "uwaga",
+}
 SECTIONS = ("entities", "screens", "roles", "states", "notifications", "integrations", "nfr")
-FieldType = Literal["text", "long_text", "integer", "decimal", "money", "boolean", "date", "datetime", "email",
-                    "phone", "enum", "file", "reference"]
 Source = Literal["rules", "ai", "manual"]
 Perm = Literal["all", "own", "none"]
 
@@ -136,6 +141,7 @@ class Spec(BaseModel):
     nfr: list[Nfr] = []
     stack: str = PField(default="", max_length=200)
     proposals: list[Proposal] = []
+    dismissed: list[str] = []
 
     def find(self, key: str):
         for section in SECTIONS:

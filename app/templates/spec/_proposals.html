@@ -5,7 +5,7 @@
   <ul class="issue-list">
     {% for x in spec.proposals %}
     <li class="suggestion"><strong>{{ x.summary }}</strong>
-      <span class="muted">{{ x.kind }}{% if x.target_key %} · {{ x.target_key }}{% endif %}</span>
+      <span class="muted">{{ kind_labels.get(x.kind, x.kind) }}{% if x.target_key %} · {{ names.get(x.target_key, x.target_key) }}{% endif %}</span>
       {% if can_edit %}<div class="row">
         {% for action, label in [('accept', 'Zatwierdź'), ('reject', 'Odrzuć')] %}
         <form method="post" action="{{ url_for('spec.proposal_action', project_id=project.id, pid=x.id, action=action) }}">

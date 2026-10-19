@@ -12,6 +12,8 @@ from .schema import Field, Nfr, Notification, Proposal, Relation, Spec, Status, 
 
 KINDS = ["set_field_type", "add_field", "add_relation", "add_status", "add_transition", "set_permission",
          "add_notification", "add_nfr", "other_note"]
+KIND_SECTIONS = {"set_field_type": ("entities",), "add_field": ("entities",), "add_relation": ("entities",),
+                 "add_status": ("states",), "add_transition": ("states",), "set_permission": ("roles",)}
 PATCH_KEYS = ["field", "type", "name", "required", "to_entity", "kind", "label", "final", "from", "to", "entity",
               "read", "create", "update", "delete", "trigger", "channel", "recipient_role", "category", "text"]
 _PATCH = _obj({k: ({"type": "boolean"} if k in ("required", "final") else {"type": "string"}) for k in PATCH_KEYS})
@@ -61,6 +63,8 @@ def apply_proposal(spec: Spec, proposal: Proposal) -> Spec:
         _sec, item = spec.find(proposal.target_key)
         if item is None:
             raise ValueError("Propozycja jest nieaktualna — element, którego dotyczy, już nie istnieje.")
+        if kind in KIND_SECTIONS and _sec not in KIND_SECTIONS[kind]:
+            raise ValueError("Propozycja AI wskazuje niewłaściwy element — odrzuć ją.")
         if kind == "set_field_type":
             field = next((f for f in item.fields if f.name == p.get("field")), None)
             if field is None:
