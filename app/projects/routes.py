@@ -208,7 +208,7 @@ def version_graph(project_id, version_id):
     status = {}
     if request.args.get("od", type=int):
         status = node_status(diff_graphs(_version(project, request.args.get("od", type=int)).snapshot, graph))
-    payload = graph_payload(graph)
+    payload = graph_payload(graph, display=project.display)
     for n in payload["nodes"]:
         n["diff"] = status.get(n["key"], "")
     return payload

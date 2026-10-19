@@ -48,5 +48,7 @@ def copy_project(project: Project, owner) -> Project:
     graph = project.graph()
     if project.spec is not None:
         graph = graph | {"spec": project.spec}
-    return project_from_graph(owner, f"{project.name} (kopia)", project.start_sentence, project.mode,
+    copy = project_from_graph(owner, f"{project.name} (kopia)", project.start_sentence, project.mode,
                               project.template, graph, "Kopia projektu")
+    copy.display = project.display  # swimlane order and icons travel with the copy
+    return copy

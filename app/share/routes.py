@@ -123,7 +123,8 @@ def view(token):
 
 @bp.get("/s/<token>/graph.json")
 def graph_json(token):
-    return graph_payload(_shared(token).graph())
+    project = _shared(token)
+    return graph_payload(project.graph(), display=project.display)
 
 
 @bp.get("/s/<token>/symulacja")
