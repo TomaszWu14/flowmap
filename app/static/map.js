@@ -318,6 +318,16 @@
     });
   }
 
+  function openNode(node) {
+    if (!cfg.panelUrl) return;
+    selected = node.id();
+    cy.nodes().removeClass("focus");
+    node.addClass("focus");
+    window.htmx.ajax("GET", cfg.panelUrl + "?node=" + encodeURIComponent(selected), { target: "#panel-body", swap: "innerHTML" });
+    const panel = document.getElementById("panel");
+    if (panel) panel.classList.remove("collapsed");
+  }
+
   cy.on("tap", "node", (ev) => openNode(ev.target));
 
   // Search: highlight matching steps, Enter jumps to the next one and opens it.
