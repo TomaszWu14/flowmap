@@ -64,9 +64,22 @@ def test_markdown_escapes_user_text_and_lists_open_questions():
     assert "Przypomnienie dzień przed wizytą" in md.split("## 8. Otwarte pytania")[1]
 
 
-def test_entities_derived_from_inputs():
-    ents = builders.derive_entities(full_graph("booking"))
-    assert "Telefon" in ents["Klient"] and "Zdarzenie" in ents
+def test_data_model_comes_from_spec_layer(auth_client):
+    from app.models import Project
+    from app.spec.schema import load_spec
+    from tests.test_projects import new_project
+    p = new_project(auth_client)
+    key = load_spec(Project.query.get(p.id).spec).entities[0].key
+    auth_client.post(f"/p/{p.id}/specyfikacja/entities/{key}",
+                     data={"name": "Właściciel", "description": "", "fields": "Kwota | money | t", "relations": ""})
+    for url in (f"/p/{p.id}/eksport/spec.md", f"/p/{p.id}/eksport/prompt.md"):
+        md = auth_client.get(url).get_data(as_text=True).split("## 4. Model danych")[1].split("## 5.")[0]
+        assert "**Właściciel**: Kwota (kwota)" in md, url
+
+
+def test_example_data_model_derived_without_spec():
+    md = builders.to_markdown(META, full_graph("booking"))
+    assert "Telefon (telefon)" in md.split("## 4. Model danych")[1].split("## 5.")[0]
 
 
 def test_prompt_embeds_spec():

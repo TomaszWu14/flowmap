@@ -31,9 +31,9 @@ def _download(body: str, filename: str, mimetype: str) -> Response:
 def index(project_id):
     project = g.project_for(project_id, "view")
     graph = project.graph()
-    spec = builders.to_markdown(_meta(project), graph)
     target = request.args.get("target", "claude_code")
     project_spec = g.project_spec(project)
+    spec = builders.to_markdown(_meta(project), graph, project_spec)
     return render_template(
         "export/index.html", project=project, spec=spec, mermaid=builders.to_mermaid(graph),
         prompt=builders.to_prompt(_meta(project), spec, target), target=target, targets=builders.TARGETS,
@@ -49,13 +49,13 @@ def download(project_id, kind):
     graph = project.graph()
     meta = _meta(project)
     if kind == "spec.md":
-        return _download(builders.to_markdown(meta, graph), "specyfikacja.md", "text/markdown")
+        return _download(builders.to_markdown(meta, graph, g.project_spec(project)), "specyfikacja.md", "text/markdown")
     if kind == "diagram.mmd":
         return _download(builders.to_mermaid(graph), "diagram.mmd", "text/plain")
     if kind == "proces.bpmn":
         return _download(builders.to_bpmn(graph, project.name), "proces.bpmn", "application/xml")
     if kind == "prompt.md":
-        spec = builders.to_markdown(meta, graph)
+        spec = builders.to_markdown(meta, graph, g.project_spec(project))
         return _download(builders.to_prompt(meta, spec, request.args.get("target", "claude_code")),
                          "polecenie.md", "text/markdown")
     if kind == "projekt.json":
