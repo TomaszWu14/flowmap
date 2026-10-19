@@ -16,6 +16,8 @@ SAMPLE_FORM = {
     "nfr": {"category": "performance", "text": "t"},
     "use_cases": {"name": "U", "actor": "role:x", "goal": "g", "main": "a\nb",
                   "alternatives": "brak danych | popraw; wróć", "includes": "uc:system"},
+    "sequences": {"name": "S", "participants": "A\nB",
+                  "messages": "A | B | zamów | call\nB | A | ok | reply\nB | A | brak | error"},
 }
 
 
