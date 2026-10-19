@@ -204,6 +204,19 @@ class Attachment(db.Model):
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
 
 
+class Evaluation(db.Model):
+    """One trainer score (map or app design) for one user, kept as history."""
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"))
+    kind = db.Column(db.String(10), nullable=False)  # map | design
+    score = db.Column(db.Integer, nullable=False)
+    details = db.Column(db.JSON, nullable=False, default=dict)
+    source = db.Column(db.String(10), nullable=False, default="rules", server_default="rules")  # rules | mixed
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+
+
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.Integer, db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False, index=True)
