@@ -26,7 +26,7 @@ def _shared(token: str) -> Project:
 @login_required
 def settings(project_id):
     project = g.project_for(project_id, "owner")
-    return render_template("share/settings.html", project=project)
+    return render_template("share/settings.html", project=project, role_labels=g.ROLE_LABELS)
 
 
 @bp.post("/p/<int:project_id>/udostepnianie/link")

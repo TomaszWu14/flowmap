@@ -1,4 +1,5 @@
-"""Comments on map steps. Anyone with access (also viewers) can comment; editors resolve."""
+"""Comments on map steps. Anyone with access comments; editors resolve any, viewers only their own;
+authors delete their own, the owner deletes any."""
 
 import json
 

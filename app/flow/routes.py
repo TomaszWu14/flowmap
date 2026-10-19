@@ -31,13 +31,13 @@ def graph_payload(graph: dict, pending: set[str] | None = None, comments: dict[s
 
 
 def render_panel(project, node=None, kind=None, slot=None, error=None, focus_changed=True, status=200):
+    pending = q.pending_nodes(project)
     if node is None:
-        pending = q.pending_nodes(project)
         node = pending[0] if pending else None
     log, question = (None, None)
     if node is not None:
         log, question = q.current_question(project, node, kind, slot)
-    remaining = len(q.pending_nodes(project))
+    remaining = len(pending)
     if remaining == 0 and project.status != "complete":
         project.status = "complete"
         db.session.commit()

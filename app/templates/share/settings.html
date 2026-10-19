@@ -47,8 +47,7 @@
         <form method="post" action="{{ url_for('share.member_role', project_id=project.id, member_id=m.id) }}" class="row">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <select name="role" aria-label="Rola {{ m.user.email }}" style="width:auto;min-height:32px">
-            <option value="editor" {{ 'selected' if m.role == 'editor' }}>edytor</option>
-            <option value="viewer" {{ 'selected' if m.role == 'viewer' }}>podgląd</option>
+            {% for r in ('editor', 'viewer') %}<option value="{{ r }}" {{ 'selected' if m.role == r }}>{{ role_labels[r] }}</option>{% endfor %}
           </select>
           <button class="btn small" type="submit">Zmień</button>
         </form>
@@ -66,7 +65,7 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label style="flex:2;min-width:200px">E-mail <input type="email" name="email" required maxlength="255"></label>
     <label style="flex:1;min-width:120px">Rola
-      <select name="role"><option value="editor">edytor</option><option value="viewer">podgląd</option></select>
+      <select name="role">{% for r in ('editor', 'viewer') %}<option value="{{ r }}">{{ role_labels[r] }}</option>{% endfor %}</select>
     </label>
     <button class="btn primary" type="submit">Dodaj</button>
   </form>
