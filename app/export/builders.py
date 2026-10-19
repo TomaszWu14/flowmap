@@ -1,7 +1,6 @@
 """Exports built from a graph dict: Markdown spec, Mermaid, BPMN 2.0, generator prompt, project JSON."""
 
 import re
-import unicodedata
 import xml.etree.ElementTree as ET
 from collections import deque
 
@@ -175,29 +174,12 @@ def _md(text: str) -> str:
     return re.sub(r"([\\`*_{}\[\]<>#|])", r"\\\1", (text or "").replace("\n", " ")).strip()
 
 
-def _slug(text: str) -> str:
-    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
-    words = re.findall(r"[A-Za-z0-9]+", text)
-    return "".join(w.capitalize() for w in words[:3]) or "Dane"
+def to_markdown(meta: dict, graph: dict, spec=None) -> str:
+    """Readable spec. The data model comes from the spec layer (derived from the map when not given)."""
+    from ..spec.derive import derive
+    from ..spec.schema import FIELD_TYPE_LABELS
 
-
-def derive_entities(graph: dict) -> dict[str, list[str]]:
-    """Group data fields into entities by the actor/role that provides them, plus a process record."""
-    entities: dict[str, list[str]] = {}
-    for n in _ordered(graph):
-        fields = [f for f in n.get("inputs", []) if f]
-        if not fields:
-            continue
-        name = _slug(n["actor"]) if n.get("actor") and n["actor"] != "System" else "Rekord"
-        bucket = entities.setdefault(name, [])
-        bucket.extend(f for f in fields if f not in bucket)
-    outputs = [f for n in graph["nodes"] if n["type"] in ("automation", "integration") for f in n.get("outputs", [])]
-    if outputs:
-        entities.setdefault("Zdarzenie", list(dict.fromkeys(outputs)))
-    return entities
-
-
-def to_markdown(meta: dict, graph: dict) -> str:
+    spec = spec or derive(graph, meta)
     nodes = _ordered(graph)
     by_key = {n["key"]: n for n in nodes}
     rep = report(graph)
@@ -235,9 +217,11 @@ def to_markdown(meta: dict, graph: dict) -> str:
         out += ["Brak ekranów na mapie.", ""]
 
     out += ["## 4. Model danych", ""]
-    for entity, fields in derive_entities(graph).items():
-        out.append(f"- **{entity}**: " + ", ".join(_md(f) for f in fields))
-    out.append("- **Proces**: id, status, krok bieżący, data utworzenia, data zmiany")
+    for e in spec.entities:
+        fields = ", ".join(f"{_md(f.name)} ({FIELD_TYPE_LABELS[f.type]})" for f in e.fields)
+        out.append(f"- **{_md(e.name)}**: {fields}")
+    if not spec.entities:
+        out.append("- brak encji")
 
     out += ["", "## 5. Powiadomienia i integracje", ""]
     notif = [n for n in nodes if n["type"] in ("automation", "integration", "wait")]

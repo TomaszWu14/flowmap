@@ -118,8 +118,9 @@ def member_remove(project_id, member_id):
 def view(token):
     project = _shared(token)
     graph = project.graph()
-    return render_template("share/view.html", project=project, token=token,
-                           spec=builders.to_markdown(_meta(project), graph), mermaid=builders.to_mermaid(graph))
+    spec = builders.to_markdown(_meta(project), graph, g.project_spec(project))
+    return render_template("share/view.html", project=project, token=token, spec=spec,
+                           mermaid=builders.to_mermaid(graph))
 
 
 @bp.get("/s/<token>/graph.json")
