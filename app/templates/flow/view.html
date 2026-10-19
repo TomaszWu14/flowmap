@@ -22,9 +22,9 @@
         {% if not can_edit %}<span class="badge">tylko podgląd</span>{% endif %}
         {% if can_edit %}
         <button class="btn small" id="btn-undo" type="button" disabled
-                hx-post="{{ url_for('flow.undo', project_id=project.id) }}" hx-target="#panel-body">↶ Cofnij</button>
+                hx-post="{{ url_for('flow.undo', project_id=project.id) }}" hx-target="#panel-body" title="Cofnij" aria-label="Cofnij">↶</button>
         <button class="btn small" id="btn-redo" type="button" disabled
-                hx-post="{{ url_for('flow.redo', project_id=project.id) }}" hx-target="#panel-body">↷ Ponów</button>
+                hx-post="{{ url_for('flow.redo', project_id=project.id) }}" hx-target="#panel-body" title="Ponów" aria-label="Ponów">↷</button>
         <button class="btn small" type="button" hx-post="{{ url_for('flow.reset_layout', project_id=project.id) }}"
                 hx-swap="none" title="Ułóż mapę automatycznie">⤧ Ułóż</button>
         {% endif %}

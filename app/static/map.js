@@ -10,6 +10,7 @@
   const csrfMeta = document.querySelector('meta[name="csrf-token"]');
   const csrf = csrfMeta ? csrfMeta.content : "";
   let selected = null;
+  const MIN_READABLE_ZOOM = 0.8;
 
   const SHAPES = {
     start: "round-rectangle", end: "round-rectangle", decision: "diamond", screen: "rectangle",
@@ -101,9 +102,23 @@
       : { name: window.cytoscapeDagre ? "dagre" : "breadthfirst", rankDir: "TB", nodeSep: 40, rankSep: 60,
           fit: true, padding: 60, directed: true };
     cy.layout(layout).run();
-    if (cy.zoom() > 1.2) { cy.zoom(1.2); cy.center(); }
-    updateChrome(data);
     if (focus !== undefined) selected = focus || null;
+    if (cy.zoom() > 1.2) { cy.zoom(1.2); cy.center(); }
+    if (cy.zoom() < MIN_READABLE_ZOOM) {
+      // Whole map would shrink labels below ~9 px: stay readable, center on the step in focus.
+      const pending = data.nodes.find((n) => n.pending);
+      const start = data.nodes.find((n) => n.type === "start");
+      const key = selected || (pending && pending.key) || (start && start.key);
+      cy.zoom(MIN_READABLE_ZOOM);
+      const node = key && cy.getElementById(key);
+      if (node && node.length) {
+        // Process flows downward: keep the focused step high, the start step near the top edge.
+        const y = cy.height() * (start && key === start.key ? 0.12 : 0.25);
+        const pos = node.position();
+        cy.pan({ x: cy.width() / 2 - pos.x * MIN_READABLE_ZOOM, y: y - pos.y * MIN_READABLE_ZOOM });
+      }
+    }
+    updateChrome(data);
     cy.nodes().removeClass("focus");
     if (selected && cy.getElementById(selected).length) {
       const node = cy.getElementById(selected);
