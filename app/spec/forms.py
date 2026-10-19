@@ -5,6 +5,7 @@ from pydantic import ValidationError
 from .derive import slug
 from .schema import (
     FIELD_TYPES,
+    Alternative,
     Entity,
     Field,
     Integration,
@@ -17,11 +18,13 @@ from .schema import (
     StateMachine,
     Status,
     Transition,
+    UseCase,
     new_key,
 )
 
 PREFIX = {"entities": "entity", "screens": "screen", "roles": "role", "states": "states",
-          "notifications": "notification", "integrations": "integration", "nfr": "nfr"}
+          "notifications": "notification", "integrations": "integration", "nfr": "nfr",
+          "use_cases": "uc"}
 
 
 def _rows(text: str | None) -> list[list[str]]:
@@ -81,6 +84,12 @@ def item_from_form(section: str, form, existing):
                                data=[d.strip() for d in f("data").split(",") if d.strip()])
         if section == "nfr":
             return Nfr(**base, category=f("category") or "other", text=f("text"))
+        if section == "use_cases":
+            alts = [Alternative(condition=_col(r, 0), steps=[s.strip() for s in _col(r, 1).split(";") if s.strip()])
+                    for r in _rows(f("alternatives"))]
+            return UseCase(**base, name=f("name"), actor=f("actor"), goal=f("goal"),
+                           main=[r[0] for r in _rows(f("main"))], alternatives=alts,
+                           includes=[k.strip() for k in f("includes").split(",") if k.strip()])
     except ValidationError as exc:
         raise ValueError(f"Niepoprawne dane ({exc.error_count()} błędów): sprawdź wymagane pola i wartości.") from exc
     raise ValueError("Nieznana sekcja.")
@@ -111,4 +120,8 @@ def form_text(section: str, item) -> dict:
     if section == "integrations":
         return {"name": item.name, "direction": item.direction, "data": ", ".join(item.data),
                 "on_error": item.on_error}
+    if section == "use_cases":
+        return {"name": item.name, "actor": item.actor, "goal": item.goal, "main": "\n".join(item.main),
+                "alternatives": "\n".join(f"{a.condition} | {'; '.join(a.steps)}" for a in item.alternatives),
+                "includes": ", ".join(item.includes)}
     return item.model_dump()

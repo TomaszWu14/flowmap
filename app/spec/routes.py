@@ -16,7 +16,8 @@ from .schema import CHANNEL_LABELS, DIRECTION_LABELS, FIELD_TYPE_LABELS, KIND_LA
 
 bp = Blueprint("spec", __name__)
 SECTION_LABELS = {"entities": "Encje", "screens": "Ekrany", "roles": "Role", "states": "Statusy",
-                  "notifications": "Powiadomienia", "integrations": "Integracje", "nfr": "Wymagania (NFR)"}
+                  "notifications": "Powiadomienia", "integrations": "Integracje", "nfr": "Wymagania (NFR)",
+                  "use_cases": "Przypadki użycia"}
 FORM_FIELDS = {
     "entities": [("name", "Nazwa", "input"), ("description", "Opis", "textarea"),
                  ("fields", "Pola: nazwa | typ | wymagane t/n | walidacja | wartości | encja odwołania | id t/n",
@@ -37,6 +38,11 @@ FORM_FIELDS = {
                      ("data", "Dane (po przecinku)", "input"), ("on_error", "Co przy błędzie", "input")],
     "nfr": [("category", "Kategoria", NFR_LABELS),
             ("text", "Treść", "textarea")],
+    "use_cases": [("name", "Nazwa", "input"), ("actor", "Aktor (klucz roli; puste = system)", "input"),
+                  ("goal", "Cel (kiedy scenariusz się udał)", "input"),
+                  ("main", "Scenariusz główny (krok w linii)", "textarea"),
+                  ("alternatives", "Scenariusze alternatywne: warunek | krok; krok", "textarea"),
+                  ("includes", "«include» — klucze przypadków użycia po przecinku", "input")],
 }
 
 
@@ -95,9 +101,7 @@ def _save(project, spec, description: str) -> None:
 @login_required
 def view(project_id):
     project = g.project_for(project_id, "view")
-    if project.spec is None:
-        g.refresh_spec(project)
-        db.session.commit()
+    g.ensure_spec(project)
     section = request.args.get("sekcja", "entities")
     if section not in SECTIONS:
         abort(400)
@@ -162,6 +166,7 @@ def keep_item(project_id, section, key):
 @login_required
 def package(project_id):
     project = g.project_for(project_id, "view")
+    g.ensure_spec(project)
     spec = _spec_or_abort(project)
     comments = [c.body for c in Comment.query.filter_by(project_id=project.id, resolved=False).order_by(Comment.id)]
     images = Attachment.query.filter_by(project_id=project.id).order_by(Attachment.id).all()

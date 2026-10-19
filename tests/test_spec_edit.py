@@ -14,6 +14,8 @@ SAMPLE_FORM = {
     "notifications": {"trigger": "t", "channel": "sms", "recipient_role": "role:x", "summary": "s"},
     "integrations": {"name": "I", "direction": "in", "data": "a, b", "on_error": "retry"},
     "nfr": {"category": "performance", "text": "t"},
+    "use_cases": {"name": "U", "actor": "role:x", "goal": "g", "main": "a\nb",
+                  "alternatives": "brak danych | popraw; wróć", "includes": "uc:system"},
 }
 
 

@@ -8,7 +8,7 @@ from ..extensions import db
 from ..models import Edge, Node, Project, ProjectMember, Version, new_key
 from ..spec.derive import derive
 from ..spec.merge import merge
-from ..spec.schema import Spec, load_spec
+from ..spec.schema import SECTIONS, Spec, load_spec
 
 ERROR_CONDITION = "error"
 DEFAULT_ACTORS = {"automation": "System", "integration": "System", "wait": "System"}
@@ -142,6 +142,14 @@ def refresh_spec(project: Project) -> None:
     """
     current = project_spec(project) if project.spec else None
     project.spec = merge(current, derive(project.graph(), project.meta)).model_dump(mode="json")
+
+
+def ensure_spec(project: Project) -> None:
+    """Derive the spec for projects saved before it (or before a newer section) existed. Broken specs stay."""
+    if project.spec is None or (project_spec(project) is not None
+                                and any(s not in project.spec for s in SECTIONS)):
+        refresh_spec(project)
+        db.session.commit()
 
 
 # --- versions -------------------------------------------------------------

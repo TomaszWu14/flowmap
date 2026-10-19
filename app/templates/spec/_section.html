@@ -36,6 +36,11 @@
     <p>{{ channel_labels[item.channel] }} → {{ names.get(item.recipient_role, item.recipient_role) if item.recipient_role else '—' }}</p>
   {% elif section == 'integrations' %}
     <p>Kierunek: {{ direction_labels[item.direction] }} · Dane: {{ item.data|join(', ') or '—' }} · Błąd: {{ item.on_error or '—' }}</p>
+  {% elif section == 'use_cases' %}
+    <p class="muted">Aktor: {{ names.get(item.actor, item.actor) if item.actor else 'System' }} · Cel: {{ item.goal or '—' }}</p>
+    <ol>{% for s in item.main %}<li>{{ s }}</li>{% endfor %}</ol>
+    {% for a in item.alternatives %}<p><span class="badge" title="Scenariusz alternatywny — w UML «extend»">wariant</span> {{ a.condition }}: {{ a.steps|join(' → ') or '—' }}</p>{% endfor %}
+    {% if item.includes %}<p class="muted" title="«include» — ten przypadek zawsze wywołuje wskazany">«include»: {% for k in item.includes %}{{ names.get(k, k) }}{{ ', ' if not loop.last }}{% endfor %}</p>{% endif %}
   {% elif section == 'nfr' %}
     <p class="muted">{{ nfr_labels[item.category] }}</p>
   {% endif %}
