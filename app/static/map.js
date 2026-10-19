@@ -10,6 +10,7 @@
   const csrfMeta = document.querySelector('meta[name="csrf-token"]');
   const csrf = csrfMeta ? csrfMeta.content : "";
   let selected = null;
+  let lastData = { nodes: [], edges: [] };
   const MIN_READABLE_ZOOM = 0.8;
 
   const SHAPES = {
@@ -38,6 +39,13 @@
       { selector: "node.diff-changed", style: { "background-color": css("--warn"), "background-opacity": 0.28, "border-width": 3 } },
       { selector: "node.dim", style: { "opacity": 0.25 } },
       { selector: "node.match", style: { "border-width": 4, "border-color": css("--accent") } },
+      { selector: ".play-dim", style: { "opacity": 0.3 } },
+      { selector: "node.play-visited", style: { "border-color": css("--accent"), "border-width": 3 } },
+      { selector: "node.play-current", style: { "border-width": 5, "underlay-color": css("--accent"),
+        "underlay-opacity": 0.25, "underlay-padding": 10 } },
+      { selector: "edge.play-edge", style: { "width": 3.5, "line-color": css("--accent"), "target-arrow-color": css("--accent") } },
+      { selector: "node.token", style: { "shape": "ellipse", "width": 18, "height": 18, "background-color": css("--accent"),
+        "border-width": 3, "border-color": css("--surface"), "label": "", "events": "no", "z-index": 99 } },
       { selector: "node.focus", style: { "overlay-color": css("--accent"), "overlay-opacity": 0.16, "overlay-padding": 6 } },
       { selector: "edge", style: {
         "width": 1.6, "line-color": css("--muted"), "target-arrow-color": css("--muted"), "target-arrow-shape": "triangle",
@@ -121,6 +129,8 @@
       }
     }
     updateChrome(data);
+    lastData = data;
+    document.dispatchEvent(new CustomEvent("flowmap:loaded"));
     cy.nodes().removeClass("focus");
     if (selected && cy.getElementById(selected).length) {
       const node = cy.getElementById(selected);
@@ -222,6 +232,7 @@
     });
   }
 
+  window.flowMap = { cy, data: () => lastData, minZoom: MIN_READABLE_ZOOM };  // used by player.js
   document.body.addEventListener("mapChanged", (ev) => load(ev.detail ? ev.detail.focus : undefined));
   load();
 })();
