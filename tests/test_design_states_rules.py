@@ -50,3 +50,16 @@ def test_rule_guard_gap_and_overlap():
     assert codes(["kwota > 1000", "inaczej"]) == set()
     assert "rule_gap" in codes(["kwota > 1000", "kwota < 100"])
     assert "rule_overlap" in codes(["VIP", "vip ", "inaczej"])
+
+
+def test_state_diagram_and_documents():
+    from app.design.uml import state_diagram, uml_md
+    from app.export.builders import to_markdown
+    from app.spec.package import data_model_md
+    spec = derive(full_graph("booking"), META)
+    out = state_diagram(spec.states[0], spec)
+    assert out.startswith("stateDiagram-v2\n") and "S0 --> S1 : Czy termin jest wolny? — tak" in out
+    assert "S0 --> S1 : Czy termin jest wolny? — tak" in data_model_md(spec)
+    md = uml_md(META, spec)
+    assert "## Stany" in md and "## Reguły biznesowe" in md and "| tak | Klient podaje dane kontaktowe |" in md
+    assert "### Reguły decyzyjne" in to_markdown(META, full_graph("booking"))
