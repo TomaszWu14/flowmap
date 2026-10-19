@@ -94,6 +94,7 @@ class Status(BaseModel):
 class Transition(BaseModel):
     from_status: str
     to_status: str
+    condition: str = PField(default="", max_length=300)
     node_key: str = ""
     role: str = ""
 

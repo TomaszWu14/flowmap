@@ -77,7 +77,8 @@ def item_from_form(section: str, form, existing):
         if section == "states":
             statuses = [Status(name=_col(r, 0), initial=_col(r, 1) == "start", final=_col(r, 1) == "koniec")
                         for r in _rows(f("statuses"))]
-            transitions = [Transition(from_status=_col(r, 0), to_status=_col(r, 1)) for r in _rows(f("transitions"))]
+            transitions = [Transition(from_status=_col(r, 0), to_status=_col(r, 1), condition=_col(r, 2))
+                           for r in _rows(f("transitions"))]
             return StateMachine(**base, entity=f("entity"), statuses=statuses, transitions=transitions)
         if section == "notifications":
             return Notification(**base, trigger=f("trigger"), channel=f("channel") or "email",
@@ -127,7 +128,7 @@ def form_text(section: str, item) -> dict:
         return {"entity": item.entity,
                 "statuses": "\n".join(f"{s.name} | {'start' if s.initial else 'koniec' if s.final else '-'}"
                                       for s in item.statuses),
-                "transitions": "\n".join(f"{t.from_status} | {t.to_status}" for t in item.transitions)}
+                "transitions": "\n".join(f"{t.from_status} | {t.to_status} | {t.condition}" for t in item.transitions)}
     if section == "integrations":
         return {"name": item.name, "direction": item.direction, "data": ", ".join(item.data),
                 "on_error": item.on_error}

@@ -40,7 +40,7 @@ FORM_FIELDS = {
                "(all = wszystkie, own = tylko swoje, none = brak)",
                "textarea")],
     "states": [("entity", "Encja (klucz)", "input"), ("statuses", "Statusy: nazwa | start/koniec/-", "textarea"),
-               ("transitions", "Przejścia: z | do", "textarea")],
+               ("transitions", "Przejścia: z | do | warunek", "textarea")],
     "notifications": [("trigger", "Zdarzenie", "input"), ("channel", "Kanał", CHANNEL_LABELS),
                       ("recipient_role", "Odbiorca (klucz roli)", "input"), ("summary", "Treść w skrócie", "input")],
     "integrations": [("name", "System", "input"), ("direction", "Kierunek", DIRECTION_LABELS),

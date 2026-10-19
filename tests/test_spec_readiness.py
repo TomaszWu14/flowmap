@@ -35,7 +35,7 @@ def test_each_rule():
         notifications=[Notification(key="n", trigger="t")], integrations=[Integration(key="i", name="I")],
         proposals=[Proposal(id="p", kind="other_note", summary="x")],
     )
-    assert codes(spec) == ["bad_relation", "enum_without_values", "integration_without_error",
+    assert codes(spec) == ["bad_relation", "dead_end_status", "enum_without_values", "integration_without_error",
                            "no_identifier", "notification_without_recipient", "open_proposal",
                            "role_without_permissions", "role_without_use_case", "screen_without_role",
                            "states_without_initial_or_final"]

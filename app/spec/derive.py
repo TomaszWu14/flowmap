@@ -94,14 +94,13 @@ def derive(graph: dict, meta: dict) -> Spec:
             before = current
             for e in graph["edges"]:
                 if e["source"] == n["key"] and e.get("label"):
-                    if NEGATIVE_LABEL.match(e["label"]):
-                        name = "odrzucony"
-                        _add_status(statuses, name)
-                        transitions.append(Transition(from_status=before, to_status=name, node_key=n["key"]))
-                    else:
-                        name = "zatwierdzony"
-                        _add_status(statuses, name)
-                        transitions.append(Transition(from_status=before, to_status=name, node_key=n["key"]))
+                    negative = bool(NEGATIVE_LABEL.match(e["label"]))
+                    name = "odrzucony" if negative else "zatwierdzony"
+                    _add_status(statuses, name, final=negative)
+                    if before != name:
+                        transitions.append(Transition(from_status=before, to_status=name, node_key=n["key"],
+                                                      condition=f"{n['title']} — {e['label']}"[:300]))
+                    if not negative:
                         current = name
         elif n["type"] == "end":
             name = n["title"][:60].lower()

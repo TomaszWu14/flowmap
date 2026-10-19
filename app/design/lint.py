@@ -4,11 +4,12 @@ from ..spec.schema import Spec
 
 WEIGHTS = {"nn_without_join": 5, "island_entity": 3, "reference_without_relation": 3,
            "role_without_use_case": 3, "use_case_without_goal": 3, "use_case_without_alternative": 2,
-           "integration_without_error_message": 4, "idle_participant": 2}
+           "integration_without_error_message": 4, "idle_participant": 2,
+           "unreachable_status": 4, "dead_end_status": 3}
 SECTION_OF = {"nn_without_join": "classes", "island_entity": "classes", "reference_without_relation": "classes",
               "role_without_use_case": "use_cases", "use_case_without_goal": "use_cases",
               "use_case_without_alternative": "use_cases", "integration_without_error_message": "sequences",
-              "idle_participant": "sequences"}
+              "idle_participant": "sequences", "unreachable_status": "states", "dead_end_status": "states"}
 
 
 def _i(code, message, key, why):
@@ -79,4 +80,24 @@ def lint(spec: Spec) -> list[dict]:
                                  "nie ma ścieżki błędu.", s.key,
                                  "System zewnętrzny może nie odpowiedzieć albo odmówić — pokaż w sekwencji, "
                                  "co wtedy dzieje się z procesem (blok alt)."))
+    for sm in spec.states:
+        nxt: dict[str, set[str]] = {}
+        for t in sm.transitions:
+            nxt.setdefault(t.from_status, set()).add(t.to_status)
+        reach = {s.name for s in sm.statuses if s.initial}
+        todo = list(reach)
+        while todo:
+            for b in nxt.get(todo.pop(), ()):
+                if b not in reach:
+                    reach.add(b)
+                    todo.append(b)
+        for s in sm.statuses:
+            if reach and s.name not in reach:
+                issues.append(_i("unreachable_status", f"Status „{s.name}” jest nieosiągalny ze stanu początkowego.",
+                                 sm.key, "Do statusu nie prowadzi żadne przejście — rekord nigdy go nie osiągnie. "
+                                 "Dodaj przejście albo usuń status."))
+            elif not s.final and not nxt.get(s.name):
+                issues.append(_i("dead_end_status", f"Status „{s.name}” nie ma wyjścia, a nie jest końcowy.", sm.key,
+                                 "Rekord utknie w tym statusie na zawsze. Oznacz go jako końcowy albo dodaj "
+                                 "przejście dalej."))
     return issues
