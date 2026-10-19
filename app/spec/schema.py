@@ -25,7 +25,7 @@ KIND_LABELS = {
     "add_status": "nowy status", "add_transition": "nowe przejście", "set_permission": "uprawnienie",
     "add_notification": "powiadomienie", "add_nfr": "wymaganie", "other_note": "uwaga",
 }
-SECTIONS = ("entities", "screens", "roles", "states", "notifications", "integrations", "nfr")
+SECTIONS = ("entities", "screens", "roles", "states", "notifications", "integrations", "nfr", "use_cases")
 Source = Literal["rules", "ai", "manual"]
 Perm = Literal["all", "own", "none"]
 
@@ -123,6 +123,20 @@ class Nfr(Item):
     text: str = PField(min_length=1, max_length=500)
 
 
+class Alternative(BaseModel):
+    condition: str = PField(min_length=1, max_length=300)
+    steps: list[str] = []
+
+
+class UseCase(Item):
+    name: str = PField(min_length=1, max_length=200)
+    actor: str = ""  # role key; empty = included use case run by the system
+    goal: str = PField(default="", max_length=300)
+    main: list[str] = []
+    alternatives: list[Alternative] = []
+    includes: list[str] = []  # keys of other use cases
+
+
 class Proposal(BaseModel):
     id: str
     kind: str
@@ -139,6 +153,7 @@ class Spec(BaseModel):
     notifications: list[Notification] = []
     integrations: list[Integration] = []
     nfr: list[Nfr] = []
+    use_cases: list[UseCase] = []
     stack: str = PField(default="", max_length=200)
     proposals: list[Proposal] = []
     dismissed: list[str] = []
