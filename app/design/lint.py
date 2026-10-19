@@ -2,7 +2,11 @@
 
 from ..spec.schema import Spec
 
-WEIGHTS = {"nn_without_join": 5, "island_entity": 3, "reference_without_relation": 3}
+WEIGHTS = {"nn_without_join": 5, "island_entity": 3, "reference_without_relation": 3,
+           "role_without_use_case": 3, "use_case_without_goal": 3, "use_case_without_alternative": 2}
+SECTION_OF = {"nn_without_join": "classes", "island_entity": "classes", "reference_without_relation": "classes",
+              "role_without_use_case": "use_cases", "use_case_without_goal": "use_cases",
+              "use_case_without_alternative": "use_cases"}
 
 
 def _i(code, message, key, why):
@@ -42,4 +46,20 @@ def lint(spec: Spec) -> list[dict]:
                                  f"„{names[f.ref_entity]}”, ale brak relacji.", e.key,
                                  "Pole-odwołanie to klucz obcy; relacja z krotnością mówi, ile rekordów może "
                                  "się wiązać — bez niej model jest niepełny."))
+    acting = {u.actor for u in spec.use_cases}
+    for r in spec.roles:
+        if r.key not in acting and r.name.strip().lower() != "administrator":
+            issues.append(_i("role_without_use_case", f"Rola „{r.name}” nie ma przypadku użycia.", r.key,
+                             "Każdy aktor korzysta z systemu po coś — rola bez przypadku użycia to zwykle "
+                             "zbędna rola albo pominięta funkcja."))
+    for u in spec.use_cases:
+        if not u.goal.strip():
+            issues.append(_i("use_case_without_goal", f"Przypadek użycia „{u.name}” nie ma celu.", u.key,
+                             "Cel mówi, kiedy scenariusz się udał (wartość dla aktora) — bez niego nie da się "
+                             "napisać testu akceptacyjnego."))
+        if u.actor and not u.alternatives:
+            issues.append(_i("use_case_without_alternative", f"Przypadek użycia „{u.name}” nie ma scenariusza "
+                             "alternatywnego.", u.key,
+                             "W prawdziwych procesach coś idzie inaczej (brak danych, odmowa, błąd systemu) — "
+                             "opisz co najmniej jeden wyjątek."))
     return issues

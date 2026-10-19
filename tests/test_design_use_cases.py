@@ -2,6 +2,7 @@ from app.ai.templates import TEMPLATES, full_graph
 from app.design.derive import main_path, use_cases
 from app.design.lint import lint
 from app.spec.derive import derive
+from app.spec.schema import Role, Spec, UseCase
 
 META = {"name": "Salon", "start_sentence": "Klient chce umówić wizytę"}
 
@@ -38,3 +39,13 @@ def test_every_template_gets_use_cases_without_role_or_goal_warnings():
         assert spec.use_cases, key
         bad = [i for i in lint(spec) if i["code"] in ("role_without_use_case", "use_case_without_goal")]
         assert not bad, (key, bad)
+
+
+def test_use_case_guard():
+    spec = Spec(roles=[Role(key="role:k", name="Kierownik"), Role(key="role:administrator", name="Administrator")],
+                use_cases=[UseCase(key="uc:a", name="A", actor="role:x"), UseCase(key="uc:s", name="S", goal="g")])
+    codes = {(i["code"], i["target_key"]) for i in lint(spec)}
+    assert ("role_without_use_case", "role:k") in codes
+    assert ("role_without_use_case", "role:administrator") not in codes
+    assert ("use_case_without_goal", "uc:a") in codes and ("use_case_without_alternative", "uc:a") in codes
+    assert ("use_case_without_alternative", "uc:s") not in codes  # included (system) use case
