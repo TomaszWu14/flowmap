@@ -42,3 +42,22 @@ def test_sequence_guard():
     spec.sequences[0].messages.append(Message(source="Bank", target="A", text="odmowa", kind="error"))
     spec.sequences[0].participants.remove("Nikt")
     assert not [c for c in lint(spec) if c["target_key"] == "s"]
+
+
+def test_sequence_diagram_mermaid():
+    from app.design.uml import sequence_diagram
+    spec = derive(full_graph("booking"), META)
+    out = sequence_diagram(spec.sequences[0], spec)
+    assert out.startswith("sequenceDiagram\n")
+    assert "actor P0 as Klient" in out and "participant P1 as Płatność online" in out
+    assert "P0->>P1: Kwota, Metoda płatności" in out and "P1-->>P0: Status płatności" in out
+    assert "alt" in out and "else brak płatności" in out and "P1--xP0: brak płatności" in out
+    assert "P2-)P0: Wysłanie potwierdzenia rezerwacji" in out
+
+
+def test_sequence_in_uml_md_and_markdown_export():
+    from app.design.uml import uml_md
+    from app.export.builders import to_markdown
+    assert "## Sekwencje" in uml_md(META, derive(full_graph("booking"), META))
+    md = to_markdown(META, full_graph("booking"))
+    assert "### Sekwencja (ścieżka główna)" in md and "Klient → Płatność online: Kwota, Metoda płatności" in md

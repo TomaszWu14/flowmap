@@ -5,19 +5,26 @@ from flask_login import login_required
 
 from ..flow import graph as g
 from .lint import SECTION_OF, lint
-from .uml import class_diagram, use_case_diagram
+from .uml import class_diagram, sequence_diagram, use_case_diagram
 
 bp = Blueprint("design", __name__)
-DESIGN_SECTIONS = {"classes": "Klasy", "use_cases": "Przypadki użycia"}
-EDIT_SECTION = {"classes": "entities", "use_cases": "use_cases"}
+DESIGN_SECTIONS = {"classes": "Klasy", "use_cases": "Przypadki użycia", "sequences": "Sekwencje"}
+EDIT_SECTION = {"classes": "entities", "use_cases": "use_cases", "sequences": "sequences"}
 HELP = {"classes": "Diagram klas UML: encje (klasy) z polami i relacjami. Krotność „1 → *” czytaj: "
                    "jeden rekord po lewej ma wiele po prawej.",
         "use_cases": "Diagram przypadków użycia UML: kto (aktor) korzysta z systemu i po co. «include» — przypadek "
-                     "zawsze wywołuje inny; «extend» — wariant lub wyjątek rozszerzający scenariusz."}
+                     "zawsze wywołuje inny; «extend» — wariant lub wyjątek rozszerzający scenariusz.",
+        "sequences": "Diagram sekwencji UML: kto komu i w jakiej kolejności przekazuje sprawę. Pełna strzałka — "
+                     "wywołanie, przerywana — odpowiedź, otwarta — komunikat asynchroniczny, krzyżyk — błąd; "
+                     "blok alt pokazuje ścieżkę błędu."}
 
 
-def _diagram(section, spec, project) -> str:
-    return use_case_diagram(spec, project.name) if section == "use_cases" else class_diagram(spec)
+def _diagrams(section, spec, project) -> list[str]:
+    if section == "sequences":
+        return [sequence_diagram(s, spec) for s in spec.sequences] or ['flowchart LR\n    EMPTY["Brak sekwencji"]\n']
+    if section == "use_cases":
+        return [use_case_diagram(spec, project.name)]
+    return [class_diagram(spec)]
 
 
 @bp.get("/p/<int:project_id>/projekt-aplikacji")
@@ -30,8 +37,8 @@ def view(project_id):
         abort(400)
     spec = g.project_spec(project)
     ctx = {"project": project, "spec": spec, "section": section, "sections": DESIGN_SECTIONS,
-           "help": HELP[section], "edit_section": EDIT_SECTION[section], "diagram": "", "issues": []}
+           "help": HELP[section], "edit_section": EDIT_SECTION[section], "diagrams": [], "issues": []}
     if spec is not None:
-        ctx.update(diagram=_diagram(section, spec, project),
+        ctx.update(diagrams=_diagrams(section, spec, project),
                    issues=[i for i in lint(spec) if SECTION_OF[i["code"]] == section])
     return render_template("design/view.html", **ctx)

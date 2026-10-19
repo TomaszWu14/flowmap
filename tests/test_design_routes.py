@@ -52,3 +52,10 @@ def test_use_cases_section_on_design_tab(auth_client):
     play_to_end(auth_client, p)
     html = auth_client.get(f"/p/{p.id}/projekt-aplikacji?sekcja=use_cases").get_data(as_text=True)
     assert "flowchart LR" in html and "Przypadki użycia" in html and "sekcja=use_cases" in html
+
+
+def test_sequences_section_on_design_tab(auth_client):
+    p = new_project(auth_client)
+    play_to_end(auth_client, p)
+    html = auth_client.get(f"/p/{p.id}/projekt-aplikacji?sekcja=sequences").get_data(as_text=True)
+    assert "sequenceDiagram" in html and "Sekwencje" in html
