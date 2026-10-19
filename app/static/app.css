@@ -205,12 +205,12 @@ details > form, details > div { margin-top: .6rem; display: grid; gap: .6rem; }
 .spec-nav a.active { background: var(--accent-soft); font-weight: 700; }
 .spec-card { margin-bottom: .8rem; }
 .spec-card.stale { opacity: .55; }
-.design-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 1rem; align-items: start; }
+.design-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
 .design-preview { margin: 0; overflow-x: auto; }
-.design-preview svg { max-width: 100%; height: auto; }
+.design-preview pre.mermaid { margin: 0; background: none; }
 .design-issue summary { cursor: pointer; }
 .design-issue p { margin: .4rem 0 0; }
-@media (max-width: 900px) { .design-grid { grid-template-columns: minmax(0, 1fr); } .spec-layout { grid-template-columns: minmax(0, 1fr); } .spec-nav { display: flex; overflow-x: auto; position: static; } .spec-nav a { flex: 0 0 auto; } }
+@media (max-width: 900px) { .spec-layout { grid-template-columns: minmax(0, 1fr); } .spec-nav { display: flex; overflow-x: auto; position: static; } .spec-nav a { flex: 0 0 auto; } }
 
 /* simulation */
 .sim { display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 1fr) 280px; align-items: start; }

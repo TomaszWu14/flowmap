@@ -59,7 +59,7 @@ na bieżąco (nic do ręcznej poprawy, więc nic nie zapisujemy).
 | Klasy | `reference_without_relation` | pole „odwołanie” bez relacji do tej encji |
 | Przypadki użycia | `role_without_use_case` | rola (poza Administratorem) bez przypadku użycia |
 | Przypadki użycia | `use_case_without_goal` | pusty `goal` |
-| Przypadki użycia | `gateway_without_alternative` | bramka w ciągu aktora, a brak scenariusza alternatywnego |
+| Przypadki użycia | `use_case_without_alternative` | przypadek z aktorem bez żadnego scenariusza alternatywnego |
 | Sekwencje | `integration_without_error_message` | komunikat do integracji bez komunikatu błędu |
 | Sekwencje | `idle_participant` | uczestnik bez komunikatów |
 | Stany | `unreachable_status` | status nieosiągalny ze stanu początkowego |

@@ -3,31 +3,35 @@
 from flask import Blueprint, abort, render_template, request
 from flask_login import login_required
 
-from ..extensions import db
 from ..flow import graph as g
-from .lint import lint
-from .uml import class_diagram
+from .lint import SECTION_OF, lint
+from .uml import class_diagram, use_case_diagram
 
 bp = Blueprint("design", __name__)
-DESIGN_SECTIONS = {"classes": "Klasy"}
-DIAGRAMS = {"classes": class_diagram}
+DESIGN_SECTIONS = {"classes": "Klasy", "use_cases": "Przypadki użycia"}
+EDIT_SECTION = {"classes": "entities", "use_cases": "use_cases"}
 HELP = {"classes": "Diagram klas UML: encje (klasy) z polami i relacjami. Krotność „1 → *” czytaj: "
-                   "jeden rekord po lewej ma wiele po prawej."}
+                   "jeden rekord po lewej ma wiele po prawej.",
+        "use_cases": "Diagram przypadków użycia UML: kto (aktor) korzysta z systemu i po co. «include» — przypadek "
+                     "zawsze wywołuje inny; «extend» — wariant lub wyjątek rozszerzający scenariusz."}
+
+
+def _diagram(section, spec, project) -> str:
+    return use_case_diagram(spec, project.name) if section == "use_cases" else class_diagram(spec)
 
 
 @bp.get("/p/<int:project_id>/projekt-aplikacji")
 @login_required
 def view(project_id):
     project = g.project_for(project_id, "view")
-    if project.spec is None:
-        g.refresh_spec(project)
-        db.session.commit()
+    g.ensure_spec(project)
     section = request.args.get("sekcja", "classes")
     if section not in DESIGN_SECTIONS:
         abort(400)
     spec = g.project_spec(project)
     ctx = {"project": project, "spec": spec, "section": section, "sections": DESIGN_SECTIONS,
-           "help": HELP[section], "diagram": "", "issues": []}
+           "help": HELP[section], "edit_section": EDIT_SECTION[section], "diagram": "", "issues": []}
     if spec is not None:
-        ctx.update(diagram=DIAGRAMS[section](spec), issues=lint(spec))
+        ctx.update(diagram=_diagram(section, spec, project),
+                   issues=[i for i in lint(spec) if SECTION_OF[i["code"]] == section])
     return render_template("design/view.html", **ctx)

@@ -7,7 +7,9 @@
   }
 
   function render() {
-    window.mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme: theme() });
+    const natural = { useMaxWidth: false };  // readable text; the preview card scrolls instead of shrinking
+    window.mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme: theme(),
+      flowchart: natural, class: natural, sequence: natural, state: natural });
     document.querySelectorAll("pre.mermaid").forEach((el) => {
       el.removeAttribute("data-processed");
       el.textContent = el.dataset.source;

@@ -2,8 +2,9 @@
 
 import re
 
-from ..export.builders import _mm
+from ..export.builders import _md, _mm
 from ..spec.schema import Spec
+from .lint import lint
 
 CARDINALITY = {"1-1": '"1" -- "1"', "1-n": '"1" --> "*"', "n-n": '"*" -- "*"'}
 
@@ -24,4 +25,48 @@ def class_diagram(spec: Spec) -> str:
         for r in e.relations:
             if r.to_entity in ids:
                 out.append(f"    {ids[e.key]} {CARDINALITY[r.kind]} {ids[r.to_entity]} : {_member(r.label or r.kind)}")
+    return "\n".join(out) + "\n"
+
+
+def use_case_diagram(spec: Spec, title: str = "System") -> str:
+    """UML use case diagram as a Mermaid flowchart (Mermaid has no native one): actors, system boundary,
+    «include» to shared use cases and «extend» for alternative scenarios."""
+    roles = {r.key: r.name for r in spec.roles}
+    ids = {u.key: f"U{i}" for i, u in enumerate(spec.use_cases)}
+    actors = {k: f"A{i}" for i, k in enumerate(dict.fromkeys(u.actor for u in spec.use_cases if u.actor in roles))}
+    out = ["flowchart LR"] + [f'    {a}["👤 {_mm(roles[k])}"]' for k, a in actors.items()]
+    out.append(f'    subgraph SYS["{_mm(title)}"]')
+    extends = []
+    for u in spec.use_cases:
+        out.append(f'        {ids[u.key]}(["{_mm(u.name)}"])')
+        for j, alt in enumerate(u.alternatives):
+            out.append(f'        {ids[u.key]}X{j}(["{_mm(alt.condition)}"])')
+            extends.append(f'    {ids[u.key]}X{j} -.->|"«extend»"| {ids[u.key]}')
+    if not spec.use_cases:
+        out.append('        EMPTY["Brak przypadków użycia"]')
+    out.append("    end")
+    out += [f"    {actors[u.actor]} --- {ids[u.key]}" for u in spec.use_cases if u.actor in actors]
+    out += [f'    {ids[u.key]} -.->|"«include»"| {ids[k]}' for u in spec.use_cases for k in u.includes if k in ids]
+    return "\n".join(out + extends) + "\n"
+
+
+def uml_md(meta: dict, spec: Spec) -> str:
+    roles = {r.key: r.name for r in spec.roles}
+    names = {u.key: u.name for u in spec.use_cases}
+    out = [f"# Projekt aplikacji (UML): {_md(meta['name'])}", "",
+           "Diagramy wygenerowane z mapy procesu. Uwagi strażnika UML są na końcu i w `OPEN_QUESTIONS.md`.", "",
+           "## Przypadki użycia", "", "```mermaid", use_case_diagram(spec, meta["name"]).rstrip(), "```", ""]
+    for u in spec.use_cases:
+        out += [f"### {_md(u.name)}", "", f"- Aktor: {_md(roles.get(u.actor, 'System'))}",
+                f"- Cel: {_md(u.goal) or '—'}"]
+        if u.includes:
+            out.append("- Zawiera (include): " + ", ".join(_md(names.get(k, k)) for k in u.includes))
+        out += ["", "Scenariusz główny:", ""]
+        out += [f"{i}. {_md(s)}" for i, s in enumerate(u.main, 1)] or ["—"]
+        if u.alternatives:
+            out += ["", "Scenariusze alternatywne:", ""]
+            out += [f"- {_md(a.condition)}: {_md(' → '.join(a.steps)) or '—'}" for a in u.alternatives]
+        out.append("")
+    out += ["## Diagram klas", "", "```mermaid", class_diagram(spec).rstrip(), "```", "", "## Uwagi strażnika UML", ""]
+    out += [f"- {_md(i['message'])} — {_md(i['why'])}" for i in lint(spec)] or ["- brak"]
     return "\n".join(out) + "\n"

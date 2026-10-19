@@ -4,6 +4,7 @@ import io
 import json
 import zipfile
 
+from ..design.uml import uml_md
 from ..export.builders import FORMAT, _md, _mm, _test_paths, to_mermaid
 from ..flow.guard import report
 from .readiness import readiness
@@ -37,12 +38,14 @@ def _name(spec: Spec, key: str) -> str:
 def claude_md(meta, spec: Spec) -> str:
     out = [f"# {_md(meta['name'])} — instrukcja dla Claude Code", "",
            f"Proces: „{_md(meta['start_sentence'])}”. Specyfikacja: `SPEC.md`, model danych: `DATA_MODEL.md`, "
-           "testy akceptacyjne: `ACCEPTANCE.md`, wątpliwości: `OPEN_QUESTIONS.md`.", "",
+           "przypadki użycia i diagramy UML: `UML.md`, testy akceptacyjne: `ACCEPTANCE.md`, "
+           "wątpliwości: `OPEN_QUESTIONS.md`.", "",
            f"Stos: {_md(spec.stack) if spec.stack else 'dobierz prosty, popularny stos i uzasadnij w README'}.", "",
            "## Kolejność budowy", "",
            "1. Model danych i migracje z `DATA_MODEL.md` (typy, wymagalność, walidacje, relacje).",
            "2. Logowanie i role z macierzą uprawnień z `SPEC.md` — sprawdzaj uprawnienia na serwerze.",
-           "3. Ekrany w kolejności procesu z `SPEC.md` (pola, akcje, walidacja).",
+           "3. Ekrany w kolejności procesu z `SPEC.md` (pola, akcje, walidacja); kto co robi i co przy "
+           "wyjątkach — przypadki użycia z `UML.md`.",
            "4. Statusy i przejścia (maszyny stanów z `DATA_MODEL.md`) — odrzucaj niedozwolone przejścia.",
            "5. Powiadomienia i integracje za interfejsem z atrapą w testach.",
            "6. Testy z `ACCEPTANCE.md` (każdy scenariusz = co najmniej jeden test).", "",
@@ -155,7 +158,8 @@ def build_files(meta: dict, graph: dict, spec: Spec, open_comments: list[str],
     data = {"format": FORMAT, "project": meta, "nodes": graph["nodes"], "edges": graph["edges"],
             "spec": spec.model_dump(mode="json")}
     return {"CLAUDE.md": claude_md(meta, spec), "SPEC.md": spec_md(meta, graph, spec, images),
-            "DATA_MODEL.md": data_model_md(spec), "ACCEPTANCE.md": acceptance_md(graph, spec),
+            "DATA_MODEL.md": data_model_md(spec), "UML.md": uml_md(meta, spec),
+            "ACCEPTANCE.md": acceptance_md(graph, spec),
             "OPEN_QUESTIONS.md": open_questions_md(graph, spec, open_comments),
             "flowmap.json": json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
             **{image_path(a): a.data for a in images}}

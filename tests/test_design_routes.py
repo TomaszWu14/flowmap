@@ -1,4 +1,6 @@
+from app.models import Project
 from tests.test_collaborators import team  # noqa: F401
+from tests.test_flow import play_to_end
 from tests.test_projects import new_project
 
 
@@ -31,3 +33,22 @@ def test_broken_spec_points_to_rebuild(auth_client, db):
     db.session.commit()
     html = auth_client.get(f"/p/{p.id}/projekt-aplikacji").get_data(as_text=True)
     assert "uszkodzona" in html and f"/p/{p.id}/specyfikacja" in html
+
+
+def test_old_spec_without_use_cases_is_completed(auth_client, db):
+    p = new_project(auth_client)
+    play_to_end(auth_client, p)
+    stored = dict(p.spec)
+    stored.pop("use_cases", None)
+    p.spec = stored
+    db.session.commit()
+    html = auth_client.get(f"/p/{p.id}/specyfikacja?sekcja=use_cases").get_data(as_text=True)
+    assert "Przypadki użycia" in html
+    assert "use_cases" in Project.query.get(p.id).spec
+
+
+def test_use_cases_section_on_design_tab(auth_client):
+    p = new_project(auth_client)
+    play_to_end(auth_client, p)
+    html = auth_client.get(f"/p/{p.id}/projekt-aplikacji?sekcja=use_cases").get_data(as_text=True)
+    assert "flowchart LR" in html and "Przypadki użycia" in html and "sekcja=use_cases" in html
