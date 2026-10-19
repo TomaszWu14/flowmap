@@ -15,7 +15,8 @@
   </div>
 {% else %}
   <header class="panel-head">
-    <span class="type-chip t-{{ node.type }}">{{ type_labels[node.type] }}</span>
+    {% set picto = node_icon(node.to_dict()) %}
+    <span class="type-chip t-{{ node.type }}">{{ pictogram_svg(picto, 14) }} {{ type_labels[node.type] }}</span>
     <h2>{{ node.title }}</h2>
     <p class="muted" style="margin:0">{{ node.actor or 'bez aktora' }}{% if remaining %} · <button class="linklike" type="button" hx-get="{{ url_for('flow.guard_panel', project_id=project.id) }}"
       hx-target="#panel-body">pytań otwartych: {{ remaining }}</button>{% endif %}</p>
@@ -115,6 +116,19 @@
         </label>
         {% endif %}
         <label>Aktor (rola) <input name="actor" maxlength="100" value="{{ node.actor or '' }}"></label>
+        {% if node.type not in ('decision', 'parallel', 'start', 'end') %}
+        {% set chosen = (node.data or {}).get('icon') or '' %}
+        <fieldset class="picto-picker">
+          <legend>Piktogram <span class="muted">— co dzieje się w tym kroku</span></legend>
+          <label class="picto-opt" title="Automatycznie z treści kroku">
+            <input type="radio" name="icon" value="" {{ 'checked' if not chosen }}><span>Auto</span></label>
+          {% for key, meta in pictograms.items() if key not in ('play', 'square') %}
+          <label class="picto-opt" title="{{ meta[0] }}">
+            <input type="radio" name="icon" value="{{ key }}" {{ 'checked' if chosen == key }}>
+            <span>{{ pictogram_svg(key, 20) }}<span class="sr-only">{{ meta[0] }}</span></span></label>
+          {% endfor %}
+        </fieldset>
+        {% endif %}
         <label>Opis <textarea name="description" maxlength="2000">{{ node.description or '' }}</textarea></label>
         <label>Dane wejściowe (po przecinku) <input name="inputs" value="{{ (node.inputs or [])|join(', ') }}"></label>
         <label>Dane wyjściowe / co widać (po przecinku) <input name="outputs" value="{{ (node.outputs or [])|join(', ') }}"></label>

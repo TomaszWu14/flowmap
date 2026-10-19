@@ -302,3 +302,14 @@ kbd { font: inherit; font-size: .75rem; border: 1px solid var(--line); border-bo
 .legend-toggle { background: none; border: 1px solid var(--line); border-radius: 999px; padding: 0 .55rem; font: inherit;
   font-size: .78rem; color: var(--ink); cursor: pointer; }
 .map-wrap:fullscreen { background-color: var(--bg); }
+.picto { vertical-align: -2px; flex: none; }
+.picto-picker { border: 1px solid var(--line); border-radius: 10px; padding: .5rem .6rem .6rem; margin: 0;
+  display: flex; flex-wrap: wrap; gap: .3rem; }
+.picto-picker legend { font-weight: 600; font-size: .9rem; padding: 0 .3rem; }
+.picto-opt { position: relative; display: inline-flex; margin: 0; cursor: pointer; }
+.picto-opt input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.picto-opt > span { display: inline-flex; align-items: center; justify-content: center; min-width: 38px; height: 38px;
+  padding: 0 .45rem; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ink);
+  font-size: .8rem; font-weight: 600; }
+.picto-opt input:checked + span { border-color: var(--accent); background: var(--accent); color: #fff; }
+.picto-opt input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }

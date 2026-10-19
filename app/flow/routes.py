@@ -11,6 +11,7 @@ from ..models import NODE_TYPE_LABELS, NODE_TYPES, QuestionLog
 from . import graph as g
 from . import guard
 from . import questions as q
+from .pictograms import PICTOGRAMS, icon_for
 from .simulate import simulation_state
 
 bp = Blueprint("flow", __name__)
@@ -27,6 +28,8 @@ def graph_payload(graph: dict, pending: set[str] | None = None, comments: dict[s
         n["pending"] = bool(pending and n["key"] in pending)
         n["comments"] = (comments or {}).get(n["key"], 0)
         n["type_label"] = NODE_TYPE_LABELS[n["type"]]
+        n["icon"] = icon_for(n)
+        n["icon_label"] = PICTOGRAMS[n["icon"]][0] if n["icon"] else ""
     return {"nodes": graph["nodes"], "edges": graph["edges"], **report}
 
 
@@ -175,6 +178,9 @@ def edit_node(project_id, key):
     if node.type == "decision":
         branches = [b.strip()[:100] for b in (f.get("branches") or "").split(",") if b.strip()]
         g.set_node_data(node, branches=list(dict.fromkeys(branches)))
+    if "icon" in f:  # "" = automatic, otherwise a known pictogram
+        icon = f.get("icon") if f.get("icon") in PICTOGRAMS else None
+        g.set_node_data(node, icon=icon)
     return _changed(project, f"Zmieniono krok „{node.title}”", node)
 
 
