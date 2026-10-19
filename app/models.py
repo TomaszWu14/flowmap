@@ -91,6 +91,7 @@ class Project(db.Model):
     share_token = db.Column(db.String(40), unique=True, index=True)  # public read-only link; None = off
     spec = db.Column(db.JSON)  # technical specification document (app/spec/schema.py)
     display = db.Column(db.JSON)  # map display settings: swimlane order and workstation icons (flow/lanes.py)
+    learning = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())  # Nauka vs Praca
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow, nullable=False)
 
@@ -224,6 +225,7 @@ class QuestionLog(db.Model):
     options = db.Column(db.JSON, default=list)
     answer = db.Column(db.Text, default="")
     source = db.Column(db.String(10), default="rules")  # rules | ai
+    hint_level = db.Column(db.Integer, nullable=False, default=0, server_default="0")  # learning-mode hints used
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
 
 
