@@ -1,12 +1,14 @@
-"""'Ocena' tab: rule-based scores with history per user."""
+"""'Ocena' tab: rule-based scores (optionally mixed with a qualitative AI part) with history per user."""
 
-from flask import Blueprint, redirect, render_template, url_for
+from flask import Blueprint, flash, redirect, render_template, url_for
 from flask_login import current_user, login_required
 
+from ..ai.client import AIError, ai_enabled, spend_ai_request
 from ..extensions import db
 from ..flow import graph as g
 from ..models import Evaluation, utcnow
-from .rubric import evaluate
+from .ai_review import assess
+from .rubric import evaluate, mix
 
 bp = Blueprint("trainer", __name__)
 
@@ -24,8 +26,18 @@ def score(project_id):
         elif e.kind not in previous:
             previous[e.kind] = e
     design_at = {e.created_at: e.score for e in rows if e.kind == "design"}
-    history = [(e.created_at, e.score, design_at.get(e.created_at)) for e in rows if e.kind == "map"][:10]
-    return render_template("trainer/score.html", project=project, latest=latest, previous=previous, history=history)
+    history = [(e.created_at, e.score, design_at.get(e.created_at), e.source) for e in rows if e.kind == "map"][:10]
+    return render_template("trainer/score.html", project=project, latest=latest, previous=previous, history=history,
+                           ai=ai_enabled())
+
+
+def _save(project, results: list[dict], source: str):
+    now = utcnow()  # one moment for both scores, so the history pairs them
+    for result in results:
+        db.session.add(Evaluation(project_id=project.id, user_id=current_user.id, kind=result["kind"],
+                                  score=result["score"], details=result, source=source, created_at=now))
+    db.session.commit()
+    return redirect(url_for("trainer.score", project_id=project.id))
 
 
 @bp.post("/p/<int:project_id>/ocena")
@@ -33,9 +45,22 @@ def score(project_id):
 def score_now(project_id):
     project = g.project_for(project_id, "view")
     g.ensure_spec(project)
-    now = utcnow()  # one moment for both scores, so the history pairs them
-    for result in evaluate(project):
-        db.session.add(Evaluation(project_id=project.id, user_id=current_user.id, kind=result["kind"],
-                                  score=result["score"], details=result, created_at=now))
-    db.session.commit()
-    return redirect(url_for("trainer.score", project_id=project.id))
+    return _save(project, evaluate(project), "rules")
+
+
+@bp.post("/p/<int:project_id>/ocena/ai")
+@login_required
+def score_ai(project_id):
+    project = g.project_for(project_id, "view")
+    g.ensure_spec(project)
+    results = evaluate(project)
+    reason = spend_ai_request()
+    if reason:
+        flash(f"{reason} — zapisano ocenę z reguł.", "error")
+        return _save(project, results, "rules")
+    try:
+        ai = assess(project, project.graph(), g.project_spec(project), results)
+    except AIError as exc:
+        flash(f"Ocena AI nieudana ({exc}) — zapisano ocenę z reguł.", "error")
+        return _save(project, results, "rules")
+    return _save(project, mix(results, ai), "mixed")

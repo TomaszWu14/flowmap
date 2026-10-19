@@ -214,6 +214,7 @@ details > form, details > div { margin-top: .6rem; display: grid; gap: .6rem; }
 form.vision-form { max-width: none; }
 .score-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 1rem; }
 .score-card td.ok { color: var(--ok); font-weight: 700; }
+.top-fix { background: var(--accent-soft); border-radius: 10px; padding: .6rem .8rem; }
 .mode-toggle { display: inline; margin: 0; }
 .hint-guide { background: var(--accent-soft); border-radius: 10px; padding: .6rem .8rem; }
 .hint-form { margin: 0 0 .75rem; }

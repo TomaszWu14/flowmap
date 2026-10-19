@@ -80,3 +80,12 @@ def evaluate(project) -> list[dict]:
 
     graph = project.graph()
     return [map_score(project, graph), design_score(graph, g.project_spec(project))]
+
+
+AI_WEIGHT = 0.3
+
+
+def mix(results: list[dict], ai: dict) -> list[dict]:
+    """Rules stay visible as rules_score; the AI part is 30% of the shown score."""
+    return [r | {"rules_score": r["score"], "ai": ai,
+                 "score": round((1 - AI_WEIGHT) * r["score"] + AI_WEIGHT * ai["pct"])} for r in results]

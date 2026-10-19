@@ -7,10 +7,16 @@
       <a class="btn small" href="{{ url_for('spec.view', project_id=project.id) }}">Specyfikacja</a>
       <a class="btn small" href="{{ url_for('design.view', project_id=project.id) }}">Projekt aplikacji</a>
       <span class="btn small primary" aria-current="page">Ocena</span></div></div>
-  <form method="post" action="{{ url_for('trainer.score_now', project_id=project.id) }}">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button class="btn primary" type="submit">Oceń teraz</button>
-  </form>
+  <div class="row">
+    <form method="post" action="{{ url_for('trainer.score_now', project_id=project.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn primary" type="submit">Oceń teraz</button>
+    </form>
+    {% if ai %}<form method="post" action="{{ url_for('trainer.score_ai', project_id=project.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn" type="submit" title="Reguły + jakościowa ocena Opus (30% wyniku); zużywa 1 zapytanie z dziennego limitu">Oceń z AI</button>
+    </form>{% endif %}
+  </div>
 </div>
 <p class="muted">Ocena z reguł: liczy ją aplikacja na podstawie strażników mapy, specyfikacji i UML — za każdym
   razem tak samo i bez AI. Każde kryterium mówi, co poprawić, żeby zdobyć brakujące punkty.</p>
@@ -27,12 +33,24 @@
     {% set prev = previous.get(kind) %}
     {% if prev %}{% set delta = e.score - prev.score %}
       <p class="muted">{% if delta %}{{ '+' if delta > 0 }}{{ delta }} od poprzedniej oceny ({{ prev.score }}){% else %}Bez zmian od poprzedniej oceny{% endif %}</p>{% endif %}
+    {% set a = e.details.get('ai') %}
+    {% if a %}
+      <p class="muted">Reguły: {{ e.details.rules_score }}/100 · Ocena AI: {{ a.pct }}/100 (30% wyniku)</p>
+      <p class="top-fix"><strong>Najważniejsza poprawka:</strong> {{ a.top_fix }}</p>
+    {% endif %}
     <div class="table-wrap"><table class="versions">
       <tr><th>Kryterium</th><th>Punkty</th><th>Uwaga</th></tr>
       {% for c in e.details.criteria %}
       <tr><td>{{ c.label }}</td><td class="{{ 'ok' if c.points == c.max }}">{{ c.points }} / {{ c.max }}</td><td>{{ c.note }}</td></tr>
       {% endfor %}
     </table></div>
+    {% if a %}
+    <h3 title="Jakościowa ocena modelu Opus — może się różnić między ocenami">Ocena AI</h3>
+    <div class="table-wrap"><table class="versions">
+      <tr><th>Kryterium</th><th>Ocena</th><th>Uzasadnienie</th></tr>
+      {% for c in a.criteria %}<tr><td>{{ c.label }}</td><td>{{ c.score }} / 5</td><td>{{ c.reason }}</td></tr>{% endfor %}
+    </table></div>
+    {% endif %}
   </section>
   {% endif %}{% endfor %}
 </div>
@@ -40,8 +58,8 @@
   <h2>Historia</h2>
   <div class="table-wrap"><table class="versions">
     <tr><th>Kiedy</th><th>Mapa procesu</th><th>Projekt aplikacji</th></tr>
-    {% for when, map_score, design_score in history %}
-    <tr class="history-row"><td>{{ when.strftime('%Y-%m-%d %H:%M') }}</td><td>{{ map_score }}</td><td>{{ design_score if design_score is not none else '—' }}</td></tr>
+    {% for when, map_score, design_score, source in history %}
+    <tr class="history-row"><td>{{ when.strftime('%Y-%m-%d %H:%M') }}{% if source == 'mixed' %} <span class="badge">AI</span>{% endif %}</td><td>{{ map_score }}</td><td>{{ design_score if design_score is not none else '—' }}</td></tr>
     {% endfor %}
   </table></div>
 </section>
