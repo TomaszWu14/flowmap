@@ -217,6 +217,17 @@ class Evaluation(db.Model):
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
 
 
+class TrainerMessage(db.Model):
+    """One message in a user's private conversation with the trainer about a project."""
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="CASCADE"), nullable=False, index=True)
+    role = db.Column(db.String(10), nullable=False)  # user | assistant
+    text = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+
+
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.Integer, db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False, index=True)

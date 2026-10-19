@@ -1,0 +1,26 @@
+<section id="trainer-chat" class="trainer-chat" aria-label="Trener">
+  <header class="row" style="justify-content:space-between">
+    <h2>Trener</h2>
+    <span class="badge" title="{{ 'Nauka: trener pyta i naprowadza, nie podaje gotowych rozwiązań' if project.learning else 'Praca: trener daje konkretne propozycje' }}">{{ 'Nauka' if project.learning else 'Praca' }}</span>
+  </header>
+  {% if error %}<div class="alert error" role="alert">{{ error }}</div>{% endif %}
+  {% if not ai %}
+    <p class="muted">Trener wymaga AI — administrator musi ustawić klucz ANTHROPIC_API_KEY i włączyć AI.</p>
+  {% endif %}
+  <ol class="chat-thread">
+    {% for m in messages %}
+      <li class="chat-msg {{ m.role }}"><span class="sr-only">{{ 'Ty' if m.role == 'user' else 'Trener' }}:</span>{{ m.text }}</li>
+    {% else %}
+      <li class="muted">Zapytaj o swoją mapę, np. „Czego brakuje w obsłudze błędów?” albo „Jak nazwać ten krok?”.</li>
+    {% endfor %}
+  </ol>
+  {% if ai %}
+  <form class="stack chat-form" hx-post="{{ url_for('trainer.chat', project_id=project.id) }}" hx-target="#trainer-chat" hx-swap="outerHTML">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="sr-only" for="trainer-text">Twoja wiadomość</label>
+    <textarea id="trainer-text" name="text" rows="3" maxlength="2000" required placeholder="Napisz pytanie do trenera…">{{ draft }}</textarea>
+    <button class="btn primary" type="submit">Wyślij</button>
+    <p class="field-help">Rozmowa jest prywatna i zużywa 1 zapytanie z dziennego limitu AI.</p>
+  </form>
+  {% endif %}
+</section>

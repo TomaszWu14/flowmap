@@ -66,6 +66,9 @@
     </div>
   </section>
 </div>
+<div class="card" style="margin-top:1rem" hx-get="{{ url_for('trainer.chat_panel', project_id=project.id) }}" hx-trigger="load" hx-swap="innerHTML">
+  <p class="muted">Ładowanie trenera…</p>
+</div>
 {% endif %}
 {% endblock %}
 {% block scripts %}

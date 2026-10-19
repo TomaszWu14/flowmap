@@ -1,6 +1,6 @@
 # Trener (Nauka / Praca) — projekt
 
-Data: 2026-10-19 · Status: zatwierdzony w rozmowie · Podprojekt 3 z 4 (kierunek: `2026-10-19-mapa-obrazowa-bpmn-design.md`)
+Data: 2026-10-19 · Status: zrealizowany (PR #56–#59) · Podprojekt 3 z 4 (kierunek: `2026-10-19-mapa-obrazowa-bpmn-design.md`)
 
 ## Cel
 
