@@ -122,6 +122,14 @@ def c4_context(spec: Spec, title: str = "System") -> str:
         else:
             out.append(f'    Rel(sys, x{i}, "{data}")')
     out += [f'    Rel(sys, ch_{c}, "Powiadomienia")' for c in channels]
+    # Labels sit on the line midpoint and collide with neighbours: nudge person labels apart, integration labels up.
+    out += [f'    UpdateRelStyle(p{i}, sys, $offsetX="{-130 if i % 2 == 0 else 20}", $offsetY="-10")'
+            for i in range(len(spec.roles))]
+    for i, x in enumerate(spec.integrations):
+        src, dst = (f"x{i}", "sys") if x.direction == "in" else ("sys", f"x{i}")
+        out.append(f'    UpdateRelStyle({src}, {dst}, $offsetX="-60", $offsetY="-45")')
+    # Rows of at most 3 shapes keep the diagram inside the card (Mermaid's default of 4 pushes the system off-screen).
+    out.append(f'    UpdateLayoutConfig($c4ShapeInRow="{min(3, max(2, len(spec.roles)))}", $c4BoundaryInRow="1")')
     return "\n".join(out) + "\n"
 
 
