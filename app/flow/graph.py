@@ -90,6 +90,18 @@ def delete_node(project: Project, node: Node) -> None:
     db.session.flush()
 
 
+def merge_nodes(project: Project, keep: Node, drop: Node) -> None:
+    """Fold `drop` into `keep`: its incoming and outgoing connections move over, then `drop` is deleted."""
+    existing = {(e.source_id, e.target_id, e.label) for e in project.edges if drop.id not in (e.source_id, e.target_id)}
+    for e in [e for e in project.edges if drop.id in (e.source_id, e.target_id)]:
+        src = keep.id if e.source_id == drop.id else e.source_id
+        dst = keep.id if e.target_id == drop.id else e.target_id
+        if src != dst and (src, dst, e.label) not in existing:
+            existing.add((src, dst, e.label))
+            db.session.add(Edge(project=project, source_id=src, target_id=dst, label=e.label, condition=e.condition))
+    delete_node(project, drop)
+
+
 def set_node_data(node: Node, **values) -> None:
     data = dict(node.data or {})
     data.update(values)

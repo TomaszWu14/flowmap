@@ -3,6 +3,10 @@
   'dead_end': ('Dodaj dalszy krok', 'next'), 'open_branch': ('Uzupełnij gałąź', 'next'),
   'decision_exits': ('Dodaj wyjście', 'next'), 'unreachable': ('Pokaż krok', none),
 } %}
+{% set quick = {
+  'dead_end': 'Zakończ tutaj', 'open_branch': 'Zakończ gałąź', 'decision_exits': 'Dodaj wyjście → koniec',
+  'missing_error_path': 'Szybka ścieżka błędu', 'similar_steps': 'Scal w jeden krok', 'duplicate_step': 'Scal z poprzednim',
+} %}
 <header class="panel-head">
   <span class="type-chip t-decision">Strażnik kompletności</span>
   <h2>Wynik: {{ report.score }}/100</h2>
@@ -30,6 +34,15 @@
     {% if i.node_key %}
       {% set f = fix.get(i.code, ('Pokaż krok', none)) %}
       <div class="row">
+        {% if i.code in quick and project.can_edit %}
+        <form hx-post="{{ url_for('flow.guard_fix', project_id=project.id) }}" hx-target="#panel-body">
+          <input type="hidden" name="code" value="{{ i.code }}">
+          <input type="hidden" name="node_key" value="{{ i.node_key }}">
+          {% if i.label %}<input type="hidden" name="label" value="{{ i.label }}">{% endif %}
+          {% if i.other %}<input type="hidden" name="other" value="{{ i.other }}">{% endif %}
+          <button class="btn small primary" type="submit">{{ quick[i.code] }}</button>
+        </form>
+        {% endif %}
         <button class="btn small" type="button" hx-target="#panel-body"
           hx-get="{{ url_for('flow.panel', project_id=project.id, node=i.node_key, ask=f[1]) if f[1] else url_for('flow.panel', project_id=project.id, node=i.node_key) }}">{{ f[0] }}</button>
       </div>
