@@ -71,7 +71,7 @@ def sequence_diagram(seq, spec: Spec) -> str:
             errors.append(msgs[i + 1 + len(errors)])
         line = f"{ids[m.source]}{ARROWS[m.kind]}{ids[m.target]}: {_seq_text(m.text)}"
         if errors:
-            out += [f"    alt {_seq_text(m.text)}", f"        {line}"]
+            out += ["    alt powodzenie", f"        {line}"]
             for e in errors:
                 out += [f"    else {_seq_text(e.text)}",
                         f"        {ids[e.source]}{ARROWS['error']}{ids[e.target]}: {_seq_text(e.text)}"]

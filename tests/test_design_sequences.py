@@ -51,7 +51,7 @@ def test_sequence_diagram_mermaid():
     assert out.startswith("sequenceDiagram\n")
     assert "actor P0 as Klient" in out and "participant P1 as Płatność online" in out
     assert "P0->>P1: Kwota, Metoda płatności" in out and "P1-->>P0: Status płatności" in out
-    assert "alt" in out and "else brak płatności" in out and "P1--xP0: brak płatności" in out
+    assert "alt powodzenie" in out and "else brak płatności" in out and "P1--xP0: brak płatności" in out
     assert "P2-)P0: Wysłanie potwierdzenia rezerwacji" in out
 
 
