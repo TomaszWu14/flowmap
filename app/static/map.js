@@ -36,6 +36,8 @@
       { selector: "node.issue", style: { "underlay-color": css("--danger"), "underlay-opacity": 0.18, "underlay-padding": 7 } },
       { selector: "node.diff-added", style: { "background-color": css("--ok"), "background-opacity": 0.22, "border-width": 3 } },
       { selector: "node.diff-changed", style: { "background-color": css("--warn"), "background-opacity": 0.28, "border-width": 3 } },
+      { selector: "node.dim", style: { "opacity": 0.25 } },
+      { selector: "node.match", style: { "border-width": 4, "border-color": css("--accent") } },
       { selector: "node.focus", style: { "overlay-color": css("--accent"), "overlay-opacity": 0.16, "overlay-padding": 6 } },
       { selector: "edge", style: {
         "width": 1.6, "line-color": css("--muted"), "target-arrow-color": css("--muted"), "target-arrow-shape": "triangle",
@@ -127,14 +129,87 @@
     }
   }
 
-  cy.on("tap", "node", (ev) => {
+  function openNode(node) {
     if (!cfg.panelUrl) return;
-    selected = ev.target.id();
+    selected = node.id();
     cy.nodes().removeClass("focus");
-    ev.target.addClass("focus");
+    node.addClass("focus");
     window.htmx.ajax("GET", cfg.panelUrl + "?node=" + encodeURIComponent(selected), { target: "#panel-body", swap: "innerHTML" });
     const panel = document.getElementById("panel");
     if (panel) panel.classList.remove("collapsed");
+  }
+
+  cy.on("tap", "node", (ev) => openNode(ev.target));
+
+  // Search: highlight matching steps, Enter jumps to the next one and opens it.
+  const search = document.getElementById("map-search");
+  const fold = (s) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ł/g, "l");
+  let matches = [], current = -1;
+  function runSearch() {
+    const q = fold(search.value.trim());
+    cy.nodes().removeClass("match dim");
+    matches = q ? cy.nodes().filter((n) => fold(n.data("label")).includes(q)).toArray() : [];
+    current = -1;
+    if (q) {
+      cy.nodes().addClass("dim");
+      matches.forEach((n) => n.removeClass("dim").addClass("match"));
+    }
+    const count = document.getElementById("map-search-count");
+    const n = matches.length, few = n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14);
+    if (count) count.textContent = !q ? "" : !n ? "brak" : n + (n === 1 ? " wynik" : few ? " wyniki" : " wyników");
+  }
+  if (search) {
+    search.addEventListener("input", runSearch);
+    search.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" && matches.length) {
+        ev.preventDefault();
+        current = (current + 1) % matches.length;
+        const node = matches[current];
+        cy.animate({ center: { eles: node }, zoom: Math.max(cy.zoom(), MIN_READABLE_ZOOM), duration: 200 });
+        openNode(node);
+      } else if (ev.key === "Escape") {
+        search.value = "";
+        runSearch();
+        search.blur();
+      }
+    });
+  }
+
+  // Keyboard: 1–9 pick a tile, I = "Inne", Ctrl+Z / Ctrl+Shift+Z (Ctrl+Y) undo / redo, / or Ctrl+F = search.
+  function typing(el) {
+    return el && (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName));
+  }
+  function press(id) {
+    const btn = document.getElementById(id);
+    if (btn && !btn.disabled) btn.click();
+  }
+  document.addEventListener("keydown", (ev) => {
+    const mod = ev.ctrlKey || ev.metaKey;
+    if (search && ((mod && ev.key.toLowerCase() === "f") || (ev.key === "/" && !typing(ev.target)))) {
+      ev.preventDefault();
+      search.focus();
+      search.select();
+      return;
+    }
+    if (typing(ev.target)) return;
+    if (mod && ev.key.toLowerCase() === "z") {
+      ev.preventDefault();
+      press(ev.shiftKey ? "btn-redo" : "btn-undo");
+    } else if (mod && ev.key.toLowerCase() === "y") {
+      ev.preventDefault();
+      press("btn-redo");
+    } else if (!mod && !ev.altKey && /^[1-9]$/.test(ev.key)) {
+      const tile = document.querySelectorAll("#panel-body .tile")[Number(ev.key) - 1];
+      if (tile) { ev.preventDefault(); tile.click(); }
+    } else if (!mod && !ev.altKey && ev.key.toLowerCase() === "i") {
+      const other = document.querySelector("#panel-body details.other");
+      if (other) {
+        ev.preventDefault();
+        other.open = true;
+        const field = other.querySelector("textarea, input:not([type=hidden])");
+        if (field) field.focus();
+      }
+    }
   });
 
   if (!readOnly && cfg.positionsUrl) {

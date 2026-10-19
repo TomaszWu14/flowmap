@@ -43,6 +43,8 @@
         </button>
       {% endfor %}
     </form>
+    <p class="kbd-hint">Klawiatura: <kbd>1</kbd>–<kbd>{{ question.options|length }}</kbd> wybór, <kbd>I</kbd> inne,
+      <kbd>Ctrl</kbd>+<kbd>Z</kbd> cofnij, <kbd>/</kbd> szukaj</p>
     <details class="other" {{ 'open' if error }}>
       <summary>Inne — wpiszę sam</summary>
       <form hx-post="{{ answer_url }}" hx-target="#panel-body">
