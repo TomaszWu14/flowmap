@@ -109,6 +109,29 @@ def _template_chunk(template: str, start_step: str, mode: str, graph_tpl: dict[s
     return specs, ""
 
 
+def _path_titles(graph: dict, node_key: str) -> set[str]:
+    """Titles of the node and every step leading to it, lower-cased."""
+    parents: dict[str, list[str]] = {}
+    for e in graph["edges"]:
+        parents.setdefault(e["target"], []).append(e["source"])
+    titles = {n["key"]: n["title"].strip().lower() for n in graph["nodes"]}
+    seen, stack = set(), [node_key]
+    while stack:
+        k = stack.pop()
+        if k not in seen:
+            seen.add(k)
+            stack.extend(parents.get(k, []))
+    return {titles[k] for k in seen if k in titles}
+
+
+def _without_repeats(opt: Option, done: set[str]) -> Option | None:
+    """Drop steps already on the path; None if nothing new is left."""
+    steps = [s for s in opt.steps if s.title.strip().lower() not in done]
+    if not steps or steps[0].type == "end" and len(steps) < len(opt.steps):
+        return None
+    return opt if len(steps) == len(opt.steps) else opt.model_copy(update={"steps": steps})
+
+
 def next_question(graph: dict, node: dict, label: str | None, mode: str, template: str | None) -> Question:
     graph_tpl = {n["data"]["tpl"]: n["key"] for n in graph["nodes"] if (n.get("data") or {}).get("tpl")}
     by_key = {n["key"]: n for n in graph["nodes"]}
@@ -135,10 +158,12 @@ def next_question(graph: dict, node: dict, label: str | None, mode: str, templat
     generic = generic_next(node, label, mode, main_actor)
     if options and mode == "quick":
         generic = generic[:-1]  # template already gives a multi-step chunk; skip the generic closer
+    done = _path_titles(graph, node["key"])
     for opt in generic:
         if len(options) >= 4:
             break
-        if opt.label not in seen:
+        opt = _without_repeats(opt, done)
+        if opt and opt.label not in seen:
             options.append(opt)
     options.append(Option(label="Koniec procesu", steps=[_end(actor=node.get("actor", ""))]))
 

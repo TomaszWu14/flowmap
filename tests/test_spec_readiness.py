@@ -46,3 +46,11 @@ def test_each_rule():
         )]
     )
     assert codes(stale) == ["stale_item"]
+
+
+def test_duplicate_items_lower_readiness():
+    from app.spec.schema import Notification, Spec
+    spec = Spec(notifications=[Notification(key=f"n{i}", trigger="Wysłanie e-mail", recipient_role="role:k")
+                               for i in range(3)])
+    dup = [i for i in readiness(spec)["issues"] if i["code"] == "duplicate_item"]
+    assert [i["target_key"] for i in dup] == ["n1", "n2"]
