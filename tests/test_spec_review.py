@@ -127,3 +127,19 @@ def test_add_transition_rejects_unknown_status():
     with pytest.raises(ValueError, match="nieaktualna"):
         apply_proposal(spec, Proposal(id="1", kind="add_transition", target_key="state:a", summary="s",
                                       patch={"from": "nowa", "to": "brak"}))
+
+
+def test_proposal_for_wrong_section_is_rejected_in_polish():
+    spec = Spec(roles=[Role(key="role:a", name="A")])
+    with pytest.raises(ValueError, match="niewłaściwy element"):
+        apply_proposal(spec, Proposal(id="1", kind="set_field_type", target_key="role:a", summary="s",
+                                      patch={"field": "x", "type": "money"}))
+
+
+def test_second_review_appends_and_panel_is_polish(auth_client, app, monkeypatch):
+    fake(monkeypatch, app, OK, OK)
+    p = new_project(auth_client)
+    auth_client.post(f"/p/{p.id}/specyfikacja/przeglad")
+    html = auth_client.post(f"/p/{p.id}/specyfikacja/przeglad", follow_redirects=True).get_data(as_text=True)
+    assert len(spec_of(p).proposals) == 4
+    assert "zmiana typu pola" in html and "set_field_type" not in html

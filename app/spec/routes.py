@@ -13,7 +13,7 @@ from .forms import form_text, item_from_form
 from .package import build_files, build_zip
 from .readiness import readiness
 from .review import apply_proposal, review_spec
-from .schema import CHANNEL_LABELS, DIRECTION_LABELS, FIELD_TYPE_LABELS, NFR_LABELS, PERM_LABELS, SECTIONS
+from .schema import CHANNEL_LABELS, DIRECTION_LABELS, FIELD_TYPE_LABELS, KIND_LABELS, NFR_LABELS, PERM_LABELS, SECTIONS
 
 bp = Blueprint("spec", __name__)
 SECTION_LABELS = {"entities": "Encje", "screens": "Ekrany", "roles": "Role", "states": "Statusy",
@@ -46,13 +46,14 @@ def _context(project, section: str) -> dict:
     ready = None
     issues_by_key = {}
     if spec is not None:
-        names = {e.key: e.name for e in spec.entities} | {r.key: r.name for r in spec.roles}
+        names = {i.key: getattr(i, "name", i.key) for sec in SECTIONS for i in getattr(spec, sec)}
         ready = readiness(spec)
         for issue in ready["issues"]:
             issues_by_key.setdefault(issue["target_key"], []).append(issue["message"])
     return {"project": project, "spec": spec, "section": section, "sections": SECTION_LABELS,
             "type_labels_f": FIELD_TYPE_LABELS, "perm_labels": PERM_LABELS, "channel_labels": CHANNEL_LABELS,
             "direction_labels": DIRECTION_LABELS, "nfr_labels": NFR_LABELS, "names": names,
+            "kind_labels": KIND_LABELS,
             "can_edit": project.current_role in ("owner", "editor"), "ready": ready, "issues_by_key": issues_by_key,
             "form_fields": FORM_FIELDS[section], "editing": None, "values": {}, "error": None}
 
@@ -142,6 +143,11 @@ def delete_item(project_id, section, key):
     if section not in SECTIONS:
         abort(400)
     spec = _spec_or_abort(project)
+    _sec, item = spec.find(key)
+    if item is None or _sec != section:
+        abort(404)
+    if item.source == "rules":
+        spec.dismissed = list(dict.fromkeys([*spec.dismissed, key]))
     setattr(spec, section, [i for i in getattr(spec, section) if i.key != key])
     project.spec = spec.model_dump(mode="json")
     g.save_version(project, f"Specyfikacja: usunięto {key}")
@@ -194,10 +200,11 @@ def ai_review(project_id):
     else:
         db.session.commit()
         try:
-            spec.proposals = review_spec(project.graph(), spec, project.start_sentence)
+            new_proposals = review_spec(project.graph(), spec, project.start_sentence)
+            spec.proposals = spec.proposals + new_proposals
             project.spec = spec.model_dump(mode="json")
-            g.save_version(project, f"Przegląd techniczny AI: {len(spec.proposals)} propozycji")
-            flash(f"AI zaproponowało {len(spec.proposals)} zmian — zatwierdź je w panelu „Do zatwierdzenia”.",
+            g.save_version(project, f"Przegląd techniczny AI: {len(new_proposals)} nowych propozycji")
+            flash(f"AI zaproponowało {len(new_proposals)} nowych zmian — zatwierdź je w panelu „Do zatwierdzenia”.",
                  "success")
         except AIError as exc:
             flash(f"Przegląd AI nieudany: {exc}.", "error")

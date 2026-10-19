@@ -1,9 +1,20 @@
 from app.models import Project
-from app.spec.forms import item_from_form
-from app.spec.schema import load_spec
+from app.spec.forms import form_text, item_from_form
+from app.spec.schema import SECTIONS, load_spec
 from tests.test_collaborators import team  # noqa: F401
 from tests.test_flow import answer_first_tile
 from tests.test_projects import new_project
+
+SAMPLE_FORM = {
+    "entities": {"name": "E", "description": "d", "fields": "pole | text | t | | | | t", "relations": ""},
+    "screens": {"name": "S", "role": "role:x", "fields": "pole | text | ", "actions": "zrob"},
+    "roles": {"name": "R", "description": "d", "permissions": "entity:x | all | own | none | none"},
+    "states": {"entity": "entity:x", "statuses": "nowy | start\nkoniec | koniec",
+               "transitions": "nowy | koniec"},
+    "notifications": {"trigger": "t", "channel": "sms", "recipient_role": "role:x", "summary": "s"},
+    "integrations": {"name": "I", "direction": "in", "data": "a, b", "on_error": "retry"},
+    "nfr": {"category": "performance", "text": "t"},
+}
 
 
 def spec_of(p):
@@ -83,3 +94,25 @@ def test_field_keys_are_unique_with_index(auth_client):
     assert e.fields[0].key != e.fields[1].key
     assert e.fields[0].key == "field:x-0"
     assert e.fields[1].key == "field:x-1"
+
+
+def test_form_round_trip_every_section():
+    for section in SECTIONS:
+        item = item_from_form(section, SAMPLE_FORM[section], None)
+        again = item_from_form(section, form_text(section, item), item)
+        assert again == item, section
+
+
+def test_delete_rules_item_stays_deleted_after_map_refresh(auth_client):
+    p = new_project(auth_client)
+    entity = spec_of(p).entities[0]
+    assert entity.source == "rules"
+    auth_client.post(f"/p/{p.id}/specyfikacja/entities/{entity.key}/usun")
+    answer_first_tile(auth_client, p)  # map change re-derives the spec
+    assert not any(e.key == entity.key for e in spec_of(p).entities)
+    assert entity.key in spec_of(p).dismissed
+
+
+def test_delete_unknown_key_is_404(auth_client):
+    p = new_project(auth_client)
+    assert auth_client.post(f"/p/{p.id}/specyfikacja/nfr/nfr:brak/usun").status_code == 404

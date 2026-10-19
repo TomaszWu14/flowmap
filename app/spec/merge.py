@@ -7,8 +7,9 @@ def merge(current: Spec | None, derived: Spec) -> Spec:
     if current is None:
         return derived.model_copy(deep=True)
     out = current.model_copy(deep=True)
+    dismissed = set(current.dismissed)
     for section in SECTIONS:
-        fresh = {item.key: item for item in getattr(derived, section)}
+        fresh = {item.key: item for item in getattr(derived, section) if item.key not in dismissed}
         merged = []
         for item in getattr(current, section):
             if item.source != "rules":
