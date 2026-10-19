@@ -100,9 +100,12 @@ def pictogram_svg(key: str | None, size: int = 18):
     body = svg_bodies().get(key or "")
     if not body:
         return Markup("")
-    return Markup(f'<svg class="picto" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" '
-                  f'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" '
-                  f'aria-hidden="true">{body}</svg>')
+    svg = (f'<svg class="picto" width="{int(size)}" height="{int(size)}" viewBox="0 0 24 24" fill="none" '
+           f'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" '
+           f'aria-hidden="true">{body}</svg>')
+    # Safe markup: body is a bundled icon (icons.json), size is an int — no user input.
+    # nosemgrep: explicit-unescape-with-markup
+    return Markup(svg)  # nosec B704
 
 
 @lru_cache(maxsize=1)

@@ -103,8 +103,12 @@ psują `DATABASE_URL`.
 
 CSRF na formularzach i żądaniach HTMX (nagłówek `X-CSRFToken`), każdy endpoint projektu sprawdza
 właściciela (cudzy projekt → 404), treść użytkownika i AI escapowana w szablonach i eksportach,
-etykiety Cytoscape jako tekst, nagłówki CSP/X-Frame-Options/nosniff. Do AI trafia tylko mapa
-(klucze, typy, tytuły, aktorzy, etykiety) — bez danych konta. Prompty w `app/prompts/*.md`.
+etykiety Cytoscape jako tekst, nagłówki CSP/X-Frame-Options/nosniff/Permissions-Policy/COOP (HSTS za HTTPS).
+Do AI trafia tylko mapa (klucze, typy, tytuły, aktorzy, etykiety) — bez danych konta. Prompty w `app/prompts/*.md`.
+
+W CI (`.github/workflows/security.yml`) każdy PR przechodzi skany: gitleaks (sekrety), Bandit i Semgrep
+`p/owasp-top-ten` (SAST), pip-audit (zależności) i Trivy (HIGH/CRITICAL z poprawką); Dependabot co tydzień
+proponuje aktualizacje. Zgłaszanie podatności i szczegóły: [SECURITY.md](SECURITY.md).
 
 ## Struktura
 

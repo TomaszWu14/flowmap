@@ -1,0 +1,8 @@
+# Fałszywe alarmy gitleaks (reguła generic-api-key) — nie są sekretami:
+# testowe hasła w fiksturach testów (tests/) …
+d457c36d81c604e2fb9f212599ba2768b2f7ce48:tests/test_admin.py:generic-api-key:128
+a30ab881cc9dd3d83fb658df7733a0849b231828:tests/test_password_reset.py:generic-api-key:30
+5264097fa2e5231a6cf5cffb130c435f2b020484:tests/test_auth.py:generic-api-key:71
+2fe415f60a8fce59a714c6388db193ab006538d3:tests/test_auth.py:generic-api-key:37
+# … i nazwa zmiennej `token` w kodzie weryfikacji linku resetu hasła (app/auth/tokens.py), nie wartość
+a30ab881cc9dd3d83fb658df7733a0849b231828:app/auth/tokens.py:generic-api-key:26

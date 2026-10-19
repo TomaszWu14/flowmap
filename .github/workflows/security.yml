@@ -1,0 +1,121 @@
+name: Security
+
+# Skany bezpieczeństwa (każdy z jobów to bramka — czerwony = nie scalać):
+#  - gitleaks: PR — tylko jego commity; co tydzień / ręcznie — cała historia. Fałszywe alarmy
+#    (hasła w testach) w .gitleaksignore (fingerprint + powód); nowy fałszywy sekret w teście oznacz
+#    komentarzem `gitleaks:allow` w tej samej linii.
+#  - Bandit (app/, severity i confidence medium+). Fałszywy alarm: `# nosec BXXX — powód`.
+#  - Semgrep p/owasp-top-ten (app/ bez app/static/vendor). Fałszywy alarm: `nosemgrep: <id> — powód`
+#    (w szablonach Jinja jako komentarz `{# nosemgrep: <id> — powód #}`).
+#  - pip-audit (requirements.txt i requirements-dev.txt) — znane podatności zależności.
+#  - Trivy fs (podatności, sekrety, konfiguracja) — HIGH/CRITICAL z dostępną poprawką. Wyjątki:
+#    .trivyignore (ID + powód + data przeglądu).
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: "23 4 * * 1"   # poniedziałek 04:23 UTC — nowe CVE w niezmienionych zależnościach
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secrets-sast:
+    name: Skany — sekrety i Bandit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GITLEAKS_VERSION: 8.30.1
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0   # gitleaks czyta commity (base..head PR-a albo całą historię)
+      - name: Instalacja gitleaks (przypięta wersja + sha256)
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl -sSfL -o gitleaks.tgz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks.tgz" | sha256sum -c -
+          tar -xzf gitleaks.tgz gitleaks
+      - name: gitleaks
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          args=(git --redact --no-banner)
+          # PR: tylko jego commity; push/cron/ręcznie: cała historia.
+          if [ -n "$BASE" ]; then args+=(--log-opts="$BASE..$HEAD"); fi
+          "$RUNNER_TEMP/gitleaks" "${args[@]}" .
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - run: pip install "bandit==1.9.4"
+      - name: Bandit (medium+)
+        run: bandit -q -r app --severity-level medium --confidence-level medium
+
+  semgrep:
+    name: Semgrep — OWASP
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - run: pip install "semgrep==1.181.0"
+      - name: Semgrep p/owasp-top-ten (bramka)
+        # app/static/vendor: zewnętrzne biblioteki (minifikowane), aktualizowane przez podmianę pliku
+        run: >-
+          semgrep scan --config p/owasp-top-ten --metrics off --error --text --sarif-output semgrep.sarif
+          --exclude app/static/vendor app
+      - name: Artefakt Semgrep
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: semgrep-${{ github.sha }}
+          path: semgrep.sarif
+          if-no-files-found: warn
+          retention-days: 30
+
+  deps:
+    name: Skany — zależności (pip-audit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"   # jak obraz (Dockerfile) i CI
+      - run: pip install "pip-audit==2.10.1"
+      - run: pip-audit -r requirements.txt --progress-spinner off       # obraz produkcyjny
+      - run: pip-audit -r requirements-dev.txt --progress-spinner off   # pytest/ruff (CI)
+
+  trivy:
+    name: Trivy — pliki i zależności
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TRIVY_VERSION: 0.74.0
+      TRIVY_SHA256: 2ae6fe3ee734b7fdf11335663e18c75ea12dccc76062f09f164a3b0f8be4371a
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Instalacja Trivy (przypięta wersja + sha256)
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl -sSfL -o trivy.tgz \
+            "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
+          echo "${TRIVY_SHA256}  trivy.tgz" | sha256sum -c -
+          tar -xzf trivy.tgz trivy
+      - name: Skan Trivy (fs, HIGH/CRITICAL z dostępną poprawką — bramka)
+        run: >-
+          "$RUNNER_TEMP/trivy" fs --scanners vuln,secret,misconfig --severity HIGH,CRITICAL
+          --ignore-unfixed --ignorefile .trivyignore --exit-code 1 --no-progress .

@@ -9,7 +9,7 @@
   <label style="flex:1;min-width:180px">Rodzaj
     <select name="action">
       <option value="">wszystkie</option>
-      {% for k, v in actions.items() %}<option value="{{ k }}" {{ 'selected' if k == action }}>{{ v }}</option>{% endfor %}
+      {% for k, v in actions.items() %}<option value="{{ k }}" {{ 'selected' if k == action }}>{{ v }}</option>{% endfor %} {# nosemgrep: unquoted-attribute-var — constant boolean attribute word, not user data #}
     </select>
   </label>
   <label style="flex:2;min-width:200px">Szukaj (e-mail lub obiekt) <input name="q" value="{{ q }}" maxlength="100"></label>

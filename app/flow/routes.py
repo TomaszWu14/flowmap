@@ -369,6 +369,7 @@ def _guard_response(project, description: str):
     """Save the fix and stay in the guard panel, so the next problem is one click away."""
     g.save_version(project, description)
     db.session.commit()
+    # nosemgrep: make-response-with-unknown-content — HTML from render_template (Jinja autoescape)
     resp = make_response(_guard_html(project))
     resp.headers["HX-Trigger"] = json.dumps({"mapChanged": {"focus": ""}})
     return with_toast(resp, description)
@@ -496,6 +497,7 @@ def guard_fill_apply(project_id):
     db.session.commit()
     left = [it for i, it in enumerate(items) if i not in done]
     note = f"Dodano {added}." + (f" Pominięto {skipped} — już mają dalszy ciąg." if skipped else "")
+    # nosemgrep: make-response-with-unknown-content — HTML from render_template (Jinja autoescape)
     resp = make_response(_guard_html(project, fill=items, fill_log=log, fill_note=note, fill_done=done)
                          if left else _guard_html(project, fill_note=note))
     resp.headers["HX-Trigger"] = json.dumps({"mapChanged": {"focus": ""}})

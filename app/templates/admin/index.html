@@ -19,8 +19,8 @@
   <h2>Ustawienia</h2>
   <form method="post" action="{{ url_for('admin.save_settings') }}" class="settings-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <label class="radio"><input type="checkbox" name="allow_signup" {{ 'checked' if config_info.signup }}> Rejestracja otwarta</label>
-    <label class="radio"><input type="checkbox" name="ai_enabled" {{ 'checked' if config_info.ai_enabled }} {{ 'disabled' if not config_info.ai_key }}>
+    <label class="radio"><input type="checkbox" name="allow_signup" {{ 'checked' if config_info.signup }}> Rejestracja otwarta</label> {# nosemgrep: unquoted-attribute-var — constant boolean attribute word, not user data #}
+    <label class="radio"><input type="checkbox" name="ai_enabled" {{ 'checked' if config_info.ai_enabled }} {{ 'disabled' if not config_info.ai_key }}> {# nosemgrep: unquoted-attribute-var — constant boolean attribute word, not user data #}
       Podpowiedzi AI włączone {% if not config_info.ai_key %}<span class="muted">(brak <span class="mono">ANTHROPIC_API_KEY</span> — działa tryb reguł)</span>{% else %}<span class="muted">· {{ config_info.model }}</span>{% endif %}</label>
     {% if not config_info.ai_key and config_info.ai_enabled %}<input type="hidden" name="ai_enabled" value="on">{% endif %}
     <label style="max-width:260px">Limit zapytań AI na osobę dziennie <input type="number" name="ai_daily_limit" min="0" max="10000" value="{{ config_info.ai_limit }}"></label>

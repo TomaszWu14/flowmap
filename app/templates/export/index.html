@@ -24,7 +24,7 @@
         <form method="get" class="row">
           <label class="sr-only" for="target">Narzędzie</label>
           <select id="target" name="target" style="width:auto">
-            {% for k, v in targets.items() %}<option value="{{ k }}" {{ 'selected' if k == target }}>{{ v }}</option>{% endfor %}
+            {% for k, v in targets.items() %}<option value="{{ k }}" {{ 'selected' if k == target }}>{{ v }}</option>{% endfor %} {# nosemgrep: unquoted-attribute-var — constant boolean attribute word, not user data #}
           </select>
           <button class="btn small" type="submit">Zmień</button>
         </form>

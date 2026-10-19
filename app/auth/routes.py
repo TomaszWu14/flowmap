@@ -98,6 +98,7 @@ def register():
             flash("Konto z tym adresem już istnieje.", "error")
         else:
             user = User(email=email)
+            # nosemgrep: unvalidated-password — User.set_password() enforces the minimum length
             user.set_password(form.password.data)
             db.session.add(user)
             db.session.flush()
@@ -119,6 +120,7 @@ def forgot_password():
         user = User.query.filter_by(email=email).first()
         if user and not user.is_blocked:
             hours = current_app.config["RESET_TOKEN_HOURS"]
+            # nosemgrep: flask-url-for-external-true — host from proxy (Traefik); fixed public URL: open decision
             link = url_for("auth.reset_password", token=make_reset_token(user, hours), _external=True)
             try:
                 send_mail(user.email, "FlowMap: ustaw nowe hasło",
@@ -143,6 +145,7 @@ def reset_password(token):
         return redirect(url_for("auth.login"))
     form = ResetForm()
     if form.validate_on_submit():
+        # nosemgrep: unvalidated-password — User.set_password() enforces the minimum length
         user.set_password(form.password.data)
         audit.log("password_reset", user.email, actor=user)
         db.session.commit()

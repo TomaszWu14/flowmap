@@ -3,7 +3,7 @@
   {% for name, label, kind in form_fields %}
     <label>{{ label }}
       {% if kind == 'textarea' %}<textarea name="{{ name }}" rows="5" class="mono">{{ values.get(name, '') }}</textarea>
-      {% elif kind is mapping %}<select name="{{ name }}">{% for v, l in kind.items() %}<option value="{{ v }}" {{ 'selected' if values.get(name) == v }}>{{ l }}</option>{% endfor %}</select>
+      {% elif kind is mapping %}<select name="{{ name }}">{% for v, l in kind.items() %}<option value="{{ v }}" {{ 'selected' if values.get(name) == v }}>{{ l }}</option>{% endfor %}</select> {# nosemgrep: unquoted-attribute-var — constant boolean attribute word, not user data #}
       {% else %}<input name="{{ name }}" value="{{ values.get(name, '') }}">{% endif %}
     </label>
   {% endfor %}
