@@ -163,12 +163,13 @@ def derive(graph: dict, meta: dict) -> Spec:
     if any(PERSONAL.search(f) for f in all_fields):
         nfr.append(Nfr(key="nfr:rodo", category="privacy",
                        text="RODO: podstawa przetwarzania danych osobowych i usunięcie danych na żądanie."))
-    from ..design.derive import sequences as derive_sequences  # local: design.derive imports this module
+    from ..design.derive import rules as derive_rules  # local: design.derive imports this module
+    from ..design.derive import sequences as derive_sequences
     from ..design.derive import use_cases as derive_use_cases
 
     return Spec(entities=entities, screens=screens, roles=roles, states=states, notifications=notifications,
                 integrations=integrations, nfr=nfr, use_cases=derive_use_cases(graph, meta),
-                sequences=derive_sequences(graph, meta))
+                sequences=derive_sequences(graph, meta), rules=derive_rules(graph))
 
 
 def _add_status(statuses: list[Status], name: str, final: bool = False) -> None:

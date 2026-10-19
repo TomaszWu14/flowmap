@@ -30,3 +30,23 @@ def test_templates_have_no_state_warnings():
         spec = derive(full_graph(key), {"name": key, "start_sentence": "S"})
         bad = [i for i in lint(spec) if i["code"] in ("unreachable_status", "dead_end_status")]
         assert not bad, (key, bad)
+
+
+def test_rules_from_gateways():
+    from app.design.derive import rules
+    r = {x.key: x for x in rules(full_graph("booking"))}["rule:free"]
+    assert r.name == "Czy termin jest wolny?" and r.node_key == "free"
+    assert [(w.condition, w.result) for w in r.rows] == [("tak", "Klient podaje dane kontaktowe"),
+                                                         ("nie", "Wybór terminu i specjalisty")]
+
+
+def test_rule_guard_gap_and_overlap():
+    from app.spec.schema import Rule, RuleRow
+
+    def codes(rows):
+        rule = Rule(key="r", name="R", rows=[RuleRow(condition=c, result="x") for c in rows])
+        return {i["code"] for i in lint(Spec(rules=[rule]))}
+    assert codes(["tak", "nie"]) == set()
+    assert codes(["kwota > 1000", "inaczej"]) == set()
+    assert "rule_gap" in codes(["kwota > 1000", "kwota < 100"])
+    assert "rule_overlap" in codes(["VIP", "vip ", "inaczej"])

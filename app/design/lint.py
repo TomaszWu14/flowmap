@@ -1,15 +1,19 @@
 """UML guard: issues in readiness() format plus 'why' — one sentence a learning analyst can act on."""
 
+import re
+
 from ..spec.schema import Spec
 
 WEIGHTS = {"nn_without_join": 5, "island_entity": 3, "reference_without_relation": 3,
            "role_without_use_case": 3, "use_case_without_goal": 3, "use_case_without_alternative": 2,
            "integration_without_error_message": 4, "idle_participant": 2,
-           "unreachable_status": 4, "dead_end_status": 3}
+           "unreachable_status": 4, "dead_end_status": 3, "rule_gap": 4, "rule_overlap": 4}
 SECTION_OF = {"nn_without_join": "classes", "island_entity": "classes", "reference_without_relation": "classes",
               "role_without_use_case": "use_cases", "use_case_without_goal": "use_cases",
               "use_case_without_alternative": "use_cases", "integration_without_error_message": "sequences",
-              "idle_participant": "sequences", "unreachable_status": "states", "dead_end_status": "states"}
+              "idle_participant": "sequences", "unreachable_status": "states", "dead_end_status": "states",
+              "rule_gap": "rules", "rule_overlap": "rules"}
+ELSE = re.compile(r"^(inaczej|w przeciwnym (razie|wypadku)|pozostałe|else|default)\b", re.I)
 
 
 def _i(code, message, key, why):
@@ -100,4 +104,14 @@ def lint(spec: Spec) -> list[dict]:
                 issues.append(_i("dead_end_status", f"Status „{s.name}” nie ma wyjścia, a nie jest końcowy.", sm.key,
                                  "Rekord utknie w tym statusie na zawsze. Oznacz go jako końcowy albo dodaj "
                                  "przejście dalej."))
+    for r in spec.rules:
+        conds = [w.condition.strip().lower() for w in r.rows]
+        if not (any(ELSE.match(c) for c in conds) or {"tak", "nie"} <= set(conds)):
+            issues.append(_i("rule_gap", f"Tabela „{r.name}” nie obejmuje wszystkich przypadków.", r.key,
+                             "Gdy żaden warunek nie pasuje, system nie wie, co zrobić. Dodaj wiersz „inaczej” "
+                             "albo uzupełnij warunki tak, by pokrywały wszystkie przypadki."))
+        if len(set(conds)) < len(conds):
+            issues.append(_i("rule_overlap", f"Tabela „{r.name}” ma powtórzony warunek.", r.key,
+                             "Dwa wiersze z tym samym warunkiem mogą dać różne wyniki — reguła staje się "
+                             "niejednoznaczna. Scal je albo doprecyzuj warunki."))
     return issues

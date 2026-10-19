@@ -5,7 +5,7 @@ from itertools import pairwise
 from ..ai.rules import NEGATIVE_LABEL
 from ..flow.lanes import assign
 from ..spec.derive import NOTIFY, slug
-from ..spec.schema import Alternative, Message, Sequence, UseCase
+from ..spec.schema import Alternative, Message, Rule, RuleRow, Sequence, UseCase
 
 FLOW = ("start", "end", "decision", "parallel", "wait")
 SYSTEM = "System"
@@ -145,3 +145,13 @@ def sequences(graph: dict, meta: dict) -> list[Sequence]:
             last_human = me
     name = f"Ścieżka główna: {meta.get('start_sentence') or meta.get('name', '')}"
     return [Sequence(key="seq:main", name=name[:200], participants=parts, messages=msgs)]
+
+
+def rules(graph: dict) -> list[Rule]:
+    """One decision table per exclusive gateway: answer (edge label) → next step."""
+    by_key = {n["key"]: n for n in graph["nodes"]}
+    out = _out(graph)
+    return [Rule(key=f"rule:{n['key']}", node_key=n["key"], name=n["title"][:200], inputs=list(n.get("inputs", [])),
+                 rows=[RuleRow(condition=(e.get("label") or "inaczej")[:200], result=by_key[e["target"]]["title"][:200])
+                       for e in out.get(n["key"], []) if e["target"] in by_key])
+            for n in graph["nodes"] if n["type"] == "decision"]

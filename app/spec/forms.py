@@ -15,6 +15,8 @@ from .schema import (
     Notification,
     Relation,
     Role,
+    Rule,
+    RuleRow,
     Screen,
     ScreenField,
     Sequence,
@@ -27,7 +29,7 @@ from .schema import (
 
 PREFIX = {"entities": "entity", "screens": "screen", "roles": "role", "states": "states",
           "notifications": "notification", "integrations": "integration", "nfr": "nfr",
-          "use_cases": "uc", "sequences": "seq"}
+          "use_cases": "uc", "sequences": "seq", "rules": "rule"}
 
 
 def _rows(text: str | None) -> list[list[str]]:
@@ -102,6 +104,9 @@ def item_from_form(section: str, form, existing):
             return Sequence(**base, name=f("name"), participants=[r[0] for r in _rows(f("participants"))],
                             messages=[Message(source=_col(r, 0), target=_col(r, 1), text=_col(r, 2),
                                               kind=_col(r, 3, "call")) for r in _rows(f("messages"))])
+        if section == "rules":
+            return Rule(**base, name=f("name"), inputs=[x.strip() for x in f("inputs").split(",") if x.strip()],
+                        rows=[RuleRow(condition=_col(r, 0), result=_col(r, 1)) for r in _rows(f("rows"))])
     except ValidationError as exc:
         raise ValueError(f"Niepoprawne dane ({exc.error_count()} błędów): sprawdź wymagane pola i wartości.") from exc
     raise ValueError("Nieznana sekcja.")
@@ -139,4 +144,7 @@ def form_text(section: str, item) -> dict:
     if section == "sequences":
         return {"name": item.name, "participants": "\n".join(item.participants),
                 "messages": "\n".join(f"{m.source} | {m.target} | {m.text} | {m.kind}" for m in item.messages)}
+    if section == "rules":
+        return {"name": item.name, "inputs": ", ".join(item.inputs),
+                "rows": "\n".join(f"{w.condition} | {w.result}" for w in item.rows)}
     return item.model_dump()

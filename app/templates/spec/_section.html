@@ -44,6 +44,10 @@
   {% elif section == 'sequences' %}
     <p>{% for p in item.participants %}<span class="badge">{{ p }}</span> {% endfor %}</p>
     <ol>{% for m in item.messages %}<li>{{ m.source }} → {{ m.target }}: {{ m.text }} <span class="muted">({{ message_kinds[m.kind] }})</span></li>{% endfor %}</ol>
+  {% elif section == 'rules' %}
+    {% if item.inputs %}<p class="muted">Dane: {{ item.inputs|join(', ') }}</p>{% endif %}
+    <div class="table-wrap"><table class="versions"><tr><th>Warunek</th><th>Wynik</th></tr>
+      {% for w in item.rows %}<tr><td>{{ w.condition }}</td><td>{{ w.result }}</td></tr>{% endfor %}</table></div>
   {% elif section == 'nfr' %}
     <p class="muted">{{ nfr_labels[item.category] }}</p>
   {% endif %}
