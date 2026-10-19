@@ -7,12 +7,14 @@ from ..spec.schema import Spec
 WEIGHTS = {"nn_without_join": 5, "island_entity": 3, "reference_without_relation": 3,
            "role_without_use_case": 3, "use_case_without_goal": 3, "use_case_without_alternative": 2,
            "integration_without_error_message": 4, "idle_participant": 2,
-           "unreachable_status": 4, "dead_end_status": 3, "rule_gap": 4, "rule_overlap": 4}
+           "unreachable_status": 4, "dead_end_status": 3, "rule_gap": 4, "rule_overlap": 4,
+           "vision_without_metrics": 3, "vision_without_wont": 1}
 SECTION_OF = {"nn_without_join": "classes", "island_entity": "classes", "reference_without_relation": "classes",
               "role_without_use_case": "use_cases", "use_case_without_goal": "use_cases",
               "use_case_without_alternative": "use_cases", "integration_without_error_message": "sequences",
               "idle_participant": "sequences", "unreachable_status": "states", "dead_end_status": "states",
-              "rule_gap": "rules", "rule_overlap": "rules"}
+              "rule_gap": "rules", "rule_overlap": "rules", "vision_without_metrics": "vision",
+              "vision_without_wont": "vision"}
 ELSE = re.compile(r"^(inaczej|w przeciwnym (razie|wypadku)|pozostałe|else|default)\b", re.I)
 
 
@@ -114,4 +116,14 @@ def lint(spec: Spec) -> list[dict]:
             issues.append(_i("rule_overlap", f"Tabela „{r.name}” ma powtórzony warunek.", r.key,
                              "Dwa wiersze z tym samym warunkiem mogą dać różne wyniki — reguła staje się "
                              "niejednoznaczna. Scal je albo doprecyzuj warunki."))
+    v = spec.vision
+    if v.problem.strip():
+        if not v.metrics:
+            issues.append(_i("vision_without_metrics", "Wizja nie ma mierników sukcesu.", "vision",
+                             "Bez mierzalnego celu (np. „rezerwacja w mniej niż 2 minuty”) nie da się ocenić, czy "
+                             "aplikacja się udała — to pierwsze pytanie sponsora projektu."))
+        if not v.wont:
+            issues.append(_i("vision_without_wont", "Zakres nie mówi, czego nie robimy (Won't).", "vision",
+                             "Jawne „tego nie robimy w MVP” chroni projekt przed rozrostem zakresu i sporami "
+                             "przy odbiorze."))
     return issues

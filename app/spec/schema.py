@@ -24,6 +24,7 @@ KIND_LABELS = {
     "set_field_type": "zmiana typu pola", "add_field": "nowe pole", "add_relation": "nowa relacja",
     "add_status": "nowy status", "add_transition": "nowe przejście", "set_permission": "uprawnienie",
     "add_notification": "powiadomienie", "add_nfr": "wymaganie", "other_note": "uwaga",
+    "add_alternative": "scenariusz alternatywny", "add_rule_row": "wiersz reguły", "set_vision": "wizja i zakres",
 }
 SECTIONS = ("entities", "screens", "roles", "states", "notifications", "integrations", "nfr", "use_cases", "sequences",
             "rules")
@@ -166,6 +167,20 @@ class Rule(Item):
     rows: list[RuleRow] = []
 
 
+VISION_FIELDS = ("problem", "goals", "metrics", "must", "should", "could", "wont")
+
+
+class Vision(BaseModel):
+    problem: str = PField(default="", max_length=1000)
+    goals: list[str] = []
+    metrics: list[str] = []
+    must: list[str] = []
+    should: list[str] = []
+    could: list[str] = []
+    wont: list[str] = []
+    manual: list[str] = []  # fields edited by hand or accepted from AI — never overwritten by the draft
+
+
 class Proposal(BaseModel):
     id: str
     kind: str
@@ -185,6 +200,7 @@ class Spec(BaseModel):
     use_cases: list[UseCase] = []
     sequences: list[Sequence] = []
     rules: list[Rule] = []
+    vision: Vision = Vision()
     stack: str = PField(default="", max_length=200)
     proposals: list[Proposal] = []
     dismissed: list[str] = []

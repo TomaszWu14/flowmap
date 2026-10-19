@@ -1,0 +1,11 @@
+<section class="card">
+  <h3>{{ x.summary }}</h3>
+  {% for f, label in vision_labels.items() %}{% if x.patch.get(f) %}
+    <p><strong>{{ label }}:</strong> {{ x.patch[f]|replace('\n', ' · ') }}</p>{% endif %}{% endfor %}
+  {% if can_edit %}<div class="row">
+    {% for action, label in [('accept', 'Zatwierdź'), ('reject', 'Odrzuć')] %}
+    <form method="post" action="{{ url_for('spec.proposal_action', project_id=project.id, pid=x.id, action=action) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="back" value="vision">
+      <button class="btn small{{ ' primary' if action == 'accept' }}">{{ label }}</button></form>
+    {% endfor %}</div>{% endif %}
+</section>

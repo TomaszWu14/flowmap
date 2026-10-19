@@ -13,12 +13,12 @@ OK = {"proposals": [
      "patch": {"field": "utworzono", "type": "datetime", "name": "", "required": False, "to_entity": "", "kind": "",
                "label": "", "final": False, "from": "", "to": "", "entity": "", "read": "", "create": "",
                "update": "", "delete": "", "trigger": "", "channel": "", "recipient_role": "", "category": "",
-               "text": ""}},
+               "text": "", "condition": "", "result": ""}},
     {"kind": "add_nfr", "target_key": "", "summary": "Czas odpowiedzi",
      "patch": {"field": "", "type": "", "name": "", "required": False, "to_entity": "", "kind": "", "label": "",
                "final": False, "from": "", "to": "", "entity": "", "read": "", "create": "", "update": "",
                "delete": "", "trigger": "", "channel": "", "recipient_role": "", "category": "performance",
-               "text": "Strony < 1 s"}},
+               "text": "Strony < 1 s", "condition": "", "result": ""}},
 ]}
 
 
