@@ -16,7 +16,8 @@
 {% else %}
   <header class="panel-head">
     {% set picto = node_icon(node.to_dict()) %}
-    <span class="type-chip t-{{ node.type }}">{{ pictogram_svg(picto, 14) }} {{ type_labels[node.type] }}</span>
+    <span class="type-chip t-{{ node.type }}" title="{{ type_help[node.type] }}">{{ pictogram_svg(picto, 14) }} {{ type_labels[node.type] }}</span>
+    <p class="type-help muted">{{ type_help[node.type] }}</p>
     <h2>{{ node.title }}</h2>
     <p class="muted" style="margin:0">{{ node.actor or 'bez aktora' }}{% if remaining %} · <button class="linklike" type="button" hx-get="{{ url_for('flow.guard_panel', project_id=project.id) }}"
       hx-target="#panel-body">pytań otwartych: {{ remaining }}</button>{% endif %}</p>

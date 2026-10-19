@@ -39,7 +39,12 @@ def test_bpmn_is_valid_xml_with_mapped_types():
     assert len(flows) == len(full_graph("booking")["edges"])
     ids = {el.get("id") for el in proc}
     assert all(f.get("sourceRef") in ids and f.get("targetRef") in ids for f in flows)
-    assert len(root.findall(".//di:BPMNShape", BPMN_NS)) == len(full_graph("booking")["nodes"])
+    lanes = proc.findall("b:laneSet/b:lane", BPMN_NS)
+    refs = [r.text for lane in lanes for r in lane.findall("b:flowNodeRef", BPMN_NS)]
+    assert len(lanes) >= 2 and sorted(refs) == sorted(ids - {proc.get("id")}) or set(refs) <= ids
+    assert len(refs) == len(full_graph("booking")["nodes"]) and len(set(refs)) == len(refs)  # each step in one lane
+    assert root.find("b:collaboration/b:participant", BPMN_NS).get("processRef") == proc.get("id")
+    assert len(root.findall(".//di:BPMNShape", BPMN_NS)) == len(full_graph("booking")["nodes"]) + len(lanes) + 1
 
 
 def test_markdown_has_all_sections():
@@ -132,3 +137,20 @@ def test_public_example_page(client, db):
     assert "Przykład: Rezerwacja wizyty" in html and "## 1. Opis procesu" in html
     data = client.get("/przyklad/graph.json").json
     assert data["score"] == 100 and len(data["nodes"]) > 5
+
+
+def test_bpmn_task_types_follow_pictograms():
+    import xml.etree.ElementTree as ET
+    graph = {"nodes": [
+        {"key": "s", "type": "start", "title": "Start", "actor": "Klient", "data": {}},
+        {"key": "m", "type": "automation", "title": "Wysłanie e-maila", "actor": "System", "data": {}},
+        {"key": "k", "type": "user_action", "title": "Wprowadza dane do SAP ręcznie", "actor": "Biuro", "data": {}},
+        {"key": "p", "type": "user_action", "title": "Pakuje towar", "actor": "Magazynier", "data": {}},
+        {"key": "g", "type": "parallel", "title": "Razem", "actor": "", "data": {"branches": ["a", "b"]}},
+        {"key": "e", "type": "end", "title": "Koniec", "actor": "", "data": {}}],
+        "edges": [{"source": a, "target": b, "label": "", "condition": ""}
+                  for a, b in (("s", "m"), ("m", "k"), ("k", "g"), ("g", "p"), ("p", "e"))]}
+    proc = ET.fromstring(builders.to_bpmn(graph, "T")).find("b:process", BPMN_NS)
+    tag = {el.get("id"): el.tag.split("}")[1] for el in proc if el.get("id", "").startswith("Node_")}
+    assert tag == {"Node_s": "startEvent", "Node_m": "sendTask", "Node_k": "userTask", "Node_p": "manualTask",
+                   "Node_g": "parallelGateway", "Node_e": "endEvent"}

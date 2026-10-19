@@ -50,7 +50,7 @@ def download(project_id, kind):
     if kind == "diagram.mmd":
         return _download(builders.to_mermaid(graph), "diagram.mmd", "text/plain")
     if kind == "proces.bpmn":
-        return _download(builders.to_bpmn(graph, project.name), "proces.bpmn", "application/xml")
+        return _download(builders.to_bpmn(graph, project.name, project.display), "proces.bpmn", "application/xml")
     if kind == "prompt.md":
         spec = builders.to_markdown(meta, graph, g.project_spec(project))
         return _download(builders.to_prompt(meta, spec, request.args.get("target", "claude_code")),

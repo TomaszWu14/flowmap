@@ -80,11 +80,12 @@ BPMN_TAGS = {
     "wait": "intermediateCatchEvent",
 }
 SIZES = {"startEvent": (36, 36), "endEvent": (36, 36), "intermediateCatchEvent": (36, 36),
-         "exclusiveGateway": (50, 50)}
+         "exclusiveGateway": (50, 50), "parallelGateway": (50, 50)}
+TASK_W, TASK_H, COL_W, ROW_H, LANE_HEAD = 100, 80, 160, 110, 30
 
 
-def _levels(graph: dict) -> dict[str, tuple[int, int]]:
-    """Simple BFS layering for the diagram (column = depth, row = order within depth)."""
+def _levels(graph: dict) -> dict[str, int]:
+    """Column of every step = its BFS depth from the start (unreachable steps go last)."""
     depth: dict[str, int] = {}
     children: dict[str, list[str]] = {}
     for e in graph["edges"]:
@@ -97,25 +98,40 @@ def _levels(graph: dict) -> dict[str, tuple[int, int]]:
         depth[k] = d
         queue.extend((c, d + 1) for c in children.get(k, []))
     next_col = max(depth.values(), default=-1) + 1
-    for n in graph["nodes"]:
-        depth.setdefault(n["key"], next_col)
-    rows: dict[int, int] = {}
-    pos = {}
-    for n in graph["nodes"]:
-        col = depth[n["key"]]
-        pos[n["key"]] = (col, rows.get(col, 0))
-        rows[col] = rows.get(col, 0) + 1
-    return pos
+    return {n["key"]: depth.get(n["key"], next_col) for n in graph["nodes"]}
 
 
-def to_bpmn(graph: dict, name: str) -> str:
+def _element(node: dict) -> str:
+    """BPMN element: fixed for events and gateways, from the pictogram for tasks (envelope = sendTask …)."""
+    from ..flow.pictograms import bpmn_element
+
+    if node["type"] in BPMN_TAGS and node["type"] not in ("user_action", "screen", "automation", "integration"):
+        return BPMN_TAGS[node["type"]]
+    kind = bpmn_element(node)
+    if kind == "timer":
+        return "intermediateCatchEvent"
+    return kind if kind.endswith("Task") else BPMN_TAGS[node["type"]]
+
+
+def to_bpmn(graph: dict, name: str, display: dict | None = None) -> str:
+    """BPMN 2.0 with a pool, one lane per workstation and BPMN task types — opens in Camunda Modeler / bpmn.io."""
+    from ..flow.lanes import lanes_info
+
     ET.register_namespace("bpmn", BPMN)
     ET.register_namespace("bpmndi", BPMNDI)
     ET.register_namespace("dc", DC)
     ET.register_namespace("di", DI)
     defs = ET.Element(f"{{{BPMN}}}definitions", {"id": "Definitions_1", "targetNamespace": "https://flowmap.local/bpmn"})
+    collab = ET.SubElement(defs, f"{{{BPMN}}}collaboration", {"id": "Collaboration_1"})
+    ET.SubElement(collab, f"{{{BPMN}}}participant", {"id": "Participant_1", "name": name, "processRef": "Process_1"})
     process = ET.SubElement(defs, f"{{{BPMN}}}process", {"id": "Process_1", "name": name, "isExecutable": "false"})
     ids = {n["key"]: f"Node_{n['key']}" for n in graph["nodes"]}
+    lanes = lanes_info(graph, display)
+    order = lanes["order"] or [""]
+    lane_ids = {role: f"Lane_{i}" for i, role in enumerate(order)}
+    lane_set = ET.SubElement(process, f"{{{BPMN}}}laneSet", {"id": "LaneSet_1"})
+    lane_els = {role: ET.SubElement(lane_set, f"{{{BPMN}}}lane",
+                                    {"id": lane_ids[role], "name": role or "Bez przypisanej roli"}) for role in order}
     incoming: dict[str, list[str]] = {}
     outgoing: dict[str, list[str]] = {}
     flows = []
@@ -125,9 +141,12 @@ def to_bpmn(graph: dict, name: str) -> str:
             flows.append((fid, e))
             outgoing.setdefault(e["source"], []).append(fid)
             incoming.setdefault(e["target"], []).append(fid)
+    tags = {}
     for n in graph["nodes"]:
-        tag = BPMN_TAGS[n["type"]]
+        tag = tags[n["key"]] = _element(n)
         el = ET.SubElement(process, f"{{{BPMN}}}{tag}", {"id": ids[n["key"]], "name": n["title"]})
+        ET.SubElement(lane_els[lanes["of"].get(n["key"], "") if lanes["of"].get(n["key"], "") in lane_els
+                               else order[0]], f"{{{BPMN}}}flowNodeRef").text = ids[n["key"]]
         if n.get("description") or n.get("actor"):
             doc = ET.SubElement(el, f"{{{BPMN}}}documentation")
             parts = (f"Aktor: {n['actor']}" if n.get("actor") else "", n.get("description", ""))
@@ -136,7 +155,7 @@ def to_bpmn(graph: dict, name: str) -> str:
             ET.SubElement(el, f"{{{BPMN}}}incoming").text = fid
         for fid in outgoing.get(n["key"], []):
             ET.SubElement(el, f"{{{BPMN}}}outgoing").text = fid
-        if n["type"] == "wait":
+        if tag == "intermediateCatchEvent":
             ET.SubElement(el, f"{{{BPMN}}}timerEventDefinition", {"id": f"Timer_{n['key']}"})
     for fid, e in flows:
         attrs = {"id": fid, "sourceRef": ids[e["source"]], "targetRef": ids[e["target"]]}
@@ -146,24 +165,53 @@ def to_bpmn(graph: dict, name: str) -> str:
         if e.get("condition") and e["condition"] != "error":
             ET.SubElement(flow, f"{{{BPMN}}}conditionExpression").text = e["condition"]
 
+    # Diagram: columns by depth, one horizontal band per lane, extra rows when a lane has two steps in a column.
+    cols = _levels(graph)
+    rows: dict[tuple[str, int], int] = {}
+    slot = {}
+    for n in graph["nodes"]:
+        lane = lanes["of"].get(n["key"], "") if lanes["of"].get(n["key"], "") in lane_els else order[0]
+        k = (lane, cols[n["key"]])
+        slot[n["key"]] = (lane, rows.get(k, 0))
+        rows[k] = rows.get(k, 0) + 1
+    lane_rows = {role: max([count for (lane, _col), count in rows.items() if lane == role] or [1]) for role in order}
+    lane_top, y = {}, 40
+    for role in order:
+        lane_top[role] = y
+        y += lane_rows[role] * ROW_H + 20
+    width = (max(cols.values(), default=0) + 1) * COL_W + 80
     diagram = ET.SubElement(defs, f"{{{BPMNDI}}}BPMNDiagram", {"id": "Diagram_1"})
-    plane = ET.SubElement(diagram, f"{{{BPMNDI}}}BPMNPlane", {"id": "Plane_1", "bpmnElement": "Process_1"})
-    pos = _levels(graph)
+    plane = ET.SubElement(diagram, f"{{{BPMNDI}}}BPMNPlane", {"id": "Plane_1", "bpmnElement": "Collaboration_1"})
+
+    def shape(element_id, x, yy, w, h, horizontal=False):
+        attrs = {"id": f"{element_id}_di", "bpmnElement": element_id}
+        if horizontal:
+            attrs["isHorizontal"] = "true"
+        s = ET.SubElement(plane, f"{{{BPMNDI}}}BPMNShape", attrs)
+        ET.SubElement(s, f"{{{DC}}}Bounds", {"x": f"{x:g}", "y": f"{yy:g}", "width": f"{w:g}", "height": f"{h:g}"})
+
+    shape("Participant_1", 40, 40, width + LANE_HEAD, y - 40, horizontal=True)
+    for role in order:
+        shape(lane_ids[role], 40 + LANE_HEAD, lane_top[role], width, lane_rows[role] * ROW_H + 20, horizontal=True)
     bounds = {}
     for n in graph["nodes"]:
-        w, h = SIZES.get(BPMN_TAGS[n["type"]], (120, 70))
-        col, row = pos[n["key"]]
-        x, y = 80 + col * 180 + (120 - w) / 2, 80 + row * 130 + (70 - h) / 2
-        bounds[n["key"]] = (x, y, w, h)
-        shape = ET.SubElement(plane, f"{{{BPMNDI}}}BPMNShape",
-                              {"id": f"{ids[n['key']]}_di", "bpmnElement": ids[n["key"]]})
-        ET.SubElement(shape, f"{{{DC}}}Bounds", {"x": f"{x:g}", "y": f"{y:g}", "width": str(w), "height": str(h)})
+        w, h = SIZES.get(tags[n["key"]], (TASK_W, TASK_H))
+        lane, row = slot[n["key"]]
+        cx = 40 + LANE_HEAD + 40 + cols[n["key"]] * COL_W + TASK_W / 2
+        cy = lane_top[lane] + 10 + row * ROW_H + ROW_H / 2
+        bounds[n["key"]] = (cx - w / 2, cy - h / 2, w, h)
+        shape(ids[n["key"]], cx - w / 2, cy - h / 2, w, h)
     for fid, e in flows:
         edge = ET.SubElement(plane, f"{{{BPMNDI}}}BPMNEdge", {"id": f"{fid}_di", "bpmnElement": fid})
         sx, sy, sw, sh = bounds[e["source"]]
         tx, ty, _tw, th = bounds[e["target"]]
-        ET.SubElement(edge, f"{{{DI}}}waypoint", {"x": f"{sx + sw:g}", "y": f"{sy + sh / 2:g}"})
-        ET.SubElement(edge, f"{{{DI}}}waypoint", {"x": f"{tx:g}", "y": f"{ty + th / 2:g}"})
+        start, end = (sx + sw, sy + sh / 2), (tx, ty + th / 2)
+        points = [start, end]
+        if abs(start[1] - end[1]) > 1:  # orthogonal route through the middle between the two columns
+            mid = (start[0] + end[0]) / 2 if end[0] > start[0] else start[0] + 20
+            points = [start, (mid, start[1]), (mid, end[1]), end]
+        for px, py in points:
+            ET.SubElement(edge, f"{{{DI}}}waypoint", {"x": f"{px:g}", "y": f"{py:g}"})
     ET.indent(defs)
     return '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(defs, encoding="unicode") + "\n"
 
