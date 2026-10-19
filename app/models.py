@@ -17,7 +17,6 @@ NODE_TYPE_LABELS = {
     "integration": "Integracja",
     "end": "Koniec",
 }
-MODES = ("quick", "thorough")
 MIN_PASSWORD_LENGTH = 12
 
 
@@ -93,6 +92,12 @@ class Project(db.Model):
 
     def node_by_key(self, key: str):
         return next((n for n in self.nodes if n.key == key), None)
+
+    @property
+    def meta(self) -> dict:
+        """Project settings shared by exports, the spec and the AI prompts."""
+        return {"name": self.name, "start_sentence": self.start_sentence, "mode": self.mode,
+                "template": self.template}
 
     def graph(self) -> dict:
         """Plain-dict snapshot of the map; the shared format for guard, export, simulation and versions."""

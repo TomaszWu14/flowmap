@@ -37,3 +37,19 @@ def test_project_list_counts_steps(auth_client):
     p = new_project(auth_client)
     n = len(Project.query.get(p.id).nodes)
     assert f"{n} krok" in auth_client.get("/projekty").get_data(as_text=True)
+
+
+def test_ai_gate_explains_admin_switch_and_limit(auth_client, app):
+    from app import settings
+    from app.models import User
+    app.config["ANTHROPIC_API_KEY"] = "sk-test"
+    p = new_project(auth_client)
+    settings.set_value("ai_enabled", False)
+    db.session.commit()
+    html = auth_client.post(f"/p/{p.id}/guard/review").get_data(as_text=True)
+    assert "wyłączone przez administratora" in html
+    settings.set_value("ai_enabled", True)
+    settings.set_value("ai_daily_limit", 0)
+    db.session.commit()
+    html = auth_client.post(f"/p/{p.id}/guard/review").get_data(as_text=True)
+    assert "limit" in html and User.query.first() is not None

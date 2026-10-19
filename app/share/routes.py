@@ -22,10 +22,6 @@ def _shared(token: str) -> Project:
     return project
 
 
-def _meta(project) -> dict:
-    return {"name": project.name, "start_sentence": project.start_sentence, "mode": project.mode}
-
-
 @bp.get("/p/<int:project_id>/udostepnianie")
 @login_required
 def settings(project_id):
@@ -120,7 +116,7 @@ def member_remove(project_id, member_id):
 def view(token):
     project = _shared(token)
     graph = project.graph()
-    spec = builders.to_markdown(_meta(project), graph, g.project_spec(project))
+    spec = builders.to_markdown(project.meta, graph, g.project_spec(project))
     return render_template("share/view.html", project=project, token=token, spec=spec,
                            mermaid=builders.to_mermaid(graph))
 

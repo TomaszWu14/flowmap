@@ -148,5 +148,5 @@
   }
 
   document.body.addEventListener("mapChanged", (ev) => load(ev.detail ? ev.detail.focus : undefined));
-  load(cfg.focus || undefined);
+  load();
 })();

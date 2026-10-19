@@ -6,8 +6,8 @@ from sqlalchemy.orm import joinedload
 from wtforms import RadioField, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Length
 
-from .. import audit, settings
-from ..ai.client import AIError, ai_enabled, draft_map
+from .. import audit
+from ..ai.client import AIError, ai_enabled, draft_map, spend_ai_request
 from ..ai.draft import draft_from_text
 from ..ai.templates import TEMPLATE_CHOICES, USER_PREFIX
 from ..extensions import db
@@ -84,14 +84,14 @@ def from_document():
         text = form.text.data.strip()
         graph, note = None, "Mapa z dokumentu (reguły)"
         if ai_enabled():
-            if current_user.consume_ai_request(settings.ai_daily_limit()):
-                db.session.commit()
+            reason = spend_ai_request()
+            if reason:
+                flash(f"{reason} — mapa z reguł.", "info")
+            else:
                 try:
                     graph, note = draft_map(text), "Mapa z dokumentu (AI)"
                 except AIError as exc:
                     flash(f"AI niedostępne ({exc}) — mapa z reguł.", "info")
-            else:
-                flash("Dzienny limit zapytań do AI wyczerpany — mapa z reguł.", "info")
         if graph is None:
             graph = draft_from_text(text)
         start = next(n for n in graph["nodes"] if n["type"] == "start")
@@ -218,9 +218,7 @@ def version_graph(project_id, version_id):
 @login_required
 def restore(project_id, version_id):
     project = g.project_for(project_id, "edit")
-    version = db.session.get(Version, version_id)
-    if version is None or version.project_id != project.id:
-        return render_template("error.html", code=404, message="Nie ma takiej wersji."), 404
+    version = _version(project, version_id)
     g.restore_version(project, version)
     db.session.commit()
     flash(f"Przywrócono wersję „{version.description}”.", "success")

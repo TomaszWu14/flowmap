@@ -220,7 +220,6 @@ details > form, details > div { margin-top: .6rem; display: grid; gap: .6rem; }
 .stats strong { display: block; font-size: 1.5rem; }
 
 /* export */
-.tabs { display: flex; gap: .3rem; flex-wrap: wrap; margin-bottom: .8rem; }
 pre.code { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: .9rem; overflow: auto;
   font: .82rem/1.5 var(--mono); max-height: 480px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .export-grid { display: grid; gap: 1rem; }

@@ -40,6 +40,7 @@ def project_for(project_id: int, need: str) -> Project:
     if ROLE_RANK[role] < NEED_RANK[need]:
         abort(403)
     project.current_role = role  # for templates
+    project.can_edit = role != "viewer"
     return project
 
 
@@ -122,9 +123,8 @@ def refresh_spec(project: Project) -> None:
     If `project.spec` is corrupt, `project_spec` returns None and we rebuild from the map alone —
     any manual/AI items recorded only in that corrupt document are lost by design.
     """
-    meta = {"name": project.name, "start_sentence": project.start_sentence}
     current = project_spec(project) if project.spec else None
-    project.spec = merge(current, derive(project.graph(), meta)).model_dump(mode="json")
+    project.spec = merge(current, derive(project.graph(), project.meta)).model_dump(mode="json")
 
 
 # --- versions -------------------------------------------------------------

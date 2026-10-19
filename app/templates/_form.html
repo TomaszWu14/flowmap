@@ -1,4 +1,4 @@
-{% macro field(f, help=None) %}
+{% macro field(f) %}
 <label>{{ f.label.text }}
   {{ f(**kwargs) }}
   {% if f.description %}<span class="field-help">{{ f.description }}</span>{% endif %}
