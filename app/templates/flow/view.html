@@ -50,9 +50,9 @@
            {% if not project.can_edit %}data-readonly="1"{% else %}data-positions-url="{{ url_for('flow.positions', project_id=project.id) }}"
            data-lanes-url="{{ url_for('flow.lanes', project_id=project.id) }}"{% endif %}></div>
       <div class="legend" aria-hidden="true">
-        <span><i style="--c:var(--t-screen)"></i>Ekran</span><span><i style="--c:var(--t-user_action)"></i>Działanie</span>
-        <span><i style="--c:var(--t-automation)"></i>Automatyzacja</span><span><i style="--c:var(--t-decision)"></i>Decyzja</span><span><i style="--c:var(--t-parallel)"></i>Bramka AND</span>
-        <span><i style="--c:var(--t-integration)"></i>Integracja</span><span><i style="--c:var(--t-wait)"></i>Oczekiwanie</span>
+        <span><i style="--c:var(--t-screen)"></i>Ekran</span><span><i style="--c:var(--t-user_action)"></i>Zadanie użytkownika</span>
+        <span><i style="--c:var(--t-automation)"></i>Zadanie systemowe</span><span><i style="--c:var(--t-decision)"></i>Bramka XOR</span><span><i style="--c:var(--t-parallel)"></i>Bramka AND</span>
+        <span><i style="--c:var(--t-integration)"></i>Integracja</span><span><i style="--c:var(--t-wait)"></i>Zdarzenie czasowe</span>
         <span><i style="--c:var(--accent)"></i>czeka na odpowiedź</span>
       </div>
     </section>

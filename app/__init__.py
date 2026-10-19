@@ -39,7 +39,7 @@ def create_app(config_class: type = Config) -> Flask:
     from .export.routes import bp as export_bp
     from .flow.routes import bp as flow_bp
     from .media.routes import bp as media_bp
-    from .models import NODE_TYPE_LABELS
+    from .models import NODE_TYPE_HELP, NODE_TYPE_LABELS
     from .projects.routes import bp as projects_bp
     from .settings import signup_open
     from .share.routes import bp as share_bp
@@ -48,7 +48,8 @@ def create_app(config_class: type = Config) -> Flask:
     app.jinja_env.globals["type_labels"] = NODE_TYPE_LABELS
     app.jinja_env.globals["signup_open"] = signup_open
     app.jinja_env.filters.update(kroki=steps_label, plural=plural, plural_word=plural_word)
-    app.jinja_env.globals.update(pictograms=PICTOGRAMS, pictogram_svg=pictogram_svg, node_icon=icon_for)
+    app.jinja_env.globals.update(pictograms=PICTOGRAMS, pictogram_svg=pictogram_svg, node_icon=icon_for,
+                                 type_help=NODE_TYPE_HELP)
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(projects_bp)

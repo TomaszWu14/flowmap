@@ -7,16 +7,27 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from .extensions import db, login_manager
 
 NODE_TYPES = ("start", "user_action", "screen", "automation", "decision", "parallel", "wait", "integration", "end")
-NODE_TYPE_LABELS = {
-    "start": "Start",
-    "user_action": "Działanie użytkownika",
-    "screen": "Ekran",
-    "automation": "Automatyzacja",
+NODE_TYPE_LABELS = {  # BPMN vocabulary, so every click teaches the right term
+    "start": "Zdarzenie startowe",
+    "user_action": "Zadanie użytkownika",
+    "screen": "Ekran (zadanie użytkownika)",
+    "automation": "Zadanie systemowe",
     "parallel": "Bramka AND (równolegle)",
-    "decision": "Decyzja",
-    "wait": "Oczekiwanie",
-    "integration": "Integracja",
-    "end": "Koniec",
+    "decision": "Bramka XOR (decyzja)",
+    "wait": "Zdarzenie czasowe",
+    "integration": "Zadanie systemowe (integracja)",
+    "end": "Zdarzenie końcowe",
+}
+NODE_TYPE_HELP = {
+    "start": "Zdarzenie startowe (BPMN: start event) — co uruchamia proces.",
+    "user_action": "Zadanie użytkownika (BPMN: user task) — człowiek wykonuje czynność, zwykle w systemie.",
+    "screen": "Zadanie użytkownika na ekranie — co osoba widzi i wypełnia; staje się widokiem aplikacji.",
+    "automation": "Zadanie systemowe (BPMN: service task) — system robi to sam, bez człowieka.",
+    "integration": "Zadanie systemowe z systemem zewnętrznym (np. SAP, płatności, kurier) — wymiana danych.",
+    "wait": "Zdarzenie czasowe (BPMN: timer event) — proces czeka na termin albo upływ czasu.",
+    "decision": "Bramka XOR (BPMN: exclusive gateway) — proces idzie dokładnie jedną z gałęzi.",
+    "parallel": "Bramka AND (BPMN: parallel gateway) — wszystkie ścieżki naraz; bramka łącząca czeka na każdą.",
+    "end": "Zdarzenie końcowe (BPMN: end event) — tu proces (albo jego gałąź) się kończy.",
 }
 MIN_PASSWORD_LENGTH = 12
 

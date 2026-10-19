@@ -13,14 +13,14 @@ META = {"name": "Salon", "start_sentence": "Klient chce umówić wizytę", "mode
 def test_build_tasks_from_booking_template():
     items = tasks.build_tasks(META, full_graph("booking"))
     titles = [t["title"] for t in items]
-    assert "Klient: Wybór usługi" in titles and "Decyzja: Czy termin jest wolny?" in titles
+    assert "Klient: Wybór usługi" in titles and "Bramka XOR (decyzja): Czy termin jest wolny?" in titles
     assert not any(t.startswith(("Start", "Koniec")) for t in titles)
     service = next(t for t in items if t["title"] == "Klient: Wybór usługi")
     assert service["type"] == "Story" and "Jako Klient chcę: wybór usługi." in service["body"]
     assert "- [ ] Pole „Usługa” jest wymagane i walidowane" in service["body"]
     payment = next(t for t in items if t["title"].endswith("Płatność online"))
     assert payment["type"] == "Task" and "Błąd jest obsłużony" in payment["body"]
-    decision = next(t for t in items if t["title"].startswith("Decyzja"))
+    decision = next(t for t in items if t["title"].startswith("Bramka XOR"))
     assert "Obsłużona gałąź „nie”" in decision["body"]
 
 
