@@ -1,8 +1,18 @@
 import click
 from flask import Flask, render_template
+from flask_wtf.csrf import CSRFError
 
 from .config import Config
 from .extensions import csrf, db, login_manager, migrate
+
+ERROR_MESSAGES = {
+    400: "Błędne żądanie.",
+    403: "Masz w tym projekcie tylko podgląd.",
+    404: "Nie znaleziono strony.",
+    405: "Ta operacja nie jest dostępna pod tym adresem.",
+    409: "Zapisana specyfikacja jest uszkodzona. Otwórz zakładkę Specyfikacja i odbuduj ją z mapy.",
+    500: "Coś poszło nie tak po naszej stronie. Spróbuj ponownie za chwilę.",
+}
 
 
 def steps_label(n: int) -> str:
@@ -56,17 +66,18 @@ def create_app(config_class: type = Config) -> Flask:
         db.session.execute(db.text("SELECT 1"))
         return {"status": "ok"}
 
-    @app.errorhandler(404)
-    def not_found(_e):
-        return render_template("error.html", code=404, message="Nie znaleziono strony."), 404
+    def error_page(code: int, default: str):
+        def handler(e):
+            # Werkzeug's own descriptions are English; show ours unless the code passed a Polish one.
+            own = getattr(e, "description", None)
+            message = own if own and own != type(e).description else default
+            return render_template("error.html", code=code, message=message), code
+        return handler
 
-    @app.errorhandler(403)
-    def forbidden(_e):
-        return render_template("error.html", code=403, message="Masz w tym projekcie tylko podgląd."), 403
-
-    @app.errorhandler(400)
-    def bad_request(e):
-        return render_template("error.html", code=400, message=getattr(e, "description", "Błędne żądanie.")), 400
+    for code, message in ERROR_MESSAGES.items():
+        app.register_error_handler(code, error_page(code, message))
+    app.register_error_handler(CSRFError, lambda e: (render_template(
+        "error.html", code=400, message="Sesja wygasła. Odśwież stronę i spróbuj ponownie."), 400))
 
     @app.after_request
     def security_headers(resp):

@@ -36,7 +36,8 @@ def test_delete_rules(team):  # noqa: F811
     key = p.nodes[0].key
     add(team["viewer"], p, key)
     c = Comment.query.one()
-    assert team["editor"].post(f"/p/{p.id}/komentarze/{c.id}/usun").status_code == 403
+    r = team["editor"].post(f"/p/{p.id}/komentarze/{c.id}/usun")
+    assert r.status_code == 403 and "tylko właściciel" in r.get_data(as_text=True)
     team["viewer"].post(f"/p/{p.id}/komentarze/{c.id}/usun")
     assert Comment.query.count() == 0
     add(team["editor"], p, key)
