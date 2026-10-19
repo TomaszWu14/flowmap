@@ -29,3 +29,14 @@ def test_trace_issues_and_screen_matched_by_name():
     from app.spec.schema import Screen
     spec.screens.append(Screen(key="screen:x", name="Klient podaje dane kontaktowe"))
     assert trace_issues(g, spec) == []
+
+
+def test_c4_context():
+    from app.design.uml import c4_context
+    _g, spec = booking()
+    out = c4_context(spec, 'Salon "Ala"')
+    assert out.startswith("C4Context\n") and 'System(sys, "Salon \'Ala\'"' in out
+    assert 'Person(p0, "Klient"' in out and 'Rel(p0, sys, "Klient chce umówić wizytę")' in out
+    assert 'System_Ext(x0, "Płatność online"' in out
+    assert 'Rel(sys, x0, "Kwota, Metoda płatności, Status płatności")' in out
+    assert 'System_Ext(ch_email, "Serwer poczty (e-mail)"' in out and 'Rel(sys, ch_email, "Powiadomienia")' in out
