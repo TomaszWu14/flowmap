@@ -5,6 +5,13 @@ from .config import Config
 from .extensions import csrf, db, login_manager, migrate
 
 
+def steps_label(n: int) -> str:
+    """Polish plural: 1 krok, 2-4 kroki (but 12-14 kroków), 5+ kroków."""
+    if n == 1:
+        return "1 krok"
+    return f"{n} kroki" if n % 10 in (2, 3, 4) and n % 100 not in (12, 13, 14) else f"{n} kroków"
+
+
 def create_app(config_class: type = Config) -> Flask:
     app = Flask(__name__)
     app.config.from_object(config_class)
@@ -34,6 +41,7 @@ def create_app(config_class: type = Config) -> Flask:
 
     app.jinja_env.globals["type_labels"] = NODE_TYPE_LABELS
     app.jinja_env.globals["signup_open"] = signup_open
+    app.jinja_env.filters["kroki"] = steps_label
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(projects_bp)
