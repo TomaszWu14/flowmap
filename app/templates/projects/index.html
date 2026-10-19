@@ -19,7 +19,7 @@
     <div class="row">
       <span class="badge">{{ 'szybki' if p.mode == 'quick' else 'dokładny' }}</span>
       {% if p.status == 'complete' %}<span class="badge ok">✓ gotowa mapa</span>{% else %}<span class="badge">w toku</span>{% endif %}
-      <span class="badge">{{ p.nodes|length|kroki }}</span>
+      <span class="badge">{{ steps.get(p.id, 0)|kroki }}</span>
     </div>
     <div class="row" style="justify-content:space-between;margin-top:.6rem">
       <p class="muted" style="font-size:.8rem;margin:0">Zmieniono {{ p.updated_at.strftime('%d.%m.%Y %H:%M') }}</p>
@@ -49,7 +49,7 @@
     <div class="row">
       <span class="badge {{ 'ok' if m.role == 'editor' }}">{{ role_labels[m.role] }}</span>
       <span class="badge">właściciel: {{ p.owner.email }}</span>
-      <span class="badge">{{ p.nodes|length|kroki }}</span>
+      <span class="badge">{{ steps.get(p.id, 0)|kroki }}</span>
     </div>
   </article>
   {% endfor %}

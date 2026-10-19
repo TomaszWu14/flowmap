@@ -197,13 +197,13 @@ def mark_end(project_id, key):
     return _changed(project, f"Oznaczono „{node.title}” jako koniec", node)
 
 
-@bp.post("/p/<int:project_id>/edge/<int:index>/delete")
+@bp.post("/p/<int:project_id>/edge/<int:edge_id>/delete")
 @login_required
-def delete_edge(project_id, index):
+def delete_edge(project_id, edge_id):
     project = g.project_for(project_id, "edit")
-    if not 0 <= index < len(project.edges):
+    edge = next((e for e in project.edges if e.id == edge_id), None)
+    if edge is None:  # stale panel (e.g. after undo): never delete a different edge by position
         abort(404)
-    edge = project.edges[index]
     source = edge.source
     project.edges.remove(edge)
     db.session.delete(edge)
@@ -289,7 +289,7 @@ def guard_review(project_id):
         except AIError as exc:
             error = f"Przegląd AI nieudany: {exc}."
     db.session.commit()
-    return render_template("flow/_guard.html", project=project, report=report, ai=True, error=error,
+    return render_template("flow/_guard.html", project=project, report=report, ai=ai_enabled(), error=error,
                            suggestions=suggestions, log=log, titles={n.key: n.title for n in project.nodes})
 
 

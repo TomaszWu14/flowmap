@@ -118,24 +118,22 @@
         <button class="btn primary" type="submit">Zapisz zmiany</button>
       </form>
     </details>
-    {% set ns = namespace(any=false) %}
-    {% for e in project.edges if e.source_id == node.id %}{% set ns.any = true %}{% endfor %}
-    {% if ns.any %}
+    {% if outgoing %}
     <details>
       <summary>Połączenia wychodzące</summary>
       <ul class="edge-list">
-        {% for e in project.edges %}{% if e.source_id == node.id %}
+        {% for e in outgoing %}
         <li>
           <span>→ {{ e.target.title }}{% if e.label %} <span class="muted">„{{ e.label }}”</span>{% endif %}</span>
-          <button class="btn small danger" type="button" hx-post="{{ url_for('flow.delete_edge', project_id=project.id, index=loop.index0) }}"
+          <button class="btn small danger" type="button" hx-post="{{ url_for('flow.delete_edge', project_id=project.id, edge_id=e.id) }}"
                   hx-target="#panel-body" aria-label="Usuń połączenie do {{ e.target.title }}">Usuń</button>
         </li>
-        {% endif %}{% endfor %}
+        {% endfor %}
       </ul>
     </details>
     {% endif %}
     <div class="row" style="margin-top:.8rem">
-      {% if node.type not in ('start', 'end') and not ns.any %}
+      {% if node.type not in ('start', 'end') and not outgoing %}
       <button class="btn small" type="button" hx-post="{{ url_for('flow.mark_end', project_id=project.id, key=node.key) }}" hx-target="#panel-body">Oznacz jako koniec</button>
       {% endif %}
       {% if node.type != 'start' %}

@@ -1,6 +1,8 @@
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
+from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 from wtforms import RadioField, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Length
 
@@ -12,7 +14,7 @@ from ..extensions import db
 from ..flow import graph as g
 from ..flow.diff import diff_graphs, node_status
 from ..flow.routes import graph_payload
-from ..models import Project, ProjectMember, UserTemplate, Version
+from ..models import Node, Project, ProjectMember, UserTemplate, Version
 from .service import copy_project, create_project, project_from_graph
 
 bp = Blueprint("projects", __name__)
@@ -49,8 +51,13 @@ def home():
 def index():
     projects = Project.query.filter_by(owner_id=current_user.id).order_by(Project.updated_at.desc()).all()
     shared = (ProjectMember.query.filter_by(user_id=current_user.id).join(Project)
+              .options(joinedload(ProjectMember.project).joinedload(Project.owner))
               .order_by(Project.updated_at.desc()).all())
-    return render_template("projects/index.html", projects=projects, shared=shared, role_labels=g.ROLE_LABELS)
+    ids = [p.id for p in projects] + [m.project_id for m in shared]
+    steps = dict(db.session.query(Node.project_id, func.count(Node.id))
+                 .filter(Node.project_id.in_(ids)).group_by(Node.project_id).all()) if ids else {}
+    return render_template("projects/index.html", projects=projects, shared=shared, role_labels=g.ROLE_LABELS,
+                           steps=steps)
 
 
 @bp.route("/projekty/nowy", methods=["GET", "POST"])

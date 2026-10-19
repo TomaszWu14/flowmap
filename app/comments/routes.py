@@ -65,7 +65,7 @@ def toggle_resolved(project_id, comment_id):
     project = g.project_for(project_id, "view")
     comment = _comment(project, comment_id)
     if project.current_role == "viewer" and comment.author_id != current_user.id:
-        abort(403)
+        abort(403, "Z podglądem możesz rozwiązywać tylko własne komentarze.")
     comment.resolved = not comment.resolved
     db.session.commit()
     return _render(project, comment.node_key, changed=True)
@@ -77,7 +77,7 @@ def delete_comment(project_id, comment_id):
     project = g.project_for(project_id, "view")
     comment = _comment(project, comment_id)
     if comment.author_id != current_user.id and project.current_role != "owner":
-        abort(403)
+        abort(403, "Cudze komentarze może usuwać tylko właściciel projektu.")
     key = comment.node_key
     db.session.delete(comment)
     db.session.commit()
