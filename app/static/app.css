@@ -169,7 +169,7 @@ details[open] > summary::before { content: "–"; }
 details > form, details > div { margin-top: .6rem; display: grid; gap: .6rem; }
 .other { border: 1px dashed var(--line); border-radius: 12px; padding: .55rem .8rem; }
 .edge-list { list-style: none; padding: 0; margin: .3rem 0 0; display: grid; gap: .3rem; }
-.edge-list li { display: flex; justify-content: space-between; gap: .5rem; align-items: center; font-size: .88rem; }
+.edge-list li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; align-items: center; font-size: .88rem; }
 .done { text-align: center; padding: 1.5rem .5rem; }
 .done .big { font-size: 2.2rem; }
 .issue-list { list-style: none; padding: 0; margin: .5rem 0; display: grid; gap: .5rem; }
@@ -251,3 +251,6 @@ table.versions td, table.versions th { padding: .55rem .4rem; border-bottom: 1px
   .stats strong { font-size: 1.2rem; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+.linklike { background: none; border: 0; padding: 0; font: inherit; color: var(--accent); text-decoration: underline; cursor: pointer; }
+.todo-head { font-size: .95rem; margin: 1rem 0 .4rem; }
+details.insert { border-top: 0; padding: .3rem 0 0; flex-basis: 100%; }

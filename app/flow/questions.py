@@ -3,6 +3,7 @@
 
 from ..ai import rules
 from ..ai.client import AIError, ai_enabled, ask_next_step, spend_ai_request
+from ..ai.draft import _lines, _title, guess_actor, guess_type
 from ..ai.schemas import Option, Question
 from ..extensions import db
 from ..models import Node, Project, QuestionLog
@@ -102,14 +103,26 @@ def option_from_other(kind: str, form) -> Option:
         if kind == "branches" and len(values) < 2:
             raise ValueError("Decyzja potrzebuje co najmniej dwóch wyjść (po przecinku).")
         return Option(label=text, kind="branches" if kind == "branches" else "fields", values=values)
+    error = kind == "error"
+    edge = {"edge_label": (form.get("edge_label") or ("błąd" if error else "")).strip(),
+            "edge_condition": "error" if error else ""}
+    actor = (form.get("actor") or "").strip()
+    lines = _lines(text) if "\n" in text else [text]
+    if len(lines) > 1:  # one step per line, types guessed like "Mapa z dokumentu"
+        steps = []
+        for line in lines:
+            step_type = guess_type(line)
+            steps.append({"type": step_type, "title": _title(line), "actor": actor or guess_actor(line, step_type, ""),
+                          **({"branches": ["tak", "nie"]} if step_type == "decision" else {})})
+            if step_type == "end":
+                break
+        return Option(label=f"{steps[0]['title']} (+{len(steps) - 1})", steps=steps, **edge)
     step_type = form.get("type") or "user_action"
-    step = {"type": step_type, "title": text, "actor": (form.get("actor") or "").strip()}
+    step = {"type": step_type, "title": text, "actor": actor}
     if step_type == "decision":
         branches = [b.strip() for b in (form.get("branches") or "").split(",") if b.strip()]
         step["branches"] = branches if len(branches) >= 2 else ["tak", "nie"]
-    error = kind == "error"
-    return Option(label=text, steps=[step], edge_label=(form.get("edge_label") or ("błąd" if error else "")).strip(),
-                  edge_condition="error" if error else "")
+    return Option(label=text, steps=[step], **edge)
 
 
 def apply_option(project: Project, node: Node, question: Question, option: Option) -> list[Node]:
@@ -140,7 +153,7 @@ def apply_option(project: Project, node: Node, question: Question, option: Optio
         g.add_edge(project, node, target, first_label, option.edge_condition)
         return created
 
-    prev = node
+    prev, label = node, None
     for i, spec in enumerate(option.steps):
         data = {"tpl": spec.tpl} if spec.tpl else {}
         if spec.type == "decision" and spec.branches:
@@ -149,12 +162,19 @@ def apply_option(project: Project, node: Node, question: Question, option: Optio
         if i == 0:
             g.add_edge(project, prev, new, first_label, option.edge_condition)
         else:
-            g.add_edge(project, prev, new)
+            g.add_edge(project, prev, new, label or "")
         created.append(new)
         prev = new
-        if spec.type in ("decision", "end"):
+        if spec.type == "end":
             break
-    if option.connect_to and created and prev.type not in ("decision", "end"):
+        if spec.type == "decision":
+            # Following steps continue on the first branch; the other branches stay open as questions.
+            label = (data.get("branches") or ["tak"])[0]
+            if i == len(option.steps) - 1:
+                break
+        else:
+            label = None
+    if option.connect_to and created and prev.type not in ("decision", "end") and label is None:
         target = node if option.connect_to == "source" else project.node_by_key(option.connect_to)
         if target is not None:
             g.add_edge(project, prev, target)
