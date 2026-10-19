@@ -1,6 +1,8 @@
 from app.ai.templates import TEMPLATES, full_graph
 from app.design.derive import sequences
+from app.design.lint import lint
 from app.spec.derive import derive
+from app.spec.schema import Integration, Message, Sequence, Spec
 
 META = {"name": "Salon", "start_sentence": "Klient chce umówić wizytę"}
 
@@ -29,3 +31,14 @@ def test_every_template_has_a_sequence_without_idle_participants():
         assert spec.sequences, key
         used = {p for m in spec.sequences[0].messages for p in (m.source, m.target)}
         assert set(spec.sequences[0].participants) == used, key
+
+
+def test_sequence_guard():
+    spec = Spec(integrations=[Integration(key="i", name="Bank")],
+                sequences=[Sequence(key="s", name="S", participants=["A", "Bank", "Nikt"],
+                                    messages=[Message(source="A", target="Bank", text="przelew")])])
+    codes = {(i["code"], i["target_key"]) for i in lint(spec)}
+    assert ("integration_without_error_message", "s") in codes and ("idle_participant", "s") in codes
+    spec.sequences[0].messages.append(Message(source="Bank", target="A", text="odmowa", kind="error"))
+    spec.sequences[0].participants.remove("Nikt")
+    assert not [c for c in lint(spec) if c["target_key"] == "s"]
