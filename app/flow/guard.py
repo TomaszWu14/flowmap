@@ -1,16 +1,42 @@
 """Completeness guard: deterministic checks over a graph dict, plus a 0-100 score."""
 
+import re
+import unicodedata
+
 from ..ai.rules import needs_error_path
 
 WEIGHTS = {
     "no_start": 25, "no_end": 25, "dead_end": 10, "open_branch": 8, "decision_exits": 10,
     "missing_actor": 3, "missing_error_path": 8, "unreachable": 10, "open_comment": 2,
-    "duplicate_step": 5,
+    "duplicate_step": 5, "similar_steps": 0,
 }
+STOP = {"oraz", "przez", "dla", "danych", "systemie", "procesu"}
+MAX_SIMILAR = 5
 
 
-def _issue(code: str, message: str, node_key: str | None = None) -> dict:
-    return {"code": code, "message": message, "node_key": node_key}
+def _issue(code: str, message: str, node_key: str | None = None, **extra) -> dict:
+    return {"code": code, "message": message, "node_key": node_key, **extra}
+
+
+def _stems(title: str) -> set[str]:
+    """Rough Polish stems: no diacritics, words of 3+ letters cut to 6 chars (powiadomienie ~ powiadomienia)."""
+    text = unicodedata.normalize("NFKD", title.lower().replace("ł", "l")).encode("ascii", "ignore").decode()
+    return {w[:6] for w in re.findall(r"[a-z0-9]{3,}", text) if w not in STOP}
+
+
+def similar_pairs(nodes: list[dict], edges: list[dict]) -> list[tuple[dict, dict]]:
+    """Same-type steps whose titles look alike (not start/end, not already reported as consecutive repeats)."""
+    linked = {(e["source"], e["target"]) for e in edges}
+    cand = [(n, _stems(n["title"])) for n in nodes if n["type"] not in ("start", "end")]
+    pairs = []
+    for i, (a, sa) in enumerate(cand):
+        for b, sb in cand[i + 1:]:
+            if a["type"] != b["type"] or not sa or not sb or (a["key"], b["key"]) in linked \
+                    or (b["key"], a["key"]) in linked:
+                continue
+            if sa == sb or (min(len(sa), len(sb)) >= 2 and len(sa & sb) / len(sa | sb) >= 0.6):
+                pairs.append((a, b))
+    return pairs[:MAX_SIMILAR]
 
 
 def reachable(graph: dict, start_keys: list[str]) -> set[str]:
@@ -57,13 +83,16 @@ def check(graph: dict) -> list[dict]:
             for label in n.get("data", {}).get("branches", []):
                 if label not in used and edges:
                     msg = f"Gałąź „{label}” decyzji „{title}” nie ma dalszego kroku."
-                    issues.append(_issue("open_branch", msg, key))
+                    issues.append(_issue("open_branch", msg, key, label=label))
         if n["type"] not in ("start", "end") and not n.get("actor"):
             issues.append(_issue("missing_actor", f"Krok „{title}” nie ma aktora (roli).", key))
         if needs_error_path(n) and len(edges) < 2 and not any(e.get("condition") == "error" for e in edges):
             issues.append(_issue("missing_error_path", f"Brak ścieżki błędu dla „{title}”.", key))
         if starts and key not in seen:
             issues.append(_issue("unreachable", f"Krok „{title}” jest nieosiągalny ze startu.", key))
+    for a, b in similar_pairs(nodes, graph["edges"]):
+        issues.append(_issue("similar_steps", f"Kroki „{a['title']}” i „{b['title']}” wyglądają podobnie — "
+                             "może to ten sam krok?", b["key"], other=a["key"]))
     return issues
 
 

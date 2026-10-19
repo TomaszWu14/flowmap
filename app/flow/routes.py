@@ -301,6 +301,59 @@ def guard_panel(project_id):
                            todo=open_questions(project))
 
 
+def _guard_response(project, description: str):
+    """Save the fix and stay in the guard panel, so the next problem is one click away."""
+    g.save_version(project, description)
+    db.session.commit()
+    resp = make_response(guard_panel(project.id))
+    resp.headers["HX-Trigger"] = json.dumps({"mapChanged": {"focus": ""}})
+    return resp
+
+
+@bp.post("/p/<int:project_id>/guard/fix")
+@login_required
+def guard_fix(project_id):
+    """Rule-based one-click fixes for guard issues (no AI)."""
+    project = g.project_for(project_id, "edit")
+    f = request.form
+    node = g.owned_node(project, f.get("node_key", ""))
+    code = f.get("code")
+    if code in ("dead_end", "open_branch", "decision_exits"):
+        if node.type == "end" or (code != "dead_end" and node.type != "decision"):
+            abort(400)
+        labels = [f.get("label") or ""]
+        if code == "decision_exits":  # close every unused branch, then add "nie"/"inne" until there are 2 exits
+            used = {e.label for e in g.outgoing(project, node)}
+            branches = list((node.data or {}).get("branches", []))
+            labels = [b for b in branches if b not in used]
+            for extra in ("nie", "inne"):
+                if len(used) + len(labels) < 2 and extra not in used | set(labels):
+                    labels.append(extra)
+            g.set_node_data(node, branches=list(dict.fromkeys(branches + labels)))
+        for label in labels:
+            g.add_edge(project, node, g.add_node(project, "end", "Koniec procesu", node.actor), label)
+        return _guard_response(project, f"Zakończono „{node.title}”" + (f" → {', '.join(filter(None, labels))}"
+                                                                         if any(labels) else ""))
+    if code == "missing_error_path":
+        actor = "Klient" if node.actor == "System" else node.actor
+        screen = g.add_node(project, "screen", f"Błąd: {node.title}"[:200], actor)
+        g.add_edge(project, node, screen, "błąd", g.ERROR_CONDITION)
+        g.add_edge(project, screen, g.add_node(project, "end", "Proces przerwany", screen.actor))
+        return _guard_response(project, f"Dodano ścieżkę błędu dla „{node.title}”")
+    if code in ("similar_steps", "duplicate_step"):
+        if code == "similar_steps":
+            keep = g.owned_node(project, f.get("other", ""))
+        else:
+            same = (node.type, node.title.strip().lower())
+            keep = next((e.source for e in project.edges if e.target_id == node.id
+                         and (e.source.type, e.source.title.strip().lower()) == same), None)
+        if keep is None or keep.id == node.id:
+            abort(400)
+        g.merge_nodes(project, keep, node)
+        return _guard_response(project, f"Scalono „{node.title}” z „{keep.title}”")
+    abort(400)
+
+
 @bp.post("/p/<int:project_id>/guard/review")
 @login_required
 def guard_review(project_id):
