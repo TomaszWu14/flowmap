@@ -9,6 +9,19 @@
   <p class="muted" style="margin:0">{{ report.issues|length|plural('problem', 'problemy', 'problemów') }} do sprawdzenia</p>
 </header>
 {% if error %}<div class="alert error" role="alert">{{ error }}</div>{% endif %}
+{% if todo %}
+<h3 class="todo-head">Otwarte pytania ({{ todo|length }})</h3>
+<ul class="issue-list">
+  {% for t in todo %}
+  <li>
+    <span><strong>{{ t.title }}</strong> <span class="muted">— {{ t.what }}</span></span>
+    <div class="row"><button class="btn small" type="button" hx-target="#panel-body"
+      hx-get="{{ url_for('flow.panel', project_id=project.id, node=t.key) }}">Odpowiedz</button></div>
+  </li>
+  {% endfor %}
+</ul>
+<h3 class="todo-head">Problemy</h3>
+{% endif %}
 {% if report.issues %}
 <ul class="issue-list">
   {% for i in report.issues %}

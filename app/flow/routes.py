@@ -56,6 +56,20 @@ def render_panel(project, node=None, kind=None, slot=None, error=None, focus_cha
     return resp
 
 
+PENDING_LABELS = {"next": "co dalej", "branches": "wyjścia decyzji", "actor": "kto wykonuje",
+                  "screen": "co pokazuje ekran", "data": "jakie dane", "error": "ścieżka błędu"}
+
+
+def open_questions(project) -> list[dict]:
+    """Steps still waiting for an answer, in walk order — the "Do zrobienia" list."""
+    out = []
+    for n in q.pending_nodes(project):
+        kind, slot = q.pending_kind(project, n)
+        out.append({"key": n.key, "title": n.title,
+                    "what": PENDING_LABELS.get(kind, kind) + (f" → „{slot}”" if slot else "")})
+    return out
+
+
 def _changed(project, description: str, node=None, **kw):
     g.save_version(project, description)
     db.session.commit()
@@ -210,6 +224,28 @@ def delete_edge(project_id, edge_id):
     return _changed(project, f"Usunięto połączenie z „{source.title}”", source)
 
 
+@bp.post("/p/<int:project_id>/edge/<int:edge_id>/insert")
+@login_required
+def insert_on_edge(project_id, edge_id):
+    project = g.project_for(project_id, "edit")
+    edge = next((e for e in project.edges if e.id == edge_id), None)
+    if edge is None:
+        abort(404)
+    title = (request.form.get("title") or "").strip()
+    if not title:
+        return render_panel(project, edge.source, error="Podaj nazwę wstawianego kroku.", focus_changed=False)
+    step_type = request.form.get("type", "user_action")
+    if step_type not in NODE_TYPES or step_type in ("start", "end", "decision"):
+        step_type = "user_action"
+    source, target = edge.source, edge.target
+    new = g.add_node(project, step_type, title, (request.form.get("actor") or "").strip() or source.actor)
+    g.add_edge(project, source, new, edge.label, edge.condition)
+    g.add_edge(project, new, target)
+    project.edges.remove(edge)
+    db.session.delete(edge)
+    return _changed(project, f"Wstawiono „{new.title}” między „{source.title}” a „{target.title}”", new)
+
+
 @bp.post("/p/<int:project_id>/undo")
 @login_required
 def undo(project_id):
@@ -261,7 +297,8 @@ def guard_panel(project_id):
     project = g.project_for(project_id, "view")
     report = guard.report(project.graph(), open_comment_counts(project))
     return render_template("flow/_guard.html", project=project, report=report, ai=ai_enabled(),
-                           suggestions=None, log=None, titles={n.key: n.title for n in project.nodes})
+                           suggestions=None, log=None, titles={n.key: n.title for n in project.nodes},
+                           todo=open_questions(project))
 
 
 @bp.post("/p/<int:project_id>/guard/review")

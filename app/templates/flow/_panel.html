@@ -17,7 +17,8 @@
   <header class="panel-head">
     <span class="type-chip t-{{ node.type }}">{{ type_labels[node.type] }}</span>
     <h2>{{ node.title }}</h2>
-    <p class="muted" style="margin:0">{{ node.actor or 'bez aktora' }}{% if remaining %} · pytań otwartych: {{ remaining }}{% endif %}</p>
+    <p class="muted" style="margin:0">{{ node.actor or 'bez aktora' }}{% if remaining %} · <button class="linklike" type="button" hx-get="{{ url_for('flow.guard_panel', project_id=project.id) }}"
+      hx-target="#panel-body">pytań otwartych: {{ remaining }}</button>{% endif %}</p>
   </header>
 
   {% if question %}
@@ -48,7 +49,9 @@
         <input type="hidden" name="log_id" value="{{ log.id }}">
         <input type="hidden" name="other" value="1">
         {% if question.kind in ('next', 'error') %}
-          <label>Nazwa kroku <input name="text" required maxlength="200" placeholder="np. Pracownik akceptuje wniosek"></label>
+          <label>Nazwa kroku <textarea name="text" required maxlength="4000" rows="2"
+            placeholder="np. Pracownik akceptuje wniosek"></textarea></label>
+          <p class="field-help">Kilka kroków naraz? Wpisz każdy w osobnej linii — typy i role dobiorę sam.</p>
           <label>Typ kroku
             <select name="type">
               {% for t in node_types if t != 'start' %}<option value="{{ t }}">{{ type_labels[t] }}</option>{% endfor %}
@@ -127,6 +130,17 @@
           <span>→ {{ e.target.title }}{% if e.label %} <span class="muted">„{{ e.label }}”</span>{% endif %}</span>
           <button class="btn small danger" type="button" hx-post="{{ url_for('flow.delete_edge', project_id=project.id, edge_id=e.id) }}"
                   hx-target="#panel-body" aria-label="Usuń połączenie do {{ e.target.title }}">Usuń</button>
+          <details class="insert">
+            <summary>Wstaw krok pomiędzy</summary>
+            <form hx-post="{{ url_for('flow.insert_on_edge', project_id=project.id, edge_id=e.id) }}" hx-target="#panel-body">
+              <label>Nazwa kroku <input name="title" required maxlength="200" placeholder="np. Weryfikacja danych"></label>
+              <label>Typ kroku
+                <select name="type">{% for t in node_types if t not in ('start', 'end', 'decision') %}<option value="{{ t }}">{{ type_labels[t] }}</option>{% endfor %}</select>
+              </label>
+              <label>Kto wykonuje <input name="actor" maxlength="100" placeholder="{{ node.actor or 'np. Klient' }}"></label>
+              <button class="btn small primary" type="submit">Wstaw</button>
+            </form>
+          </details>
         </li>
         {% endfor %}
       </ul>
