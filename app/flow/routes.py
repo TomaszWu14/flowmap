@@ -1,6 +1,6 @@
 import json
 
-from flask import Blueprint, abort, jsonify, make_response, render_template, request, url_for
+from flask import Blueprint, abort, jsonify, make_response, redirect, render_template, request, url_for
 from flask_login import login_required
 
 from ..ai.client import AIError, ai_enabled, fill_map, review_map, spend_ai_request
@@ -8,6 +8,7 @@ from ..ai.schemas import Option, Question
 from ..comments.routes import open_comment_counts
 from ..extensions import db
 from ..models import NODE_TYPE_LABELS, NODE_TYPES, QuestionLog
+from ..trainer.hints import HINT_LEVELS, guide_text, visible_options
 from . import graph as g
 from . import guard
 from . import lanes as lanes_mod
@@ -46,6 +47,9 @@ def render_panel(project, node=None, kind=None, slot=None, error=None, focus_cha
     log, question = (None, None)
     if node is not None:
         log, question = q.current_question(project, node, kind, slot)
+    hint_level = log.hint_level if log else 0
+    tiles = visible_options(question.options, project.learning, hint_level) if question else []
+    guide = guide_text(question.kind, node.title, question.slot) if question and project.learning and hint_level else ""
     remaining = len(pending)
     if remaining == 0 and project.status != "complete":
         project.status = "complete"
@@ -59,6 +63,7 @@ def render_panel(project, node=None, kind=None, slot=None, error=None, focus_cha
         node_types=NODE_TYPES, others=others, remaining=remaining,
         step_images=_step_images(project, node),
         outgoing=g.outgoing(project, node) if node else [],
+        tiles=tiles, hint_level=hint_level, guide=guide, hint_levels=HINT_LEVELS,
     )
     resp = make_response(html, status)
     if focus_changed:
@@ -139,6 +144,29 @@ def panel(project_id):
     return render_panel(project, node, kind, slot, focus_changed=False)
 
 
+@bp.post("/p/<int:project_id>/tryb")
+@login_required
+def toggle_mode(project_id):
+    project = g.project_for(project_id, "edit")
+    project.learning = not project.learning
+    db.session.commit()
+    return redirect(url_for("flow.view", project_id=project.id))
+
+
+@bp.post("/p/<int:project_id>/podpowiedz")
+@login_required
+def hint(project_id):
+    project = g.project_for(project_id, "edit")
+    log = db.session.get(QuestionLog, request.form.get("log_id", type=int) or 0)
+    if log is None or log.project_id != project.id or log.answer:
+        abort(404)
+    log.hint_level = min(HINT_LEVELS, (log.hint_level or 0) + 1)
+    db.session.commit()
+    question = Question.model_validate(log.options)
+    return render_panel(project, g.owned_node(project, log.node_key), question.kind, question.slot or None,
+                        focus_changed=False)
+
+
 @bp.post("/p/<int:project_id>/answer")
 @login_required
 def answer(project_id):
@@ -158,9 +186,10 @@ def answer(project_id):
             option = q.option_from_other(question.kind, request.form)
         else:
             idx = request.form.get("option", type=int)
-            if idx is None or not 0 <= idx < len(question.options):
+            visible = visible_options(question.options, project.learning, log.hint_level)  # Nauka: only revealed
+            if idx is None or not 0 <= idx < len(visible):
                 abort(400)
-            option = question.options[idx]
+            option = visible[idx]
     except ValueError as exc:
         return render_panel(project, node, question.kind, question.slot, error=str(exc), focus_changed=False)
     if (node.type == "decision" or g.is_split(node)) and question.kind == "next" and question.slot:

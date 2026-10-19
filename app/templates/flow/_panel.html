@@ -28,9 +28,19 @@
     {% if question.notice %}<div class="alert info">{{ question.notice }}</div>{% endif %}
     <h3 id="q-text">{{ question.text }}</h3>
     {% if question.hint %}<p class="hint">{{ question.hint }}</p>{% endif %}
+    {% if project.learning %}
+      {% if guide %}<p class="hint-guide">💡 {{ guide }}</p>{% endif %}
+      {% if hint_level < hint_levels %}
+      <form class="hint-form" hx-post="{{ url_for('flow.hint', project_id=project.id) }}" hx-target="#panel-body">
+        <input type="hidden" name="log_id" value="{{ log.id }}">
+        <button class="btn small" type="submit" title="Najpierw pytanie naprowadzające, potem jedna propozycja, na końcu wszystkie">Podpowiedź ({{ hint_level }}/{{ hint_levels }})</button>
+      </form>
+      {% endif %}
+    {% endif %}
+    {% if tiles %}
     <form class="tiles" hx-post="{{ answer_url }}" hx-target="#panel-body">
       <input type="hidden" name="log_id" value="{{ log.id }}">
-      {% for opt in question.options %}
+      {% for opt in tiles %}
         {% set first = opt.steps[0] if opt.steps else none %}
         <button class="tile {{ 't-' ~ first.type if first }}" type="submit" name="option" value="{{ loop.index0 }}">
           {% if first %}<span class="type-chip">{{ type_labels[first.type] }}</span>
@@ -45,10 +55,11 @@
         </button>
       {% endfor %}
     </form>
-    <p class="kbd-hint">Klawiatura: <kbd>1</kbd>–<kbd>{{ question.options|length }}</kbd> wybór, <kbd>I</kbd> inne,
+    <p class="kbd-hint">Klawiatura: <kbd>1</kbd>–<kbd>{{ tiles|length }}</kbd> wybór, <kbd>I</kbd> inne,
       <kbd>Ctrl</kbd>+<kbd>Z</kbd> cofnij, <kbd>/</kbd> szukaj</p>
-    <details class="other" {{ 'open' if error }}> {# nosemgrep: unquoted-attribute-var — constant boolean attribute word, not user data #}
-      <summary>Inne — wpiszę sam</summary>
+    {% endif %}
+    <details class="other" {{ 'open' if error or project.learning }}> {# nosemgrep: unquoted-attribute-var — constant boolean attribute word, not user data #}
+      <summary>{{ 'Twój krok — wpisz sam' if project.learning else 'Inne — wpiszę sam' }}</summary>
       <form hx-post="{{ answer_url }}" hx-target="#panel-body">
         <input type="hidden" name="log_id" value="{{ log.id }}">
         <input type="hidden" name="other" value="1">
