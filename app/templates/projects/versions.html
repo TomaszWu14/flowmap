@@ -19,7 +19,7 @@
         <td class="muted">{{ v.created_at.strftime('%d.%m %H:%M:%S') }}</td>
         <td class="row">
           {% if not loop.last %}<a class="btn small" href="{{ url_for('projects.compare', project_id=project.id, do=v.id) }}">Zmiany</a>{% endif %}
-          {% if v.id != project.version_cursor_id and project.current_role != 'viewer' %}
+          {% if v.id != project.version_cursor_id and project.can_edit %}
           <form method="post" action="{{ url_for('projects.restore', project_id=project.id, version_id=v.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn small" type="submit">Przywróć</button>

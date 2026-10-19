@@ -3,7 +3,7 @@ import json
 from flask import Blueprint, abort, jsonify, make_response, render_template, request, url_for
 from flask_login import login_required
 
-from ..ai.client import AIError, ai_enabled, review_map
+from ..ai.client import AIError, ai_enabled, review_map, spend_ai_request
 from ..ai.schemas import Option, Question
 from ..comments.routes import open_comment_counts
 from ..extensions import db
@@ -47,7 +47,7 @@ def render_panel(project, node=None, kind=None, slot=None, error=None, focus_cha
     others = [n for n in project.nodes if node is None or n.key != node.key]
     html = render_template(
         "flow/_panel.html", project=project, node=node, log=log, question=question, error=error,
-        node_types=NODE_TYPES, type_labels=NODE_TYPE_LABELS, others=others, remaining=remaining,
+        node_types=NODE_TYPES, others=others, remaining=remaining,
         outgoing=g.outgoing(project, node) if node else [],
     )
     resp = make_response(html, status)
@@ -88,7 +88,7 @@ def panel(project_id):
     kind = request.args.get("ask") or None
     if kind and kind not in ("next", "actor", "screen", "data", "error", "branches"):
         abort(400)
-    if project.current_role == "viewer":
+    if not project.can_edit:
         return render_template("flow/_panel_readonly.html", project=project,
                                node=node or (project.nodes[0] if project.nodes else None))
     slot = (request.args.get("slot") or "").strip()[:100] or None
@@ -267,20 +267,14 @@ def guard_panel(project_id):
 @bp.post("/p/<int:project_id>/guard/review")
 @login_required
 def guard_review(project_id):
-    from flask_login import current_user
-
-    from .. import settings
-
     project = g.project_for(project_id, "edit")
     graph = project.graph()
     report = guard.report(graph)
     error, log, suggestions = None, None, None
-    if not ai_enabled():
-        error = "Przegląd AI wymaga klucza ANTHROPIC_API_KEY."
-    elif not current_user.consume_ai_request(settings.ai_daily_limit()):
-        error = "Dzienny limit zapytań do AI został wyczerpany."
+    reason = spend_ai_request()
+    if reason:
+        error = f"{reason}."
     else:
-        db.session.commit()
         try:
             suggestions = review_map(project, graph, report["issues"])
             log = QuestionLog(project_id=project.id, kind="review", question="Przegląd AI: brakujące wyjątki",

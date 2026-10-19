@@ -24,7 +24,7 @@ def _render(project, node_key: str, error: str | None = None, changed: bool = Fa
     comments = (Comment.query.filter_by(project_id=project.id, node_key=node_key)
                 .order_by(Comment.resolved, Comment.id).all())
     html = render_template("comments/_list.html", project=project, node_key=node_key, comments=comments,
-                           error=error, can_resolve=project.current_role in ("owner", "editor"))
+                           error=error, can_resolve=project.can_edit)
     resp = make_response(html)
     if changed:
         resp.headers["HX-Trigger"] = json.dumps({"mapChanged": {"focus": node_key}})
@@ -64,7 +64,7 @@ def _comment(project, comment_id) -> Comment:
 def toggle_resolved(project_id, comment_id):
     project = g.project_for(project_id, "view")
     comment = _comment(project, comment_id)
-    if project.current_role == "viewer" and comment.author_id != current_user.id:
+    if not project.can_edit and comment.author_id != current_user.id:
         abort(403, "Z podglądem możesz rozwiązywać tylko własne komentarze.")
     comment.resolved = not comment.resolved
     db.session.commit()

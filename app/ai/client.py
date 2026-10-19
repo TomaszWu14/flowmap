@@ -23,6 +23,22 @@ def ai_enabled() -> bool:
     return bool(current_app.config.get("ANTHROPIC_API_KEY")) and bool(settings.get("ai_enabled"))
 
 
+def spend_ai_request() -> str | None:
+    """Use one of today's AI requests. Returns why AI can't be used (Polish sentence, no period), or None."""
+    from flask_login import current_user
+
+    from .. import settings
+    from ..extensions import db
+
+    if not current_app.config.get("ANTHROPIC_API_KEY"):
+        return "AI wymaga klucza ANTHROPIC_API_KEY"
+    if not settings.get("ai_enabled"):
+        return "AI jest wyłączone przez administratora"
+    allowed = current_user.consume_ai_request(settings.ai_daily_limit())
+    db.session.commit()
+    return None if allowed else "Dzienny limit zapytań do AI został wyczerpany"
+
+
 def _client() -> anthropic.Anthropic:
     return anthropic.Anthropic(
         api_key=current_app.config["ANTHROPIC_API_KEY"],

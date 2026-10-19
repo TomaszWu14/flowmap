@@ -46,7 +46,7 @@
       {% endfor %}
     </ul>
     {% else %}<p class="muted">AI nie znalazło brakujących wyjątków.</p>{% endif %}
-  {% elif ai and project.current_role != 'viewer' %}
+  {% elif ai and project.can_edit %}
     <p class="muted">AI przejrzy mapę i zaproponuje brakujące wyjątki do dodania.</p>
     <button class="btn" type="button" hx-post="{{ url_for('flow.guard_review', project_id=project.id) }}" hx-target="#panel-body">Uruchom przegląd AI</button>
   {% else %}

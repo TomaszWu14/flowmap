@@ -1,11 +1,10 @@
 """Read-only 'Specyfikacja' tab: sections derived from the map, rebuild on a broken document."""
 
 from flask import Blueprint, Response, abort, flash, make_response, redirect, render_template, request, url_for
-from flask_login import current_user, login_required
+from flask_login import login_required
 from pydantic import ValidationError
 
-from .. import settings
-from ..ai.client import AIError, ai_enabled
+from ..ai.client import AIError, ai_enabled, spend_ai_request
 from ..extensions import db
 from ..flow import graph as g
 from ..models import Comment
@@ -55,7 +54,7 @@ def _context(project, section: str) -> dict:
             "type_labels_f": FIELD_TYPE_LABELS, "perm_labels": PERM_LABELS, "channel_labels": CHANNEL_LABELS,
             "direction_labels": DIRECTION_LABELS, "nfr_labels": NFR_LABELS, "names": names,
             "kind_labels": KIND_LABELS, "ai": ai_enabled(),
-            "can_edit": project.current_role in ("owner", "editor"), "ready": ready, "issues_by_key": issues_by_key,
+            "can_edit": project.can_edit, "ready": ready, "issues_by_key": issues_by_key,
             "form_fields": FORM_FIELDS[section], "editing": None, "values": {}, "error": None}
 
 
@@ -70,6 +69,26 @@ def _spec_or_abort(project):
     if spec is None:
         abort(409)
     return spec
+
+
+def _load_item(project_id, section, key, allow_new=False):
+    """(project, spec, item) for an edit endpoint; 400 bad section, 404 key not in this section, 409 broken spec."""
+    project = g.project_for(project_id, "edit")
+    if section not in SECTIONS:
+        abort(400)
+    spec = _spec_or_abort(project)
+    if allow_new and key == "nowy":
+        return project, spec, None
+    found, item = spec.find(key)
+    if item is None or found != section:
+        abort(404)
+    return project, spec, item
+
+
+def _save(project, spec, description: str) -> None:
+    project.spec = spec.model_dump(mode="json")
+    g.save_version(project, description)
+    db.session.commit()
 
 
 @bp.get("/p/<int:project_id>/specyfikacja")
@@ -99,30 +118,14 @@ def rebuild(project_id):
 @bp.get("/p/<int:project_id>/specyfikacja/<section>/<key>/edytuj")
 @login_required
 def edit_form(project_id, section, key):
-    project = g.project_for(project_id, "edit")
-    if section not in SECTIONS:
-        abort(400)
-    spec = _spec_or_abort(project)
-    _sec, item = spec.find(key) if key != "nowy" else (None, None)
-    if key != "nowy" and item is None:
-        abort(404)
-    if item is not None and _sec != section:
-        abort(404)
+    project, _spec, item = _load_item(project_id, section, key, allow_new=True)
     return _section_response(project, section, editing=key, values=form_text(section, item))
 
 
 @bp.post("/p/<int:project_id>/specyfikacja/<section>/<key>")
 @login_required
 def save_item(project_id, section, key):
-    project = g.project_for(project_id, "edit")
-    if section not in SECTIONS:
-        abort(400)
-    spec = _spec_or_abort(project)
-    _sec, existing = spec.find(key) if key != "nowy" else (None, None)
-    if key != "nowy" and existing is None:
-        abort(404)
-    if existing is not None and _sec != section:
-        abort(404)
+    project, spec, existing = _load_item(project_id, section, key, allow_new=True)
     try:
         item = item_from_form(section, request.form, existing)
     except ValueError as exc:
@@ -131,47 +134,27 @@ def save_item(project_id, section, key):
     pos = next((n for n, i in enumerate(getattr(spec, section)) if i.key == item.key), len(items))
     items.insert(pos, item)
     setattr(spec, section, items)
-    project.spec = spec.model_dump(mode="json")
-    g.save_version(project, f"Specyfikacja: {section} — {getattr(item, 'name', None) or item.key}")
-    db.session.commit()
+    _save(project, spec, f"Specyfikacja: {section} — {getattr(item, 'name', None) or item.key}")
     return _section_response(project, section)
 
 
 @bp.post("/p/<int:project_id>/specyfikacja/<section>/<key>/usun")
 @login_required
 def delete_item(project_id, section, key):
-    project = g.project_for(project_id, "edit")
-    if section not in SECTIONS:
-        abort(400)
-    spec = _spec_or_abort(project)
-    _sec, item = spec.find(key)
-    if item is None or _sec != section:
-        abort(404)
+    project, spec, item = _load_item(project_id, section, key)
     if item.source == "rules":
         spec.dismissed = list(dict.fromkeys([*spec.dismissed, key]))
     setattr(spec, section, [i for i in getattr(spec, section) if i.key != key])
-    project.spec = spec.model_dump(mode="json")
-    g.save_version(project, f"Specyfikacja: usunięto {key}")
-    db.session.commit()
+    _save(project, spec, f"Specyfikacja: usunięto {key}")
     return _section_response(project, section)
 
 
 @bp.post("/p/<int:project_id>/specyfikacja/<section>/<key>/zachowaj")
 @login_required
 def keep_item(project_id, section, key):
-    project = g.project_for(project_id, "edit")
-    if section not in SECTIONS:
-        abort(400)
-    spec = _spec_or_abort(project)
-    _sec, item = spec.find(key)
-    if item is None:
-        abort(404)
-    if _sec != section:
-        abort(404)
+    project, spec, item = _load_item(project_id, section, key)
     item.stale, item.source = False, "manual"
-    project.spec = spec.model_dump(mode="json")
-    g.save_version(project, f"Specyfikacja: zachowano {key}")
-    db.session.commit()
+    _save(project, spec, f"Specyfikacja: zachowano {key}")
     return _section_response(project, section)
 
 
@@ -179,12 +162,9 @@ def keep_item(project_id, section, key):
 @login_required
 def package(project_id):
     project = g.project_for(project_id, "view")
-    spec = g.project_spec(project)
-    if spec is None:
-        abort(409)
+    spec = _spec_or_abort(project)
     comments = [c.body for c in Comment.query.filter_by(project_id=project.id, resolved=False).order_by(Comment.id)]
-    meta = {"name": project.name, "start_sentence": project.start_sentence}
-    body = build_zip(build_files(meta, project.graph(), spec, comments))
+    body = build_zip(build_files(project.meta, project.graph(), spec, comments))
     return Response(body, mimetype="application/zip",
                     headers={"Content-Disposition": 'attachment; filename="flowmap-claude-code.zip"'})
 
@@ -194,12 +174,10 @@ def package(project_id):
 def ai_review(project_id):
     project = g.project_for(project_id, "edit")
     spec = _spec_or_abort(project)
-    if not ai_enabled():
-        flash("Przegląd techniczny AI wymaga klucza ANTHROPIC_API_KEY.", "error")
-    elif not current_user.consume_ai_request(settings.ai_daily_limit()):
-        flash("Dzienny limit zapytań do AI został wyczerpany.", "error")
+    reason = spend_ai_request()
+    if reason:
+        flash(f"{reason}.", "error")
     else:
-        db.session.commit()
         try:
             new_proposals = review_spec(project.graph(), spec, project.start_sentence)
             spec.proposals = spec.proposals + new_proposals

@@ -19,11 +19,6 @@ bp = Blueprint("export", __name__)
 EXAMPLE = "booking"
 
 
-def _meta(project) -> dict:
-    return {"name": project.name, "start_sentence": project.start_sentence, "mode": project.mode,
-            "template": project.template}
-
-
 def _download(body: str, filename: str, mimetype: str) -> Response:
     return Response(body, mimetype=mimetype, headers={"Content-Disposition": f'attachment; filename="{filename}"'})
 
@@ -35,11 +30,11 @@ def index(project_id):
     graph = project.graph()
     target = request.args.get("target", "claude_code")
     project_spec = g.project_spec(project)
-    spec = builders.to_markdown(_meta(project), graph, project_spec)
+    spec = builders.to_markdown(project.meta, graph, project_spec)
     return render_template(
         "export/index.html", project=project, spec=spec, mermaid=builders.to_mermaid(graph),
-        prompt=builders.to_prompt(_meta(project), spec, target), target=target, targets=builders.TARGETS,
-        task_count=len(tasks.build_tasks(_meta(project), graph)), github_command=tasks.GITHUB_COMMAND,
+        prompt=builders.to_prompt(project.meta, spec, target), target=target, targets=builders.TARGETS,
+        task_count=len(tasks.build_tasks(project.meta, graph)), github_command=tasks.GITHUB_COMMAND,
         ready=readiness(project_spec) if project_spec else None, paste_prompt=PASTE_PROMPT,
     )
 
@@ -49,7 +44,7 @@ def index(project_id):
 def download(project_id, kind):
     project = g.project_for(project_id, "view")
     graph = project.graph()
-    meta = _meta(project)
+    meta = project.meta
     if kind == "spec.md":
         return _download(builders.to_markdown(meta, graph, g.project_spec(project)), "specyfikacja.md", "text/markdown")
     if kind == "diagram.mmd":
