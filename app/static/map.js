@@ -13,9 +13,21 @@
   let lastData = { nodes: [], edges: [] };
   const MIN_READABLE_ZOOM = 0.8;
 
-  const ICONS = {
-    start: "▶", screen: "🖥", user_action: "👤", automation: "⚙", decision: "◆", wait: "⏳", integration: "⇄", end: "■",
-  };
+  // Pictograms (Lucide SVG bodies from /static/icons.json), tinted per node and theme.
+  let ICON_BODIES = {};
+  const iconCache = {};
+  function iconUri(key, color) {
+    const body = ICON_BODIES[key];
+    if (!body) return "none";
+    const id = key + color;
+    if (!iconCache[id]) {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" `
+        + `stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+      iconCache[id] = "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+    }
+    return iconCache[id];
+  }
+  const hasIcon = (n) => Boolean(n.data("icon") && ICON_BODIES[n.data("icon")]);
   const ROLE_PALETTE = ["#2f6fdf", "#c2410c", "#15803d", "#7c3aed", "#b45309", "#0e7490", "#be185d", "#4d7c0f"];
   let colorMode = "type";
   try { colorMode = localStorage.getItem("fm-color-mode") || "type"; } catch (e) { /* ignore */ }
@@ -41,7 +53,12 @@
         "background-color": css("--surface"), "border-width": 2,
         "border-color": nodeColor,
         "label": "data(label)", "color": css("--ink"), "font-size": 11,
-        "text-wrap": "wrap", "text-max-width": (n) => (n.data("type") === "decision" ? 100 : 156),
+        "background-image": (n) => (hasIcon(n) ? iconUri(n.data("icon"), ["start", "end"].includes(n.data("type"))
+          ? css("--surface") : nodeColor(n)) : "none"),
+        "background-width": 20, "background-height": 20, "background-clip": "none",
+        "background-position-x": 12, "background-position-y": "50%",
+        "text-margin-x": (n) => (hasIcon(n) ? 12 : 0),
+        "text-wrap": "wrap", "text-max-width": (n) => (n.data("type") === "decision" ? 100 : hasIcon(n) ? 132 : 156),
         "text-valign": "center", "text-halign": "center",
       } },
       { selector: "node[type='start'], node[type='end']", style: {
@@ -82,8 +99,8 @@
     const nodes = data.nodes.map((n) => {
       const classes = [n.pending ? "pending" : "", n.issues.length ? "issue" : "",
         n.diff ? "diff-" + n.diff : ""].join(" ").trim();
-      const label = (ICONS[n.type] ? ICONS[n.type] + " " : "") + n.title + (n.actor ? "\n— " + n.actor : "") + (n.issues.length ? "\n⚠ " + n.issues.length : "") + (n.comments ? "  💬 " + n.comments : "");
-      const item = { group: "nodes", data: { id: n.key, type: n.type, actor: n.actor || "", label: label },
+      const label = n.title + (n.actor ? "\n— " + n.actor : "") + (n.issues.length ? "\n⚠ " + n.issues.length : "") + (n.comments ? "  💬 " + n.comments : "");
+      const item = { group: "nodes", data: { id: n.key, type: n.type, actor: n.actor || "", icon: n.icon || "", label: label },
         classes: classes };
       if (n.x !== null && n.y !== null) item.position = { x: n.x, y: n.y };
       return item;
@@ -144,7 +161,11 @@
     return { placed, parents };
   }
 
+  const iconsReady = fetch(cfg.iconsUrl || "/static/icons.json").then((r) => (r.ok ? r.json() : {}))
+    .then((b) => { ICON_BODIES = b; }).catch(() => {});
+
   async function load(focus) {
+    await iconsReady;
     const res = await fetch(cfg.graphUrl, { headers: { Accept: "application/json" } });
     if (!res.ok) return;
     const data = await res.json();
@@ -223,9 +244,10 @@
       if (!n) return;
       tip.replaceChildren();
       const head = document.createElement("strong");
-      head.textContent = `${ICONS[n.type] || ""} ${n.title}`;
+      head.textContent = n.title;
       tip.append(head);
       tipLine("Typ", n.type_label);
+      tipLine("Czynność", n.icon_label);
       tipLine("Rola", n.actor);
       tipLine("Pokazuje", (n.outputs || []).join(", "));
       tipLine("Dane", (n.inputs || []).join(", "));
@@ -379,7 +401,7 @@
     });
   }
 
-  window.flowMap = { cy, data: () => lastData, minZoom: MIN_READABLE_ZOOM };  // used by player.js
+  window.flowMap = { cy, data: () => lastData, minZoom: MIN_READABLE_ZOOM, icon: (k) => ICON_BODIES[k] || "" };  // player.js
   document.body.addEventListener("mapChanged", (ev) => load(ev.detail ? ev.detail.focus : undefined));
   load();
 })();

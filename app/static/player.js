@@ -68,8 +68,21 @@
     const outs = out[n.key] || [];
     card.replaceChildren();
     const head = el("div", "player-head");
-    head.append(el("span", `type-chip t-${n.type}`, n.type_label || n.type),
-      el("span", "muted", `Krok ${path.length}${n.actor ? " · " + n.actor : ""}`));
+    const chip = el("span", `type-chip t-${n.type}`, n.type_label || n.type);
+    const body = n.icon && fm().icon(n.icon);
+    if (body) {  // static bundled SVG, not user content
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      ["width", "height"].forEach((a) => svg.setAttribute(a, "14"));
+      svg.setAttribute("viewBox", "0 0 24 24");
+      svg.setAttribute("fill", "none");
+      svg.setAttribute("stroke", "currentColor");
+      svg.setAttribute("stroke-width", "2");
+      svg.setAttribute("class", "picto");
+      svg.innerHTML = body;
+      chip.prepend(svg, " ");
+    }
+    head.append(chip, el("span", "muted", `Krok ${path.length}${n.actor ? " · " + n.actor : ""}`
+      + (n.icon_label ? " · " + n.icon_label : "")));
     card.append(head, el("strong", "player-title", n.title));
     narrate(n, outs, by).forEach((line) => card.append(el("p", "player-line", line)));
     if (message) card.append(el("div", "alert info", message));
