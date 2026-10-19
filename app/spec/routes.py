@@ -26,7 +26,8 @@ from .schema import (
 bp = Blueprint("spec", __name__)
 SECTION_LABELS = {"entities": "Encje", "screens": "Ekrany", "roles": "Role", "states": "Statusy",
                   "notifications": "Powiadomienia", "integrations": "Integracje", "nfr": "Wymagania (NFR)",
-                  "use_cases": "Przypadki użycia", "sequences": "Sekwencje"}
+                  "use_cases": "Przypadki użycia", "sequences": "Sekwencje",
+                  "rules": "Reguły"}
 FORM_FIELDS = {
     "entities": [("name", "Nazwa", "input"), ("description", "Opis", "textarea"),
                  ("fields", "Pola: nazwa | typ | wymagane t/n | walidacja | wartości | encja odwołania | id t/n",
@@ -40,7 +41,7 @@ FORM_FIELDS = {
                "(all = wszystkie, own = tylko swoje, none = brak)",
                "textarea")],
     "states": [("entity", "Encja (klucz)", "input"), ("statuses", "Statusy: nazwa | start/koniec/-", "textarea"),
-               ("transitions", "Przejścia: z | do", "textarea")],
+               ("transitions", "Przejścia: z | do | warunek", "textarea")],
     "notifications": [("trigger", "Zdarzenie", "input"), ("channel", "Kanał", CHANNEL_LABELS),
                       ("recipient_role", "Odbiorca (klucz roli)", "input"), ("summary", "Treść w skrócie", "input")],
     "integrations": [("name", "System", "input"), ("direction", "Kierunek", DIRECTION_LABELS),
@@ -55,6 +56,8 @@ FORM_FIELDS = {
     "sequences": [("name", "Nazwa", "input"), ("participants", "Uczestnicy (po jednym w linii)", "textarea"),
                   ("messages", "Komunikaty: od | do | tekst | call/reply/async/error "
                    "(wywołanie, odpowiedź, asynchronicznie, błąd)", "textarea")],
+    "rules": [("name", "Decyzja", "input"), ("inputs", "Dane wejściowe (po przecinku)", "input"),
+              ("rows", "Wiersze: warunek | wynik (dodaj „inaczej | …” dla pozostałych przypadków)", "textarea")],
 }
 
 

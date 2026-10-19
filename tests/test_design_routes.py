@@ -59,3 +59,11 @@ def test_sequences_section_on_design_tab(auth_client):
     play_to_end(auth_client, p)
     html = auth_client.get(f"/p/{p.id}/projekt-aplikacji?sekcja=sequences").get_data(as_text=True)
     assert "sequenceDiagram" in html and "Sekwencje" in html
+
+
+def test_states_and_rules_sections(auth_client):
+    p = new_project(auth_client)
+    play_to_end(auth_client, p)
+    assert "stateDiagram-v2" in auth_client.get(f"/p/{p.id}/projekt-aplikacji?sekcja=states").get_data(as_text=True)
+    html = auth_client.get(f"/p/{p.id}/projekt-aplikacji?sekcja=rules").get_data(as_text=True)
+    assert "Reguły" in html and ("decision-table" in html or "Brak tabel decyzyjnych" in html)

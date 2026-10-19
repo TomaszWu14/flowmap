@@ -25,7 +25,8 @@ KIND_LABELS = {
     "add_status": "nowy status", "add_transition": "nowe przejście", "set_permission": "uprawnienie",
     "add_notification": "powiadomienie", "add_nfr": "wymaganie", "other_note": "uwaga",
 }
-SECTIONS = ("entities", "screens", "roles", "states", "notifications", "integrations", "nfr", "use_cases", "sequences")
+SECTIONS = ("entities", "screens", "roles", "states", "notifications", "integrations", "nfr", "use_cases", "sequences",
+            "rules")
 Source = Literal["rules", "ai", "manual"]
 Perm = Literal["all", "own", "none"]
 
@@ -94,6 +95,7 @@ class Status(BaseModel):
 class Transition(BaseModel):
     from_status: str
     to_status: str
+    condition: str = PField(default="", max_length=300)
     node_key: str = ""
     role: str = ""
 
@@ -153,6 +155,17 @@ class Sequence(Item):
     messages: list[Message] = []
 
 
+class RuleRow(BaseModel):
+    condition: str = PField(min_length=1, max_length=200)
+    result: str = PField(min_length=1, max_length=200)
+
+
+class Rule(Item):
+    name: str = PField(min_length=1, max_length=200)
+    inputs: list[str] = []
+    rows: list[RuleRow] = []
+
+
 class Proposal(BaseModel):
     id: str
     kind: str
@@ -171,6 +184,7 @@ class Spec(BaseModel):
     nfr: list[Nfr] = []
     use_cases: list[UseCase] = []
     sequences: list[Sequence] = []
+    rules: list[Rule] = []
     stack: str = PField(default="", max_length=200)
     proposals: list[Proposal] = []
     dismissed: list[str] = []

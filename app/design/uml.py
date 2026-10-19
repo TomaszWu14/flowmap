@@ -82,6 +82,19 @@ def sequence_diagram(seq, spec: Spec) -> str:
     return "\n".join(out) + "\n"
 
 
+def state_diagram(sm, spec: Spec) -> str:
+    """UML state machine; transition labels are the gateway answers that cause them."""
+    ids = {s.name: f"S{i}" for i, s in enumerate(sm.statuses)}
+    out = ["stateDiagram-v2"] + [f"    {ids[s.name]} : {_seq_text(s.name)}" for s in sm.statuses]
+    out += [f"    [*] --> {ids[s.name]}" for s in sm.statuses if s.initial]
+    for t in sm.transitions:
+        if t.from_status in ids and t.to_status in ids:
+            label = f" : {_seq_text(t.condition)}" if t.condition else ""
+            out.append(f"    {ids[t.from_status]} --> {ids[t.to_status]}{label}")
+    out += [f"    {ids[s.name]} --> [*]" for s in sm.statuses if s.final]
+    return "\n".join(out) + "\n"
+
+
 def uml_md(meta: dict, spec: Spec) -> str:
     roles = {r.key: r.name for r in spec.roles}
     names = {u.key: u.name for u in spec.use_cases}
@@ -103,6 +116,18 @@ def uml_md(meta: dict, spec: Spec) -> str:
     for s in spec.sequences:
         out += [f"### {_md(s.name)}", "", "```mermaid", sequence_diagram(s, spec).rstrip(), "```", ""]
     if not spec.sequences:
+        out += ["- brak", ""]
+    entity_names = {e.key: e.name for e in spec.entities}
+    out += ["## Stany", ""]
+    for sm in spec.states:
+        out += [f"### {_md(entity_names.get(sm.entity, sm.entity))}", "", "```mermaid",
+                state_diagram(sm, spec).rstrip(), "```", ""]
+    out += ["## Reguły biznesowe (tabele decyzyjne)", ""]
+    for r in spec.rules:
+        out += [f"### {_md(r.name)}", ""] + ([f"Dane: {_md(', '.join(r.inputs))}", ""] if r.inputs else [])
+        out += ["| Warunek | Wynik |", "|---|---|"] + [f"| {_md(w.condition)} | {_md(w.result)} |" for w in r.rows]
+        out.append("")
+    if not spec.rules:
         out += ["- brak", ""]
     out += ["## Diagram klas", "", "```mermaid", class_diagram(spec).rstrip(), "```", "", "## Uwagi strażnika UML", ""]
     out += [f"- {_md(i['message'])} — {_md(i['why'])}" for i in lint(spec)] or ["- brak"]

@@ -86,6 +86,8 @@ def derive(graph: dict, meta: dict) -> Spec:
             Relation(key=f"rel:{slug(actor)}-{slug(main_name)}", to_entity=main.key, kind="1-n")]))
 
     # --- states of the main entity (walk order, decisions give approve/reject)
+    from ..design.derive import rejoins_main  # local: design.derive imports this module
+
     statuses = [Status(name="nowy", initial=True)]
     transitions = []
     current = "nowy"
@@ -94,14 +96,15 @@ def derive(graph: dict, meta: dict) -> Spec:
             before = current
             for e in graph["edges"]:
                 if e["source"] == n["key"] and e.get("label"):
-                    if NEGATIVE_LABEL.match(e["label"]):
-                        name = "odrzucony"
-                        _add_status(statuses, name)
-                        transitions.append(Transition(from_status=before, to_status=name, node_key=n["key"]))
-                    else:
-                        name = "zatwierdzony"
-                        _add_status(statuses, name)
-                        transitions.append(Transition(from_status=before, to_status=name, node_key=n["key"]))
+                    negative = bool(NEGATIVE_LABEL.match(e["label"]))
+                    if negative and rejoins_main(graph, e["target"]):
+                        continue  # a retry or a skipped step, not a rejection of the record
+                    name = "odrzucony" if negative else "zatwierdzony"
+                    _add_status(statuses, name, final=negative)
+                    if before != name:
+                        transitions.append(Transition(from_status=before, to_status=name, node_key=n["key"],
+                                                      condition=f"{n['title']} — {e['label']}"[:300]))
+                    if not negative:
                         current = name
         elif n["type"] == "end":
             name = n["title"][:60].lower()
@@ -164,12 +167,13 @@ def derive(graph: dict, meta: dict) -> Spec:
     if any(PERSONAL.search(f) for f in all_fields):
         nfr.append(Nfr(key="nfr:rodo", category="privacy",
                        text="RODO: podstawa przetwarzania danych osobowych i usunięcie danych na żądanie."))
-    from ..design.derive import sequences as derive_sequences  # local: design.derive imports this module
+    from ..design.derive import rules as derive_rules  # local: design.derive imports this module
+    from ..design.derive import sequences as derive_sequences
     from ..design.derive import use_cases as derive_use_cases
 
     return Spec(entities=entities, screens=screens, roles=roles, states=states, notifications=notifications,
                 integrations=integrations, nfr=nfr, use_cases=derive_use_cases(graph, meta),
-                sequences=derive_sequences(graph, meta))
+                sequences=derive_sequences(graph, meta), rules=derive_rules(graph))
 
 
 def _add_status(statuses: list[Status], name: str, final: bool = False) -> None:

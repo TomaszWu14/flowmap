@@ -5,7 +5,7 @@ from itertools import pairwise
 from ..ai.rules import NEGATIVE_LABEL
 from ..flow.lanes import assign
 from ..spec.derive import NOTIFY, slug
-from ..spec.schema import Alternative, Message, Sequence, UseCase
+from ..spec.schema import Alternative, Message, Rule, RuleRow, Sequence, UseCase
 
 FLOW = ("start", "end", "decision", "parallel", "wait")
 SYSTEM = "System"
@@ -31,6 +31,20 @@ def main_path(graph: dict) -> list[str]:
         nxt = (positive or edges or [None])[0]
         key = nxt["target"] if nxt else None
     return path
+
+
+def rejoins_main(graph: dict, target: str, limit: int = 30) -> bool:
+    """Does the branch starting at `target` come back to the happy path (normal edges, first answer)?"""
+    main = set(main_path(graph))
+    out = _out(graph)
+    key, seen = target, set()
+    while key and key not in seen and len(seen) < limit:
+        if key in main:
+            return True
+        seen.add(key)
+        nxt = [e["target"] for e in out.get(key, []) if e.get("condition") != "error"]
+        key = nxt[0] if nxt else None
+    return False
 
 
 def _branch(by_key, out, target, main, origin) -> list[str]:
@@ -145,3 +159,13 @@ def sequences(graph: dict, meta: dict) -> list[Sequence]:
             last_human = me
     name = f"Ścieżka główna: {meta.get('start_sentence') or meta.get('name', '')}"
     return [Sequence(key="seq:main", name=name[:200], participants=parts, messages=msgs)]
+
+
+def rules(graph: dict) -> list[Rule]:
+    """One decision table per exclusive gateway: answer (edge label) → next step."""
+    by_key = {n["key"]: n for n in graph["nodes"]}
+    out = _out(graph)
+    return [Rule(key=f"rule:{n['key']}", node_key=n["key"], name=n["title"][:200], inputs=list(n.get("inputs", [])),
+                 rows=[RuleRow(condition=(e.get("label") or "inaczej")[:200], result=by_key[e["target"]]["title"][:200])
+                       for e in out.get(n["key"], []) if e["target"] in by_key])
+            for n in graph["nodes"] if n["type"] == "decision"]

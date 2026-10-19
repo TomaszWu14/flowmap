@@ -5,21 +5,31 @@ from flask_login import login_required
 
 from ..flow import graph as g
 from .lint import SECTION_OF, lint
-from .uml import class_diagram, sequence_diagram, use_case_diagram
+from .uml import class_diagram, sequence_diagram, state_diagram, use_case_diagram
 
 bp = Blueprint("design", __name__)
-DESIGN_SECTIONS = {"classes": "Klasy", "use_cases": "Przypadki użycia", "sequences": "Sekwencje"}
-EDIT_SECTION = {"classes": "entities", "use_cases": "use_cases", "sequences": "sequences"}
+DESIGN_SECTIONS = {"classes": "Klasy", "use_cases": "Przypadki użycia", "sequences": "Sekwencje", "states": "Stany",
+                   "rules": "Reguły"}
+EDIT_SECTION = {"classes": "entities", "use_cases": "use_cases", "sequences": "sequences", "states": "states",
+                "rules": "rules"}
 HELP = {"classes": "Diagram klas UML: encje (klasy) z polami i relacjami. Krotność „1 → *” czytaj: "
                    "jeden rekord po lewej ma wiele po prawej.",
         "use_cases": "Diagram przypadków użycia UML: kto (aktor) korzysta z systemu i po co. «include» — przypadek "
                      "zawsze wywołuje inny; «extend» — wariant lub wyjątek rozszerzający scenariusz.",
         "sequences": "Diagram sekwencji UML: kto komu i w jakiej kolejności przekazuje sprawę. Pełna strzałka — "
                      "wywołanie, przerywana — odpowiedź, otwarta — komunikat asynchroniczny, krzyżyk — błąd; "
-                     "blok alt pokazuje ścieżkę błędu."}
+                     "blok alt pokazuje ścieżkę błędu.",
+        "states": "Diagram stanów UML: przez jakie statusy przechodzi rekord. Etykieta przejścia to warunek z bramki "
+                  "na mapie; [*] — początek i koniec.",
+        "rules": "Tabele decyzyjne (reguły biznesowe): dla każdej decyzji — warunek i wynik. Pełna tabela obejmuje "
+                 "wszystkie przypadki (np. wiersz „inaczej”)."}
 
 
 def _diagrams(section, spec, project) -> list[str]:
+    if section == "rules":
+        return []  # decision tables are tables, rendered in the template
+    if section == "states":
+        return [state_diagram(sm, spec) for sm in spec.states] or ['flowchart LR\n    EMPTY["Brak statusów"]\n']
     if section == "sequences":
         return [sequence_diagram(s, spec) for s in spec.sequences] or ['flowchart LR\n    EMPTY["Brak sekwencji"]\n']
     if section == "use_cases":

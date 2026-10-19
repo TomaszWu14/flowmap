@@ -34,6 +34,14 @@
         <pre class="mermaid" data-source="{{ d }}">{{ d }}</pre>
       </figure>
       {% endfor %}
+      {% if section == 'rules' %}
+        {% for r in spec.rules %}
+        <div class="card table-wrap"><h3>{{ r.name }}</h3>
+          {% if r.inputs %}<p class="muted">Dane: {{ r.inputs|join(', ') }}</p>{% endif %}
+          <table class="versions decision-table"><tr><th>Warunek</th><th>Wynik</th></tr>
+          {% for w in r.rows %}<tr><td>{{ w.condition }}</td><td>{{ w.result }}</td></tr>{% endfor %}</table></div>
+        {% else %}<p class="muted">Brak tabel decyzyjnych — dodaj bramkę na mapie albo regułę w specyfikacji.</p>{% endfor %}
+      {% endif %}
     </div>
   </section>
 </div>

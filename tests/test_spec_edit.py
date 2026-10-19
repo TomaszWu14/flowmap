@@ -18,6 +18,7 @@ SAMPLE_FORM = {
                   "alternatives": "brak danych | popraw; wróć", "includes": "uc:system"},
     "sequences": {"name": "S", "participants": "A\nB",
                   "messages": "A | B | zamów | call\nB | A | ok | reply\nB | A | brak | error"},
+    "rules": {"name": "R", "inputs": "kwota, klient", "rows": "kwota > 1000 | akceptacja kierownika\ninaczej | auto"},
 }
 
 

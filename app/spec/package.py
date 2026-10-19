@@ -4,7 +4,7 @@ import io
 import json
 import zipfile
 
-from ..design.uml import uml_md
+from ..design.uml import state_diagram, uml_md
 from ..export.builders import FORMAT, _md, _mm, _test_paths, to_mermaid
 from ..flow.guard import report
 from .readiness import readiness
@@ -119,13 +119,8 @@ def data_model_md(spec: Spec) -> str:
                 out.append(f'    {ids[e.key]} {card} {ids[r.to_entity]} : "{_mm(r.label or r.kind)}"')
     out += ["```", ""]
     for sm in spec.states:
-        out += [f"## Statusy: {_md(_name(spec, sm.entity))}", "", "```mermaid", "stateDiagram-v2"]
-        sid = {s.name: f"S{i}" for i, s in enumerate(sm.statuses)}
-        out += [f'    {sid[s.name]} : {_mm(s.name)}' for s in sm.statuses]
-        out += [f"    [*] --> {sid[s.name]}" for s in sm.statuses if s.initial]
-        out += [f"    {sid[t.from_status]} --> {sid[t.to_status]}" for t in sm.transitions
-                if t.from_status in sid and t.to_status in sid]
-        out += [f"    {sid[s.name]} --> [*]" for s in sm.statuses if s.final] + ["```", ""]
+        out += [f"## Statusy: {_md(_name(spec, sm.entity))}", "", "```mermaid", state_diagram(sm, spec).rstrip(),
+                "```", ""]
     return "\n".join(out) + "\n"
 
 

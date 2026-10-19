@@ -243,6 +243,10 @@ def to_markdown(meta: dict, graph: dict, spec=None) -> str:
         for e in graph["edges"]:
             if e["source"] == n["key"] and e.get("label"):
                 out.append(f"   - jeśli „{_md(e['label'])}” → {_md(by_key[e['target']]['title'])}")
+    if spec.rules:
+        out += ["", "### Reguły decyzyjne", ""]
+        out += [f"- {_md(r.name)}: " + "; ".join(f"{_md(w.condition)} → {_md(w.result)}" for w in r.rows)
+                for r in spec.rules]
     out += ["", "## 2. Role i uprawnienia", ""]
     for a in actors:
         steps = [n for n in nodes if n.get("actor") == a]
