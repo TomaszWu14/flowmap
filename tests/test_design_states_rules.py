@@ -10,8 +10,16 @@ def test_transitions_carry_gateway_conditions_and_no_self_loops():
     sm = derive(full_graph("booking"), META).states[0]
     conds = {(t.from_status, t.to_status): t.condition for t in sm.transitions}
     assert conds[("nowy", "zatwierdzony")] == "Czy termin jest wolny? — tak"
-    assert conds[("nowy", "odrzucony")] == "Czy termin jest wolny? — nie"
     assert all(t.from_status != t.to_status for t in sm.transitions)
+    # "termin zajęty" goes back to choosing a slot and "bez przedpłaty" skips a step — neither rejects the booking
+    assert "odrzucony" not in {s.name for s in sm.statuses}
+
+
+def test_negative_answer_that_leaves_the_happy_path_rejects():
+    sm = derive(full_graph("service"), {"name": "Serwis", "start_sentence": "S"}).states[0]
+    conds = {t.condition: (t.from_status, t.to_status) for t in sm.transitions}
+    assert conds["Czy klient akceptuje wycenę? — nie"][1] == "odrzucony"
+    assert "Czy naprawa gwarancyjna? — nie" not in conds  # goes through a quote and back to the repair
     assert next(s for s in sm.statuses if s.name == "odrzucony").final
 
 

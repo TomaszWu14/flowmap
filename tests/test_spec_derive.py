@@ -59,15 +59,15 @@ def test_derive_service_staff_role_permissions():
 
 
 def test_derive_transition_from_status_tracks_running_status():
-    # booking has two sequential decisions: "free" then "prepay". Once "free"'s positive
-    # branch sets the running status to "zatwierdzony", every later transition out of
-    # "prepay" (both branches) must start from that status, not a hardcoded "nowy".
-    spec = derive(full_graph("booking"), META)
+    # service has two sequential decisions: "warranty" then "accept". Once "warranty"'s positive
+    # branch sets the running status to "zatwierdzony", the later rejection out of "accept"
+    # must start from that status, not a hardcoded "nowy".
+    spec = derive(full_graph("service"), META)
     sm = spec.states[0]
     status_names = {s.name for s in sm.statuses}
-    prepay_transitions = [t for t in sm.transitions if t.node_key == "prepay"]
-    assert prepay_transitions
-    assert all(t.from_status == "zatwierdzony" for t in prepay_transitions)
+    accept_transitions = [t for t in sm.transitions if t.node_key == "accept"]
+    assert accept_transitions
+    assert all(t.from_status == "zatwierdzony" for t in accept_transitions)
     assert all(t.from_status in status_names and t.to_status in status_names for t in sm.transitions)
 
 

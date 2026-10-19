@@ -86,6 +86,8 @@ def derive(graph: dict, meta: dict) -> Spec:
             Relation(key=f"rel:{slug(actor)}-{slug(main_name)}", to_entity=main.key, kind="1-n")]))
 
     # --- states of the main entity (walk order, decisions give approve/reject)
+    from ..design.derive import rejoins_main  # local: design.derive imports this module
+
     statuses = [Status(name="nowy", initial=True)]
     transitions = []
     current = "nowy"
@@ -95,6 +97,8 @@ def derive(graph: dict, meta: dict) -> Spec:
             for e in graph["edges"]:
                 if e["source"] == n["key"] and e.get("label"):
                     negative = bool(NEGATIVE_LABEL.match(e["label"]))
+                    if negative and rejoins_main(graph, e["target"]):
+                        continue  # a retry or a skipped step, not a rejection of the record
                     name = "odrzucony" if negative else "zatwierdzony"
                     _add_status(statuses, name, final=negative)
                     if before != name:

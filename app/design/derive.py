@@ -33,6 +33,20 @@ def main_path(graph: dict) -> list[str]:
     return path
 
 
+def rejoins_main(graph: dict, target: str, limit: int = 30) -> bool:
+    """Does the branch starting at `target` come back to the happy path (normal edges, first answer)?"""
+    main = set(main_path(graph))
+    out = _out(graph)
+    key, seen = target, set()
+    while key and key not in seen and len(seen) < limit:
+        if key in main:
+            return True
+        seen.add(key)
+        nxt = [e["target"] for e in out.get(key, []) if e.get("condition") != "error"]
+        key = nxt[0] if nxt else None
+    return False
+
+
 def _branch(by_key, out, target, main, origin) -> list[str]:
     """Titles along a side branch until it rejoins the main path ('wraca do' / 'dalej') or ends."""
     steps, seen, key = [], set(), target
