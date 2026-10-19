@@ -140,34 +140,41 @@ def compact_graph(graph: dict) -> str:
     return json.dumps({"nodes": nodes, "edges": edges}, ensure_ascii=False)
 
 
+def _api_call(client, **kwargs):
+    """messages.create with API failures turned into Polish AIError messages."""
+    try:
+        response = client.messages.create(**kwargs)
+    except anthropic.APITimeoutError as exc:
+        raise AIError("przekroczono czas odpowiedzi") from exc
+    except anthropic.RateLimitError as exc:
+        raise AIError("limit zapytań API, spróbuj za chwilę") from exc
+    except anthropic.AuthenticationError as exc:
+        raise AIError("nieprawidłowy klucz API") from exc
+    except anthropic.APIStatusError as exc:
+        raise AIError(f"błąd API {exc.status_code}") from exc
+    except anthropic.APIConnectionError as exc:
+        raise AIError("brak połączenia z API") from exc
+    if response.stop_reason == "refusal":
+        raise AIError("model odmówił odpowiedzi")
+    return response
+
+
 def call_tool(prompt: str, tool: dict, model_cls: type[BaseModel]) -> BaseModel:
     """One request + one retry when the tool payload fails validation."""
     client = _client()
     system = _prompt("system")
     last_error = "brak wywołania narzędzia"
     for _attempt in range(2):
-        try:
-            response = client.messages.create(
-                model=current_app.config["ANTHROPIC_MODEL"],
-                max_tokens=8000,
-                system=system,
-                tools=[tool],
-                tool_choice={"type": "auto"},
-                output_config={"effort": "low"},
-                messages=[{"role": "user", "content": prompt}],
-            )
-        except anthropic.APITimeoutError as exc:
-            raise AIError("przekroczono czas odpowiedzi") from exc
-        except anthropic.RateLimitError as exc:
-            raise AIError("limit zapytań API, spróbuj za chwilę") from exc
-        except anthropic.AuthenticationError as exc:
-            raise AIError("nieprawidłowy klucz API") from exc
-        except anthropic.APIStatusError as exc:
-            raise AIError(f"błąd API {exc.status_code}") from exc
-        except anthropic.APIConnectionError as exc:
-            raise AIError("brak połączenia z API") from exc
-        if response.stop_reason == "refusal":
-            raise AIError("model odmówił odpowiedzi")
+        response = _api_call(
+            client,
+            model=current_app.config["ANTHROPIC_MODEL"],
+            max_tokens=8000,
+            system=system,
+            tools=[tool],
+            tool_choice={"type": "auto"},
+            output_config={"effort": "low"},
+            messages=[{"role": "user", "content": prompt}],
+        )
         block = next((b for b in response.content if b.type == "tool_use" and b.name == tool["name"]), None)
         if block is None:
             continue

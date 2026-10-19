@@ -1,6 +1,6 @@
 """'Ocena' tab: rule-based scores (optionally mixed with a qualitative AI part) with history per user."""
 
-from flask import Blueprint, flash, redirect, render_template, url_for
+from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from ..ai.client import AIError, ai_enabled, spend_ai_request
@@ -8,6 +8,7 @@ from ..extensions import db
 from ..flow import graph as g
 from ..models import Evaluation, utcnow
 from .ai_review import assess
+from .chat import history, reply
 from .rubric import evaluate, mix
 
 bp = Blueprint("trainer", __name__)
@@ -64,3 +65,33 @@ def score_ai(project_id):
         flash(f"Ocena AI nieudana ({exc}) — zapisano ocenę z reguł.", "error")
         return _save(project, results, "rules")
     return _save(project, mix(results, ai), "mixed")
+
+
+def _chat(project, error=None, draft=""):
+    return render_template("trainer/_chat.html", project=project, messages=history(project, current_user),
+                           ai=ai_enabled(), error=error, draft=draft)
+
+
+@bp.get("/p/<int:project_id>/trener")
+@login_required
+def chat_panel(project_id):
+    return _chat(g.project_for(project_id, "view"))
+
+
+@bp.post("/p/<int:project_id>/trener")
+@login_required
+def chat(project_id):
+    project = g.project_for(project_id, "view")
+    text = (request.form.get("text") or "").strip()
+    if not text:
+        return _chat(project, "Napisz pytanie do trenera.")
+    if len(text) > 2000:
+        return _chat(project, "Wiadomość może mieć najwyżej 2000 znaków.", draft=text[:2000])
+    reason = spend_ai_request()
+    if reason:
+        return _chat(project, f"{reason}.", draft=text)
+    try:
+        reply(project, current_user, text)
+    except AIError as exc:
+        return _chat(project, f"Trener nie odpowiedział: {exc}.", draft=text)
+    return _chat(project)

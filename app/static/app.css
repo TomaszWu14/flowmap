@@ -214,6 +214,11 @@ details > form, details > div { margin-top: .6rem; display: grid; gap: .6rem; }
 form.vision-form { max-width: none; }
 .score-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 1rem; }
 .score-card td.ok { color: var(--ok); font-weight: 700; }
+.chat-thread { list-style: none; padding: 0; margin: .5rem 0; display: grid; gap: .5rem; max-height: 50vh; overflow-y: auto; }
+.chat-msg { padding: .55rem .75rem; border-radius: 12px; white-space: pre-wrap; max-width: 92%; }
+.chat-msg.user { background: var(--accent-soft); justify-self: end; }
+.chat-msg.assistant { background: var(--surface-2); justify-self: start; }
+form.chat-form { max-width: none; }
 .top-fix { background: var(--accent-soft); border-radius: 10px; padding: .6rem .8rem; }
 .mode-toggle { display: inline; margin: 0; }
 .hint-guide { background: var(--accent-soft); border-radius: 10px; padding: .6rem .8rem; }
