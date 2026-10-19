@@ -36,6 +36,7 @@ def create_app(config_class: type = Config) -> Flask:
     from .admin.routes import bp as admin_bp
     from .auth.routes import bp as auth_bp
     from .comments.routes import bp as comments_bp
+    from .design.routes import bp as design_bp
     from .export.routes import bp as export_bp
     from .flow.routes import bp as flow_bp
     from .media.routes import bp as media_bp
@@ -59,6 +60,7 @@ def create_app(config_class: type = Config) -> Flask:
     app.register_blueprint(comments_bp)
     app.register_blueprint(spec_bp)
     app.register_blueprint(media_bp)
+    app.register_blueprint(design_bp)
 
     @app.get("/healthz")
     def healthz():

@@ -17,3 +17,9 @@ def test_player_js_defines_its_helpers():
     src = (STATIC / "player.js").read_text(encoding="utf-8")
     for name in ("place", "focus", "render", "travel", "advance", "start", "close"):
         assert re.search(rf"function {name}\(", src), name
+
+
+def test_design_js_defines_its_helpers():
+    src = (STATIC / "design.js").read_text(encoding="utf-8")
+    for name in ("render", "theme"):
+        assert re.search(rf"function {name}\(", src), name

@@ -1,11 +1,13 @@
 """How ready the spec is for Claude Code: 0-100 plus issues pinned to items."""
 
+from ..design.lint import WEIGHTS as LINT_WEIGHTS
+from ..design.lint import lint
 from .schema import SECTIONS, Spec
 
 WEIGHTS = {"no_identifier": 10, "enum_without_values": 3, "bad_relation": 8, "screen_without_role": 5,
            "role_without_permissions": 5, "states_without_initial_or_final": 8,
            "notification_without_recipient": 3, "integration_without_error": 5, "stale_item": 2,
-           "open_proposal": 1, "duplicate_item": 3}
+           "open_proposal": 1, "duplicate_item": 3, **LINT_WEIGHTS}
 
 
 def _i(code, message, key=""):
@@ -52,5 +54,6 @@ def readiness(spec: Spec) -> dict:
             labels.add(label)
             if item.stale:
                 issues.append(_i("stale_item", "Element nie ma już odpowiednika na mapie.", item.key))
+    issues += lint(spec)
     issues += [_i("open_proposal", f"Propozycja AI czeka: {p.summary}", p.target_key) for p in spec.proposals]
     return {"score": max(0, 100 - sum(WEIGHTS[i["code"]] for i in issues)), "issues": issues}
