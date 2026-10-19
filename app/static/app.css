@@ -290,3 +290,10 @@ kbd { font: inherit; font-size: .75rem; border: 1px solid var(--line); border-bo
 .toast .btn { background: var(--bg); color: var(--ink); }
 .toast-close { background: none; border: 0; color: inherit; font-size: 1.2rem; cursor: pointer; line-height: 1; padding: 0 .2rem; }
 @media (max-width: 900px) { .panel-resize { display: none; } .toasts { bottom: 76px; } .save-status { display: none; } }
+.map-tip { position: absolute; z-index: 7; max-width: 300px; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 10px; box-shadow: var(--shadow); padding: .55rem .7rem; font-size: .85rem; pointer-events: none; }
+.map-tip strong { display: block; margin-bottom: .25rem; }
+.map-tip p { margin: .1rem 0; }
+.legend-toggle { background: none; border: 1px solid var(--line); border-radius: 999px; padding: 0 .55rem; font: inherit;
+  font-size: .78rem; color: var(--ink); cursor: pointer; }
+.map-wrap:fullscreen { background-color: var(--bg); }

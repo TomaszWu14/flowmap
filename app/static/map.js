@@ -13,6 +13,20 @@
   let lastData = { nodes: [], edges: [] };
   const MIN_READABLE_ZOOM = 0.8;
 
+  const ICONS = {
+    start: "▶", screen: "🖥", user_action: "👤", automation: "⚙", decision: "◆", wait: "⏳", integration: "⇄", end: "■",
+  };
+  const ROLE_PALETTE = ["#2f6fdf", "#c2410c", "#15803d", "#7c3aed", "#b45309", "#0e7490", "#be185d", "#4d7c0f"];
+  let colorMode = "type";
+  try { colorMode = localStorage.getItem("fm-color-mode") || "type"; } catch (e) { /* ignore */ }
+  const roles = () => [...new Set((lastData.nodes || []).map((n) => n.actor).filter(Boolean))].sort();
+  const roleColor = (actor) => {
+    const i = roles().indexOf(actor);
+    return i < 0 ? css("--muted") : ROLE_PALETTE[i % ROLE_PALETTE.length];
+  };
+  const nodeColor = (n) => (colorMode === "role" && !["start", "end"].includes(n.data("type"))
+    ? roleColor(n.data("actor")) : css("--t-" + n.data("type")));
+
   const SHAPES = {
     start: "round-rectangle", end: "round-rectangle", decision: "diamond", screen: "rectangle",
     user_action: "round-rectangle", automation: "cut-rectangle", wait: "barrel", integration: "rhomboid",
@@ -25,7 +39,7 @@
         "width": (n) => (n.data("type") === "decision" ? 150 : 176),
         "height": (n) => (n.data("type") === "decision" ? 96 : 66),
         "background-color": css("--surface"), "border-width": 2,
-        "border-color": (n) => css("--t-" + n.data("type")),
+        "border-color": nodeColor,
         "label": "data(label)", "color": css("--ink"), "font-size": 11,
         "text-wrap": "wrap", "text-max-width": (n) => (n.data("type") === "decision" ? 100 : 156),
         "text-valign": "center", "text-halign": "center",
@@ -68,8 +82,9 @@
     const nodes = data.nodes.map((n) => {
       const classes = [n.pending ? "pending" : "", n.issues.length ? "issue" : "",
         n.diff ? "diff-" + n.diff : ""].join(" ").trim();
-      const label = n.title + (n.actor ? "\n— " + n.actor : "") + (n.issues.length ? "\n⚠ " + n.issues.length : "") + (n.comments ? "  💬 " + n.comments : "");
-      const item = { group: "nodes", data: { id: n.key, type: n.type, label: label }, classes: classes };
+      const label = (ICONS[n.type] ? ICONS[n.type] + " " : "") + n.title + (n.actor ? "\n— " + n.actor : "") + (n.issues.length ? "\n⚠ " + n.issues.length : "") + (n.comments ? "  💬 " + n.comments : "");
+      const item = { group: "nodes", data: { id: n.key, type: n.type, actor: n.actor || "", label: label },
+        classes: classes };
       if (n.x !== null && n.y !== null) item.position = { x: n.x, y: n.y };
       return item;
     });
@@ -100,34 +115,84 @@
     return bb.x1 >= 0 && bb.y1 >= 0 && bb.x2 <= cy.width() && bb.y2 <= cy.height();
   }
 
+  // Stable layout: steps keep the place they had in the previous render; new steps land under their
+  // predecessor. Only the first render and "Ułóż" run the full dagre layout.
+  const prev = {};
+  let firstLoad = true, forceLayout = false;
+  const relayout = document.querySelector("button[title='Ułóż mapę automatycznie']");
+  if (relayout) relayout.addEventListener("click", () => { forceLayout = true; });
+
+  function placeNew(data) {
+    const parents = {};
+    data.edges.forEach((e) => { (parents[e.target] = parents[e.target] || []).push(e.source); });
+    const placed = {};
+    data.nodes.forEach((n) => { if (prev[n.key]) placed[n.key] = prev[n.key]; });
+    const maxY = Math.max(0, ...Object.values(placed).map((p) => p.y));
+    const busy = (pos) => Object.values(placed).some((p) => Math.abs(p.x - pos.x) < 195 && Math.abs(p.y - pos.y) < 100);
+    let waiting = data.nodes.filter((n) => !placed[n.key]);
+    for (let pass = 0; waiting.length && pass < 60; pass++) {
+      waiting = waiting.filter((n) => {
+        const from = (parents[n.key] || []).find((k) => placed[k]);
+        if (!from && pass < 59) return true;  // its parent is new too: place that one first
+        const base = from ? placed[from] : { x: 0, y: maxY };
+        const pos = { x: base.x, y: base.y + 135 };
+        while (busy(pos)) pos.x += 215;
+        placed[n.key] = pos;
+        return false;
+      });
+    }
+    return { placed, parents };
+  }
+
   async function load(focus) {
     const res = await fetch(cfg.graphUrl, { headers: { Accept: "application/json" } });
     if (!res.ok) return;
     const data = await res.json();
+    cy.nodes().not(".token").forEach((n) => { prev[n.id()] = { ...n.position() }; });
     const allPositioned = data.nodes.every((n) => n.x !== null && n.y !== null);
+    const stable = !firstLoad && !forceLayout && data.nodes.some((n) => prev[n.key]);
     cy.elements().remove();
     cy.add(elements(data));
-    const layout = allPositioned
-      ? { name: "preset", fit: true, padding: 60 }
-      : { name: window.cytoscapeDagre ? "dagre" : "breadthfirst", rankDir: "TB", nodeSep: 40, rankSep: 60,
-          fit: true, padding: 60, directed: true };
-    cy.layout(layout).run();
+    if (stable) {
+      const { placed, parents } = placeNew(data);
+      cy.nodes().forEach((n) => {
+        const target = placed[n.id()];
+        if (!target) return;
+        if (prev[n.id()]) { n.position(target); return; }
+        const from = (parents[n.id()] || []).map((k) => placed[k]).find(Boolean) || target;
+        n.position({ ...from });
+        n.style("opacity", 0);
+        n.animate({ position: target, style: { opacity: 1 } }, { duration: 320, easing: "ease-out-cubic" });
+      });
+    } else if (allPositioned && !forceLayout) {
+      cy.layout({ name: "preset", fit: true, padding: 60 }).run();
+    } else {
+      const animate = forceLayout && Object.keys(prev).length > 0;
+      if (animate) cy.nodes().forEach((n) => { if (prev[n.id()]) n.position(prev[n.id()]); });
+      cy.layout({ name: window.cytoscapeDagre ? "dagre" : "breadthfirst", rankDir: "TB", nodeSep: 40, rankSep: 60,
+        fit: true, padding: 60, directed: true, animate, animationDuration: 450 }).run();
+    }
     if (focus !== undefined) selected = focus || null;
-    if (cy.zoom() > 1.2) { cy.zoom(1.2); cy.center(); }
-    if (cy.zoom() < MIN_READABLE_ZOOM) {
-      // Whole map would shrink labels below ~9 px: stay readable, center on the step in focus.
-      const pending = data.nodes.find((n) => n.pending);
-      const start = data.nodes.find((n) => n.type === "start");
-      const key = selected || (pending && pending.key) || (start && start.key);
-      cy.zoom(MIN_READABLE_ZOOM);
-      const node = key && cy.getElementById(key);
-      if (node && node.length) {
-        // Process flows downward: keep the focused step high, the start step near the top edge.
-        const y = cy.height() * (start && key === start.key ? 0.12 : 0.25);
-        const pos = node.position();
-        cy.pan({ x: cy.width() / 2 - pos.x * MIN_READABLE_ZOOM, y: y - pos.y * MIN_READABLE_ZOOM });
+    if (!stable && !forceLayout) {
+      if (cy.zoom() > 1.2) { cy.zoom(1.2); cy.center(); }
+      if (cy.zoom() < MIN_READABLE_ZOOM) {
+        // Whole map would shrink labels below ~9 px: stay readable, center on the step in focus.
+        const pending = data.nodes.find((n) => n.pending);
+        const start = data.nodes.find((n) => n.type === "start");
+        const key = selected || (pending && pending.key) || (start && start.key);
+        cy.zoom(MIN_READABLE_ZOOM);
+        const node = key && cy.getElementById(key);
+        if (node && node.length) {
+          // Process flows downward: keep the focused step high, the start step near the top edge.
+          const y = cy.height() * (start && key === start.key ? 0.12 : 0.25);
+          const pos = node.position();
+          cy.pan({ x: cy.width() / 2 - pos.x * MIN_READABLE_ZOOM, y: y - pos.y * MIN_READABLE_ZOOM });
+        }
       }
     }
+    firstLoad = false;
+    forceLayout = false;
+    for (const k of Object.keys(prev)) delete prev[k];
     updateChrome(data);
     lastData = data;
     document.dispatchEvent(new CustomEvent("flowmap:loaded"));
@@ -135,18 +200,100 @@
     if (selected && cy.getElementById(selected).length) {
       const node = cy.getElementById(selected);
       node.addClass("focus");
-      if (!inView(node)) cy.animate({ center: { eles: node }, duration: 200 });
+      if (!inView(node)) cy.animate({ center: { eles: node }, duration: 250 });
     }
   }
 
-  function openNode(node) {
-    if (!cfg.panelUrl) return;
-    selected = node.id();
-    cy.nodes().removeClass("focus");
-    node.addClass("focus");
-    window.htmx.ajax("GET", cfg.panelUrl + "?node=" + encodeURIComponent(selected), { target: "#panel-body", swap: "innerHTML" });
-    const panel = document.getElementById("panel");
-    if (panel) panel.classList.remove("collapsed");
+  // --- hover card: details of a step without opening the panel ---------------------------
+  const tip = document.createElement("div");
+  tip.className = "map-tip";
+  tip.hidden = true;
+  el.parentElement.append(tip);
+  const tipLine = (label, value) => {
+    if (!value) return;
+    const p = document.createElement("p");
+    const b = document.createElement("b");
+    b.textContent = label + ": ";
+    p.append(b, document.createTextNode(value));
+    tip.append(p);
+  };
+  if (window.matchMedia("(hover: hover)").matches) {
+    cy.on("mouseover", "node", (ev) => {
+      const n = lastData.nodes.find((x) => x.key === ev.target.id());
+      if (!n) return;
+      tip.replaceChildren();
+      const head = document.createElement("strong");
+      head.textContent = `${ICONS[n.type] || ""} ${n.title}`;
+      tip.append(head);
+      tipLine("Typ", n.type_label);
+      tipLine("Rola", n.actor);
+      tipLine("Pokazuje", (n.outputs || []).join(", "));
+      tipLine("Dane", (n.inputs || []).join(", "));
+      tipLine("Opis", n.description);
+      tipLine("Do poprawy", (n.issues || []).join(" · "));
+      tipLine("Komentarze", n.comments ? String(n.comments) : "");
+      const pos = ev.target.renderedPosition();
+      tip.style.left = Math.min(pos.x + 20, el.clientWidth - 300) + "px";
+      tip.style.top = Math.max(pos.y + 40, 60) + "px";
+      tip.hidden = false;
+    });
+    cy.on("mouseout", "node", () => { tip.hidden = true; });
+    cy.on("viewport tapstart", () => { tip.hidden = true; });
+  }
+
+  // --- colours by type or by role ----------------------------------------------------------
+  const legend = el.parentElement.querySelector(".legend");
+  if (legend) {
+    const typeLegend = legend.innerHTML;
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "legend-toggle";
+    const paint = () => {
+      legend.innerHTML = colorMode === "role" ? "" : typeLegend;
+      if (colorMode === "role") {
+        roles().forEach((r) => {
+          const s = document.createElement("span");
+          const i = document.createElement("i");
+          i.style.setProperty("--c", roleColor(r));
+          s.append(i, document.createTextNode(r));
+          legend.append(s);
+        });
+      }
+      toggle.textContent = colorMode === "role" ? "Kolory: role ⇄" : "Kolory: typy ⇄";
+      toggle.title = "Przełącz kolorowanie kroków: typ kroku albo rola";
+      legend.prepend(toggle);
+      legend.removeAttribute("aria-hidden");
+    };
+    toggle.addEventListener("click", () => {
+      colorMode = colorMode === "role" ? "type" : "role";
+      try { localStorage.setItem("fm-color-mode", colorMode); } catch (e) { /* ignore */ }
+      cy.style(style());
+      paint();
+    });
+    document.addEventListener("flowmap:loaded", paint);
+  }
+
+  // --- full screen (button + F) ------------------------------------------------------------
+  const wrapEl = el.closest(".map-wrap");
+  const bar = wrapEl && wrapEl.querySelector(".map-toolbar");
+  if (wrapEl && bar && wrapEl.requestFullscreen) {
+    const fs = document.createElement("button");
+    fs.type = "button";
+    fs.className = "btn small";
+    fs.textContent = "⛶";
+    fs.title = "Pełny ekran (F)";
+    fs.setAttribute("aria-label", "Pełny ekran");
+    const flip = () => (document.fullscreenElement ? document.exitFullscreen() : wrapEl.requestFullscreen());
+    fs.addEventListener("click", flip);
+    bar.append(fs);
+    document.addEventListener("fullscreenchange", () => setTimeout(() => cy.resize(), 50));
+    document.addEventListener("keydown", (ev) => {
+      const t = ev.target;
+      if (ev.key.toLowerCase() !== "f" || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+      if (t && (t.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName))) return;
+      ev.preventDefault();
+      flip();
+    });
   }
 
   cy.on("tap", "node", (ev) => openNode(ev.target));
