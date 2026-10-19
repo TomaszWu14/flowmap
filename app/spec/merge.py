@@ -1,6 +1,12 @@
 """Combine a freshly derived spec with the stored one without losing anyone's edits."""
 
-from .schema import SECTIONS, Spec
+from .schema import SECTIONS, VISION_FIELDS, Spec, Vision
+
+
+def merge_vision(current: Vision, derived: Vision) -> Vision:
+    """Fields the analyst (or an accepted AI proposal) wrote stay; the rest follows the fresh draft."""
+    return Vision(**{f: getattr(current if f in current.manual else derived, f) for f in VISION_FIELDS},
+                  manual=current.manual)
 
 
 def merge(current: Spec | None, derived: Spec) -> Spec:
@@ -20,4 +26,5 @@ def merge(current: Spec | None, derived: Spec) -> Spec:
                 merged.append(item.model_copy(update={"stale": True}))
         merged.extend(fresh[k] for k in fresh if k not in {i.key for i in merged})
         setattr(out, section, merged)
+    out.vision = merge_vision(current.vision, derived.vision)
     return out

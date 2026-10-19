@@ -18,6 +18,7 @@ from .schema import (
     StateMachine,
     Status,
     Transition,
+    Vision,
 )
 
 TYPE_RULES = [  # (regex on lower-cased field name, type) - first match wins
@@ -171,9 +172,14 @@ def derive(graph: dict, meta: dict) -> Spec:
     from ..design.derive import sequences as derive_sequences
     from ..design.derive import use_cases as derive_use_cases
 
+    ends = [n["title"] for n in nodes if n["type"] == "end"]
+    vision = Vision(problem=f"Proces „{meta.get('start_sentence', '')}” — opisz, kogo dziś boli i co nie działa.",
+                    goals=[f"Doprowadzić do: {t}" for t in ends], must=[s.name for s in screens],
+                    should=[i.name for i in integrations], could=[n.trigger for n in notifications])
     return Spec(entities=entities, screens=screens, roles=roles, states=states, notifications=notifications,
                 integrations=integrations, nfr=nfr, use_cases=derive_use_cases(graph, meta),
-                sequences=derive_sequences(graph, meta), rules=derive_rules(graph))
+                sequences=derive_sequences(graph, meta), rules=derive_rules(graph),
+                vision=vision)
 
 
 def _add_status(statuses: list[Status], name: str, final: bool = False) -> None:
