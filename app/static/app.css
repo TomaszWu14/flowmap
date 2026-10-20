@@ -230,6 +230,10 @@ form.chat-form { max-width: none; }
 .bar .ok { background: var(--ok); }
 .bar .low { background: var(--warn); }
 .delta { color: var(--ok); font-weight: 700; }
+.recruit-start { flex-wrap: nowrap; gap: .4rem; }
+.recruit-start select { width: auto; }
+.recruit-timer { font-variant-numeric: tabular-nums; font-size: .85rem; }
+.recruit-timer.urgent { color: var(--danger); border-color: var(--danger); }
 .top-fix { background: var(--accent-soft); border-radius: 10px; padding: .6rem .8rem; }
 .mode-toggle { display: inline; margin: 0; }
 .hint-guide { background: var(--accent-soft); border-radius: 10px; padding: .6rem .8rem; }

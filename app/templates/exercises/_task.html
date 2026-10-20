@@ -11,7 +11,14 @@
   {% else %}
     <p class="muted">Na karcie <a href="{{ url_for('design.view', project_id=project.id) }}">Projekt aplikacji</a> opisz przypadki użycia, klasy, reguły i wizję.</p>
   {% endif %}
-  {% if project.can_edit %}
+  {% if project.recruit %}
+  <form method="post" action="{{ url_for('recruit.finish', project_id=project.id) }}" class="stack"
+        data-confirm="Oddać mapę? Po oddaniu nie da się jej zmienić.">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if project.can_edit %}<button class="btn primary" type="submit">Oddaję</button>{% endif %}
+    <p class="field-help">Tryb rekrutacyjny: {{ project.recruit.minutes }} min. Po oddaniu (albo gdy minie czas) rekruter AI zada 5 pytań o Twoje decyzje. <a href="{{ url_for('recruit.view', project_id=project.id) }}">Szczegóły →</a></p>
+  </form>
+  {% elif project.can_edit %}
   <form method="post" action="{{ url_for('exercises.submit', project_id=project.id) }}" class="stack">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="stage" value="{{ project.exercise_stage }}">

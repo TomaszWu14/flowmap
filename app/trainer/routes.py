@@ -69,7 +69,7 @@ def score_ai(project_id):
 
 def _chat(project, error=None, draft=""):
     return render_template("trainer/_chat.html", project=project, messages=history(project, current_user),
-                           ai=ai_enabled(), error=error, draft=draft)
+                           ai=ai_enabled() and not project.recruit, error=error, draft=draft)
 
 
 @bp.get("/p/<int:project_id>/trener")
@@ -82,6 +82,8 @@ def chat_panel(project_id):
 @login_required
 def chat(project_id):
     project = g.project_for(project_id, "view")
+    if project.recruit:
+        return _chat(project)
     text = (request.form.get("text") or "").strip()
     if not text:
         return _chat(project, "Napisz pytanie do trenera.")

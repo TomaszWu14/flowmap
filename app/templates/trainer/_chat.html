@@ -4,7 +4,9 @@
     <span class="badge" title="{{ 'Nauka: trener pyta i naprowadza, nie podaje gotowych rozwiązań' if project.learning else 'Praca: trener daje konkretne propozycje' }}">{{ 'Nauka' if project.learning else 'Praca' }}</span>
   </header>
   {% if error %}<div class="alert error" role="alert">{{ error }}</div>{% endif %}
-  {% if not ai %}
+  {% if project.recruit %}
+    <p class="muted">Trener jest wyłączony w trybie rekrutacyjnym — tu liczy się Twoja samodzielna praca.</p>
+  {% elif not ai %}
     <p class="muted">Trener wymaga AI — administrator musi ustawić klucz ANTHROPIC_API_KEY i włączyć AI.</p>
   {% endif %}
   <ol class="chat-thread">

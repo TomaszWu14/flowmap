@@ -19,8 +19,16 @@
         {% if project.exercise_key %}
         <button class="btn small primary" type="button" hx-get="{{ url_for('exercises.task_panel', project_id=project.id) }}" hx-target="#panel-body">Zadanie</button>
         {% endif %}
+        {% if project.recruit %}
+          {% if project.can_edit %}
+          <span class="recruit-timer badge" role="timer" aria-live="off" title="Pozostały czas"
+                data-deadline="{{ project.recruit.deadline.isoformat(timespec='seconds') }}Z">⏱ {{ project.recruit.minutes }}:00</span>
+          {% endif %}
+          <a class="btn small" href="{{ url_for('recruit.view', project_id=project.id) }}">Rekrutacja</a>
+        {% else %}
         <button class="btn small" type="button" hx-get="{{ url_for('trainer.chat_panel', project_id=project.id) }}" hx-target="#panel-body">Trener</button>
-        {% if project.can_edit %}
+        {% endif %}
+        {% if project.can_edit and not project.recruit %}
         <form method="post" action="{{ url_for('flow.toggle_mode', project_id=project.id) }}" class="mode-toggle"
               title="Nauka: sam proponujesz kroki, podpowiedzi na prośbę. Praca: gotowe propozycje.">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

@@ -27,11 +27,12 @@
   <section class="question" aria-labelledby="q-text">
     {% if question.notice %}<div class="alert info">{{ question.notice }}</div>{% endif %}
     <h3 id="q-text">{{ question.text }}</h3>
-    {% if project.learning %}<p class="hint">Opisz własny krok poniżej. Utkniesz? Podpowiedź odsłania pomoc stopniowo.</p>
+    {% if project.recruit %}<p class="hint">Opisz własny krok poniżej — w trybie rekrutacyjnym bez pomocy.</p>
+    {% elif project.learning %}<p class="hint">Opisz własny krok poniżej. Utkniesz? Podpowiedź odsłania pomoc stopniowo.</p>
     {% elif question.hint %}<p class="hint">{{ question.hint }}</p>{% endif %}
     {% if project.learning %}
       {% if guide %}<p class="hint-guide">💡 {{ guide }}</p>{% endif %}
-      {% if hint_level < hint_levels %}
+      {% if hint_level < hint_levels and not project.recruit %}
       <form class="hint-form" hx-post="{{ url_for('flow.hint', project_id=project.id) }}" hx-target="#panel-body">
         <input type="hidden" name="log_id" value="{{ log.id }}">
         <button class="btn small" type="submit" title="Najpierw pytanie naprowadzające, potem jedna propozycja, na końcu wszystkie">Podpowiedź ({{ hint_level }}/{{ hint_levels }})</button>
