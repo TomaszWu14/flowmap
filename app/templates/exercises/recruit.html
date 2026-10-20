@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Rekrutacja — {{ project.name }}{% endblock %}
 {% block content %}
+{% set can_answer = project.current_role != 'viewer' %}
 <div class="page-head">
   <div><h1>Tryb rekrutacyjny: {{ ex.title if ex else project.name }}</h1>
-    <p class="muted">Mapa procesu na czas ({{ session.minutes }} min), potem 5 pytań rekrutera AI o Twoje decyzje i raport.</p></div>
+    <p class="muted">Mapa procesu na czas ({{ session.minutes }} min), potem {{ total }} pytań rekrutera AI o Twoje decyzje i raport.</p></div>
   <div class="row"><a class="btn" href="{{ url_for('flow.view', project_id=project.id) }}">Mapa</a>
     <a class="btn" href="{{ url_for('exercises.progress_page') }}">Postęp</a></div>
 </div>
@@ -11,7 +12,7 @@
 <section class="card">
   <h2>Trwa — pozostało <span class="recruit-timer badge" role="timer" data-deadline="{{ session.deadline.isoformat(timespec='seconds') }}Z">⏱ {{ session.minutes }}:00</span></h2>
   <p>Zbuduj mapę od zdania „{{ project.start_sentence }}”. Podpowiedzi i trener są wyłączone. Gdy czas minie, mapa zablokuje się sama.</p>
-  {% if project.current_role != 'viewer' %}
+  {% if can_answer %}
   <form method="post" action="{{ url_for('recruit.finish', project_id=project.id) }}" data-confirm="Oddać mapę? Po oddaniu nie da się jej zmienić.">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button class="btn primary" type="submit">Oddaję</button>
@@ -19,11 +20,64 @@
   {% endif %}
 </section>
 {% else %}
-<section class="card">
+{% set rep = session.report %}
+{% if rep %}
+<section class="card recommend">
+  <div class="row" style="justify-content:space-between">
+    <h2>Raport rekrutera</h2>
+    <span class="score"><span class="score-ring" style="--p: {{ rep.final_score }}"><span>{{ rep.final_score }}</span></span>/ 100</span>
+  </div>
+  <p><span class="badge {{ 'ok' if rep.recommendation == 'invite' }}">{{ recommendations[rep.recommendation] }}</span> {{ rep.reason }}</p>
+  <p class="muted">Wynik końcowy {{ rep.final_score }}/100 · mapa: {{ rep.map_score }}/100 (60%) · rozmowa: {{ rep.interview_score }}/100 (40%)</p>
+  <div class="score-grid">
+    <div><h3>Mocne strony</h3><ul>{% for t in rep.strengths %}<li>{{ t }}</li>{% endfor %}</ul></div>
+    <div><h3>Do sprawdzenia na kolejnym etapie</h3><ul>{% for t in rep.risks %}<li>{{ t }}</li>{% endfor %}</ul></div>
+  </div>
+</section>
+{% endif %}
+<section class="card" style="margin-top:1rem">
   <h2>Mapa oddana {{ (session.finished_at or session.deadline).strftime('%d.%m.%Y %H:%M') }}</h2>
   <p class="muted">{{ 'Oddana przed czasem.' if session.finished_at and session.finished_at < session.deadline else 'Czas minął.' }}
-    Mapa jest zablokowana — możesz ją oglądać, ale nie zmieniać.</p>
-  <p>Rozmowa z rekruterem AI pojawi się tutaj.</p>
+    Mapa jest zablokowana — możesz ją oglądać, ale nie zmieniać.
+    {% if session.grade %}Ocena mapy według oczekiwań eksperta: <strong>{{ session.grade.score }}/100</strong>
+    (<a href="{{ url_for('exercises.results', project_id=project.id) }}">szczegóły</a>).{% endif %}</p>
+  {% if session.questions is none %}
+    {% if can_answer %}
+    <form method="post" action="{{ url_for('recruit.start_interview', project_id=project.id) }}" class="stack">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn primary" type="submit"{% if not ai %} disabled{% endif %}>Rozpocznij rozmowę</button>
+      <p class="field-help">{% if ai %}Rekruter oceni mapę i zada {{ total }} pytań o Twoje decyzje — kolejno, bez możliwości poprawiania odpowiedzi. Zużywa 3 zapytania z dziennego limitu AI.{% else %}Rozmowa wymaga AI — administrator musi ustawić klucz ANTHROPIC_API_KEY i włączyć AI.{% endif %}</p>
+    </form>
+    {% endif %}
+  {% else %}
+    <h3>Rozmowa</h3>
+    <ol class="interview">
+      {% for q in session.questions %}{% set i = loop.index0 %}
+        {% if i < session.answers|length %}
+        <li><p class="q">{{ q.question }} <span class="badge">{{ q.focus }}</span></p>
+          <p class="a">{{ session.answers[i] }}</p>
+          {% if rep %}<p class="field-help"><strong>{{ rep.answers[i].score }}/5</strong> — {{ rep.answers[i].comment }}</p>{% endif %}</li>
+        {% elif i == session.answers|length %}
+        <li><p class="q">{{ q.question }} <span class="badge">{{ q.focus }}</span></p>
+          <p class="field-help">Pytanie {{ i + 1 }} z {{ total }}</p>
+          {% if can_answer %}
+          <form method="post" action="{{ url_for('recruit.answer', project_id=project.id) }}" class="stack">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label class="sr-only" for="answer-text">Twoja odpowiedź</label>
+            <textarea id="answer-text" name="text" rows="5" maxlength="{{ answer_max }}" required placeholder="Odpowiedz jak na rozmowie: konkretnie, z odniesieniem do mapy i uzasadnieniem."></textarea>
+            <button class="btn primary" type="submit">{{ 'Odpowiedz i zakończ rozmowę' if i + 1 == total else 'Odpowiedz' }}</button>
+          </form>
+          {% endif %}</li>
+        {% endif %}
+      {% endfor %}
+    </ol>
+    {% if session.answers|length == total and not rep and can_answer %}
+    <form method="post" action="{{ url_for('recruit.make_report', project_id=project.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn primary" type="submit"{% if not ai %} disabled{% endif %}>Wygeneruj raport</button>
+    </form>
+    {% endif %}
+  {% endif %}
 </section>
 {% endif %}
 {% endblock %}
