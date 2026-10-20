@@ -47,8 +47,8 @@ def reply(project, user, text: str) -> str:
     """Ask the trainer; on success store the question and the answer. Raises AIError, storing nothing."""
     messages = [{"role": m.role, "content": m.text} for m in history(project, user, HISTORY)]
     messages.append({"role": "user", "content": text})
-    response = ai._api_call(ai._client(), model=current_app.config["ANTHROPIC_CHAT_MODEL"], max_tokens=1500,
-                         system=system_prompt(project, user), messages=messages)
+    response = ai._api_call(ai._client(), "trainer_chat", model=current_app.config["ANTHROPIC_CHAT_MODEL"],
+                            max_tokens=1500, system=system_prompt(project, user), messages=messages)
     answer = "".join(b.text for b in response.content if b.type == "text").strip() or "(brak odpowiedzi)"
     db.session.add_all([TrainerMessage(project_id=project.id, user_id=user.id, role="user", text=text),
                         TrainerMessage(project_id=project.id, user_id=user.id, role="assistant", text=answer)])

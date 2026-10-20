@@ -3,7 +3,8 @@
 {% block content %}
 <div class="page-head">
   <div><h1>Panel administratora</h1><p class="muted">Statystyki i konta. Treść projektów widzą tylko ich właściciele.</p></div>
-  <div class="row"><a class="btn" href="{{ url_for('admin.events') }}">Dziennik zdarzeń</a>
+  <div class="row"><a class="btn" href="{{ url_for('admin.costs') }}">Koszty AI</a>
+    <a class="btn" href="{{ url_for('admin.events') }}">Dziennik zdarzeń</a>
     <a class="btn" href="{{ url_for('projects.index') }}">← Projekty</a></div>
 </div>
 
@@ -13,6 +14,7 @@
   <div class="card stat"><span class="muted">Gotowe mapy</span><strong>{{ stats.projects_complete }}</strong><small>{{ ((stats.projects_complete / stats.projects * 100) | round | int) if stats.projects else 0 }}% projektów</small></div>
   <div class="card stat"><span class="muted">Odpowiedzi na pytania</span><strong>{{ stats.answers }}</strong><small>łącznie</small></div>
   <div class="card stat"><span class="muted">Zapytania AI dziś</span><strong>{{ stats.ai_today }}</strong><small>limit {{ config_info.ai_limit }}/os./dzień</small></div>
+  <a class="card stat" href="{{ url_for('admin.costs') }}"><span class="muted">Koszt AI (30 dni)</span><strong>${{ '%.4f'|format(stats.ai_cost_30d) }}</strong><small>szczegóły →</small></a>
 </section>
 
 <section class="card" style="margin-top:1rem">

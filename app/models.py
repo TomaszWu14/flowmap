@@ -263,6 +263,19 @@ class RecruitSession(db.Model):
         return self.finished_at is not None or utcnow() >= self.deadline
 
 
+class AiUsage(db.Model):
+    """One billed Anthropic API call: tokens and the cost at list price when it was made (app/ai/pricing.py)."""
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"), index=True)
+    feature = db.Column(db.String(40), nullable=False)  # tool name, or trainer_chat
+    model = db.Column(db.String(60), nullable=False)
+    input_tokens = db.Column(db.Integer, nullable=False)
+    output_tokens = db.Column(db.Integer, nullable=False)
+    cost_usd = db.Column(db.Float)  # None when the model is missing from the price table
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False, index=True)
+
+
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.Integer, db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False, index=True)
