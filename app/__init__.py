@@ -37,6 +37,8 @@ def create_app(config_class: type = Config) -> Flask:
     from .auth.routes import bp as auth_bp
     from .comments.routes import bp as comments_bp
     from .design.routes import bp as design_bp
+    from .exercises import catalog as exercise_catalog
+    from .exercises.routes import bp as exercises_bp
     from .export.routes import bp as export_bp
     from .flow.routes import bp as flow_bp
     from .media.routes import bp as media_bp
@@ -63,6 +65,8 @@ def create_app(config_class: type = Config) -> Flask:
     app.register_blueprint(media_bp)
     app.register_blueprint(design_bp)
     app.register_blueprint(trainer_bp)
+    app.register_blueprint(exercises_bp)
+    exercise_catalog.init()  # a broken exercise file stops the app here, not on first use
 
     @app.get("/healthz")
     def healthz():

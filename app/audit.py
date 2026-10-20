@@ -21,6 +21,7 @@ ACTIONS = {
     "settings_changed": "Zmiana ustawień",
     "project_created": "Nowy projekt",
     "project_deleted": "Usunięcie projektu",
+    "exercise_started": "Rozpoczęcie ćwiczenia",
     "project_shared": "Udostępnienie projektu",
     "member_added": "Dodanie współpracownika",
     "member_removed": "Usunięcie współpracownika",

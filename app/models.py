@@ -92,6 +92,8 @@ class Project(db.Model):
     spec = db.Column(db.JSON)  # technical specification document (app/spec/schema.py)
     display = db.Column(db.JSON)  # map display settings: swimlane order and workstation icons (flow/lanes.py)
     learning = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())  # Nauka vs Praca
+    exercise_key = db.Column(db.String(40))  # app/exercises/data/<key>.json; None = ordinary project
+    exercise_stage = db.Column(db.Integer, nullable=False, default=1, server_default="1")  # 1 map, 2 app design
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow, nullable=False)
 
@@ -225,6 +227,18 @@ class TrainerMessage(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="CASCADE"), nullable=False, index=True)
     role = db.Column(db.String(10), nullable=False)  # user | assistant
     text = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+
+
+class ExerciseAttempt(db.Model):
+    """One submission of an exercise stage, graded by AI against the expert expectations."""
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"), index=True)
+    stage = db.Column(db.Integer, nullable=False)
+    score = db.Column(db.Integer, nullable=False)  # 0-100
+    feedback = db.Column(db.JSON, nullable=False)
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
 
 

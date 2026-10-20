@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Ćwiczenia{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Ćwiczenia</h1><p class="muted">Gotowe zadania z różnych dziedzin. Najpierw rysujesz mapę procesu, potem projektujesz aplikację — każdy etap oddajesz do oceny.</p></div>
+  <a class="btn" href="{{ url_for('projects.index') }}">← Projekty</a>
+</div>
+<div class="grid-cards">
+  {% for ex in exercises %}
+  <article class="card project-card">
+    <h2>{{ ex.title }}</h2>
+    <p class="muted">„{{ ex.start_sentence }}”</p>
+    <div class="row">
+      <span class="badge">{{ ex.domain }}</span>
+      <span class="badge">{{ levels[ex.level] }}</span>
+      {% if best.get(ex.key) is not none %}<span class="badge ok">najlepszy wynik: {{ best[ex.key] }}/100</span>{% endif %}
+    </div>
+    <form method="post" action="{{ url_for('exercises.start', key=ex.key) }}" style="margin-top:.6rem">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn primary small" type="submit">Rozpocznij</button>
+    </form>
+  </article>
+  {% endfor %}
+</div>
+{% endblock %}
