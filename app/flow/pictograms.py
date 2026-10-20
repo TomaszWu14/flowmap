@@ -39,6 +39,15 @@ PICTOGRAMS = {
     "square": ("Koniec", "endEvent"),
 }
 
+# key -> kind of activity; colours the picker tiles (app.css .picto-opt.g-*, theme tokens).
+GROUPS = {
+    "mail": "kom", "mail-open": "kom", "message-square": "kom", "phone": "kom",
+    "keyboard": "dane", "scan-barcode": "dane", "printer": "dane", "file-text": "dane", "search": "dane",
+    "monitor": "dane", "signature": "dec", "clipboard-check": "dec", "credit-card": "pln", "receipt": "pln",
+    "package": "log", "truck": "log", "hand": "log", "server": "sys", "cog": "sys", "arrow-left-right": "sys",
+    "timer": "czas", "calendar": "czas", "user": "os",
+}
+
 # First match wins: specific activities before generic ones.
 RULES = [
     ("mail-open", r"(otrzym|odbier|przychodz|wpływ|czeka na).{0,25}(e-?mail|maila|wiadomo|odpowied)|skrzynk"),

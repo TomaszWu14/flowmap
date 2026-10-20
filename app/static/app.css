@@ -345,6 +345,15 @@ kbd { font: inherit; font-size: .75rem; border: 1px solid var(--line); border-bo
   padding: 0 .45rem; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ink);
   font-size: .8rem; font-weight: 600; }
 .picto-opt input:checked + span { border-color: var(--accent); background: var(--accent); color: #fff; }
+/* tiles tinted by kind of activity (pictograms.GROUPS), the chosen one in full colour */
+.picto-opt.g-kom { --g: var(--t-screen); } .picto-opt.g-dane { --g: var(--t-user_action); }
+.picto-opt.g-dec { --g: var(--t-decision); } .picto-opt.g-pln { --g: var(--t-start); }
+.picto-opt.g-log { --g: var(--accent); } .picto-opt.g-sys { --g: var(--t-automation); }
+.picto-opt.g-czas { --g: var(--t-integration); } .picto-opt.g-os { --g: var(--t-parallel); }
+.picto-opt[class*=" g-"] > span { color: var(--g); border-color: transparent;
+  background: color-mix(in srgb, var(--g) 14%, var(--surface)); }
+.picto-opt[class*=" g-"] input:checked + span { background: var(--g); border-color: var(--g); color: var(--surface); }
+.picto-opt[class*=" g-"] > span:hover { border-color: var(--g); }
 .picto-opt input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
 .lane-menu { position: absolute; z-index: 8; background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
   box-shadow: var(--shadow); padding: .6rem .7rem; display: grid; gap: .5rem; max-width: 300px; }

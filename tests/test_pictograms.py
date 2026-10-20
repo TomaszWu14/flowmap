@@ -1,7 +1,7 @@
 import pytest
 
 from app.ai.templates import TEMPLATES, full_graph
-from app.flow.pictograms import PICTOGRAMS, RULES, detect, icon_for, svg_bodies
+from app.flow.pictograms import GROUPS, PICTOGRAMS, RULES, detect, icon_for, svg_bodies
 
 
 @pytest.mark.parametrize("title,type_,expected", [
@@ -48,6 +48,15 @@ def test_every_pictogram_has_an_svg_and_rules_point_to_known_keys():
     assert {key for key, _ in RULES} <= set(PICTOGRAMS)
 
 
+def test_every_pickable_pictogram_has_a_coloured_group():
+    from pathlib import Path
+
+    css = (Path(__file__).resolve().parent.parent / "app" / "static" / "app.css").read_text(encoding="utf-8")
+    assert set(GROUPS) == set(PICTOGRAMS) - {"play", "square"}  # start/end are not in the picker
+    for group in set(GROUPS.values()):
+        assert f".picto-opt.g-{group} {{ --g:" in css, group
+
+
 def test_builtin_templates_get_varied_icons():
     for name in TEMPLATES:
         icons = {icon_for(n) for n in full_graph(name)["nodes"]}
@@ -66,6 +75,6 @@ def test_edit_sets_and_clears_icon(auth_client):
     graph = auth_client.get(f"/p/{p.id}/graph.json").get_json()
     assert next(n for n in graph["nodes"] if n["key"] == node.key)["icon"] == "truck"
     html = auth_client.get(f"/p/{p.id}/panel?node={node.key}").get_data(as_text=True)
-    assert 'value="truck" checked' in html and "picto-picker" in html
+    assert 'value="truck" checked' in html and "picto-picker" in html and "picto-opt g-log" in html
     auth_client.post(f"/p/{p.id}/node/{node.key}/edit", data=form | {"icon": ""})
     assert Project.query.get(p.id).node_by_key(node.key).data.get("icon") is None

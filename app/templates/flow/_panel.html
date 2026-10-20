@@ -141,7 +141,7 @@
           <label class="picto-opt" title="Automatycznie z treści kroku">
             <input type="radio" name="icon" value="" {{ 'checked' if not chosen }}><span>Auto</span></label> {# nosemgrep: unquoted-attribute-var — constant boolean attribute word, not user data #}
           {% for key, meta in pictograms.items() if key not in ('play', 'square') %}
-          <label class="picto-opt" title="{{ meta[0] }}">
+          <label class="picto-opt g-{{ picto_groups[key] }}" title="{{ meta[0] }}">
             <input type="radio" name="icon" value="{{ key }}" {{ 'checked' if chosen == key }}> {# nosemgrep: unquoted-attribute-var — constant boolean attribute word, not user data #}
             <span>{{ pictogram_svg(key, 20) }}<span class="sr-only">{{ meta[0] }}</span></span></label>
           {% endfor %}
