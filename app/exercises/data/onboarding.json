@@ -1,0 +1,24 @@
+{
+  "key": "onboarding",
+  "title": "Wdrożenie nowego pracownika",
+  "domain": "HR / IT",
+  "level": "podstawowy",
+  "brief": "Jesteś analitykiem w firmie programistycznej, która w tym roku zatrudni 80 osób. Nowi pracownicy w pierwszym dniu często nie mają laptopa, kont w systemach ani karty wejściowej, a nikt nie wie, kto ma to przygotować. Kadry, IT, administracja i przełożeni pracują na osobnych listach. Dyrektor HR chce, żeby każdy nowy pracownik pierwszego dnia miał wszystko gotowe. Opisz proces od podpisania umowy do zakończenia okresu wdrożenia, a potem zaprojektuj aplikację, która go poprowadzi.",
+  "start_sentence": "Kandydat podpisuje umowę o pracę",
+  "stage1": [
+    "Podpisanie umowy uruchamia zadania dla kadr, IT, administracji i przełożonego z terminem przed pierwszym dniem.",
+    "IT przygotowuje sprzęt i konta zależnie od stanowiska (rola określa zakres dostępów).",
+    "Mapa obsługuje opóźnienie przygotowania (np. brak sprzętu) i eskalację przed pierwszym dniem.",
+    "Pierwszy dzień ma odbiór sprzętu, szkolenie BHP i przedstawienie opiekuna.",
+    "Przełożony ustala plan wdrożenia i jest ocena na koniec okresu próbnego.",
+    "Mapa obsługuje rezygnację kandydata przed pierwszym dniem (odwołanie zadań i dostępów)."
+  ],
+  "stage2": [
+    "Przypadki użycia obejmują uruchomienie wdrożenia, realizację zadań przez działy i podgląd postępu przez przełożonego.",
+    "Model danych ma co najmniej pracownika, stanowisko, listę kontrolną wdrożenia i zadanie (z działem, terminem i statusem).",
+    "Zadanie ma opisane statusy i przejścia (np. do zrobienia, w toku, zrobione, zablokowane).",
+    "Reguły biznesowe opisują szablon zadań zależny od stanowiska i termin względem pierwszego dnia.",
+    "Role rozróżniają kadry, IT, administrację, przełożonego i nowego pracownika.",
+    "Wizja określa cel i mierzalną korzyść (np. odsetek osób z kompletem sprzętu i dostępów w pierwszym dniu)."
+  ]
+}
