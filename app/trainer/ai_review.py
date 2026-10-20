@@ -1,4 +1,4 @@
-"""Qualitative AI assessment (Opus): four 0–5 criteria with reasons and one top fix; 30% of the mixed score."""
+"""Qualitative AI assessment: four 0–5 criteria with reasons and one top fix; 30% of the mixed score."""
 
 import json
 from typing import Literal
@@ -37,7 +37,7 @@ class _Assessment(BaseModel):
 
 
 def assess(project, graph: dict, spec, results: list[dict]) -> dict:
-    """One Opus call. Raises AIError (from call_tool) when the model fails twice."""
+    """One AI call. Raises AIError (from call_tool) when the model fails twice."""
     spec_json = json.dumps(spec.model_dump(mode="json", exclude={"proposals"}), ensure_ascii=False) if spec else "{}"
     summary = "; ".join(f"{r['label']} {r['score']}/100" for r in results)
     prompt = _prompt("assess", start_sentence=project.start_sentence, graph_json=compact_graph(graph),

@@ -14,7 +14,7 @@
     </form>
     {% if ai %}<form method="post" action="{{ url_for('trainer.score_ai', project_id=project.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button class="btn" type="submit" title="Reguły + jakościowa ocena Opus (30% wyniku); zużywa 1 zapytanie z dziennego limitu">Oceń z AI</button>
+      <button class="btn" type="submit" title="Reguły + jakościowa ocena AI (30% wyniku); zużywa 1 zapytanie z dziennego limitu">Oceń z AI</button>
     </form>{% endif %}
   </div>
 </div>
@@ -47,7 +47,7 @@
 {% set a = latest.map.details.get('ai') if latest.get('map') else none %}
 {% if a %}
 <section class="card" style="margin-top:1rem">
-  <h2 title="Jakościowa ocena modelu Opus — może się różnić między ocenami">Ocena AI <span class="badge">30% obu wyników</span></h2>
+  <h2 title="Jakościowa ocena modelu AI — może się różnić między ocenami">Ocena AI <span class="badge">30% obu wyników</span></h2>
   <p class="top-fix"><strong>Najważniejsza poprawka:</strong> {{ a.top_fix }}</p>
   <div class="table-wrap"><table class="versions">
     <tr><th>Kryterium</th><th>Ocena</th><th>Uzasadnienie</th></tr>

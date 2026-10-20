@@ -36,7 +36,7 @@ Coolify sam generuje zmienne z prefiksem `SERVICE_` użyte w `docker-compose.yml
 | `SERVICE_PASSWORD_64_SECRETKEY` | generuje Coolify | `SECRET_KEY` aplikacji |
 | `ALLOW_SIGNUP` | ręcznie, opcjonalnie | `false` = rejestracja wyłączona |
 | `ANTHROPIC_API_KEY` | ręcznie, opcjonalnie | bez klucza działa tryb reguł i szablonów |
-| `ANTHROPIC_MODEL` | ręcznie, opcjonalnie | domyślnie `claude-opus-5-5` |
+| `ANTHROPIC_MODEL` | ręcznie, opcjonalnie | domyślnie `claude-sonnet-5-5` (czat trenera: `ANTHROPIC_CHAT_MODEL`, też `claude-sonnet-5-5`) |
 | `AI_DAILY_LIMIT` | ręcznie, opcjonalnie | domyślnie 100 zapytań/użytkownika/dzień (można zmienić w panelu admina) |
 | `MAIL_SERVER` i reszta `MAIL_*` | ręcznie, opcjonalnie | SMTP do linków „Nie pamiętam hasła”; bez tego admin generuje link w panelu |
 

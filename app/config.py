@@ -42,8 +42,8 @@ class Config:
     RESET_TOKEN_HOURS = int(os.environ.get("RESET_TOKEN_HOURS", "1"))
 
     ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-    ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-opus-5-5")
-    ANTHROPIC_CHAT_MODEL = os.environ.get("ANTHROPIC_CHAT_MODEL", "claude-sonnet-5")  # trainer chat
+    ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5-5")  # grading, questions, reports
+    ANTHROPIC_CHAT_MODEL = os.environ.get("ANTHROPIC_CHAT_MODEL", "claude-sonnet-5-5")  # trainer chat
     AI_TIMEOUT_SECONDS = float(os.environ.get("AI_TIMEOUT_SECONDS", "60"))
     AI_DAILY_LIMIT = int(os.environ.get("AI_DAILY_LIMIT", "100"))
 

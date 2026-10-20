@@ -1,4 +1,4 @@
-"""Trainer chat (Sonnet): a private conversation per user and project, aware of the map, guards and last score."""
+"""Trainer chat: a private conversation per user and project, aware of the map, guards and last score."""
 
 from flask import current_app
 
