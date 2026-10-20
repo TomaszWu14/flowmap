@@ -89,7 +89,7 @@ docker compose exec app flask create-user ty@example.com
 | `ALLOW_SIGNUP` | `true` | `false` wyłącza rejestrację (konta tylko przez `flask create-user`) |
 | `COOKIE_SECURE` | `true` w produkcji | flaga `Secure` ciasteczek |
 | `ANTHROPIC_API_KEY` | — | bez klucza działa tryb reguł i szablonów |
-| `ANTHROPIC_MODEL` | `claude-opus-5-5` | model do pytań i przeglądu |
+| `ANTHROPIC_MODEL` | `claude-sonnet-5-5` | model do pytań, ocen i rozmowy rekrutacyjnej |
 | `AI_TIMEOUT_SECONDS` | `60` | timeout jednego zapytania |
 | `AI_DAILY_LIMIT` | `100` | limit zapytań AI na użytkownika na dzień (nadpisywany w panelu admina) |
 | `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM`, `MAIL_USE_TLS` | — | SMTP; włącza „Nie pamiętam hasła” |

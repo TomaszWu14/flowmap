@@ -1,4 +1,4 @@
-"""Exercise grading (Opus): each expert expectation judged met / partial / missed, a 0–100 score, strengths, fixes."""
+"""Exercise grading (AI): each expert expectation judged met / partial / missed, a 0–100 score, strengths, fixes."""
 
 import json
 from typing import Literal
@@ -49,7 +49,7 @@ def _grade_model(count: int) -> type[_Grade]:
 
 
 def grade(project, ex: Exercise, stage: int, spec) -> dict:
-    """One Opus call. Raises AIError (from call_tool) when the model fails twice; the result is the stored feedback."""
+    """One AI call. Raises AIError (from call_tool) when the model fails twice; the result is the stored feedback."""
     expected = ex.expectations(stage)
     graph = project.graph()
     rules = evaluate(project)[stage - 1]  # [map, design] — the same order as the stages
