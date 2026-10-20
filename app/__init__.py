@@ -4,7 +4,7 @@ from flask_wtf.csrf import CSRFError
 
 from .config import Config
 from .extensions import csrf, db, login_manager, migrate
-from .flow.pictograms import PICTOGRAMS, icon_for, pictogram_svg
+from .flow.pictograms import GROUPS, PICTOGRAMS, icon_for, pictogram_svg
 from .text import plural, plural_word, steps_label
 
 ERROR_MESSAGES = {
@@ -53,8 +53,8 @@ def create_app(config_class: type = Config) -> Flask:
     app.jinja_env.globals["type_labels"] = NODE_TYPE_LABELS
     app.jinja_env.globals["signup_open"] = signup_open
     app.jinja_env.filters.update(kroki=steps_label, plural=plural, plural_word=plural_word)
-    app.jinja_env.globals.update(pictograms=PICTOGRAMS, pictogram_svg=pictogram_svg, node_icon=icon_for,
-                                 type_help=NODE_TYPE_HELP)
+    app.jinja_env.globals.update(pictograms=PICTOGRAMS, picto_groups=GROUPS, pictogram_svg=pictogram_svg,
+                                 node_icon=icon_for, type_help=NODE_TYPE_HELP)
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(projects_bp)
