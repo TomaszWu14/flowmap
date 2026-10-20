@@ -16,6 +16,9 @@
         <a class="btn small" href="{{ url_for('spec.view', project_id=project.id) }}">Specyfikacja</a>
         <a class="btn small" href="{{ url_for('design.view', project_id=project.id) }}">Projekt aplikacji</a>
         <a class="btn small" href="{{ url_for('trainer.score', project_id=project.id) }}">Ocena</a>
+        {% if project.exercise_key %}
+        <button class="btn small primary" type="button" hx-get="{{ url_for('exercises.task_panel', project_id=project.id) }}" hx-target="#panel-body">Zadanie</button>
+        {% endif %}
         <button class="btn small" type="button" hx-get="{{ url_for('trainer.chat_panel', project_id=project.id) }}" hx-target="#panel-body">Trener</button>
         {% if project.can_edit %}
         <form method="post" action="{{ url_for('flow.toggle_mode', project_id=project.id) }}" class="mode-toggle"

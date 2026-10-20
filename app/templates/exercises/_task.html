@@ -1,0 +1,15 @@
+<section class="exercise-task" aria-label="Zadanie">
+  <header class="row" style="justify-content:space-between">
+    <h2>Zadanie: {{ ex.title }}</h2>
+    <span class="badge">Etap {{ project.exercise_stage }} z {{ stages }}</span>
+  </header>
+  <p class="row"><span class="badge">{{ ex.domain }}</span> <span class="badge">{{ levels[ex.level] }}</span></p>
+  <p>{{ ex.brief }}</p>
+  <h3>{{ 'Etap 1: mapa procesu' if project.exercise_stage == 1 else 'Etap 2: projekt aplikacji' }}</h3>
+  {% if project.exercise_stage == 1 %}
+    <p class="muted">Zbuduj mapę od zdania „{{ ex.start_sentence }}” do końca procesu: kto co robi, jakie są decyzje, błędy i wyjątki.</p>
+  {% else %}
+    <p class="muted">Na karcie <a href="{{ url_for('design.view', project_id=project.id) }}">Projekt aplikacji</a> opisz przypadki użycia, klasy, reguły i wizję.</p>
+  {% endif %}
+  <p class="field-help">Oczekiwania eksperta zobaczysz po pierwszym oddaniu etapu.</p>
+</section>

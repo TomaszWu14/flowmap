@@ -1,0 +1,25 @@
+{
+  "key": "reklamacje",
+  "title": "Reklamacja produktu",
+  "domain": "Obsługa klienta",
+  "level": "podstawowy",
+  "brief": "Jesteś analitykiem w sklepie internetowym ze sprzętem AGD. Reklamacje przychodzą mailem, telefonicznie i przez formularz na stronie. Każdy konsultant prowadzi je po swojemu, klienci czekają na odpowiedź nawet miesiąc, a firma przekracza ustawowy termin 14 dni na zajęcie stanowiska. Kierownik obsługi klienta chce jednego, przewidywalnego procesu i aplikacji, która go poprowadzi. Opisz proces od chwili, gdy klient zgłasza reklamację, do jej zamknięcia, a potem zaprojektuj aplikację.",
+  "start_sentence": "Klient zgłasza reklamację produktu",
+  "stage1": [
+    "Zgłoszenie jest rejestrowane z numerem zamówienia, opisem wady i danymi kontaktowymi klienta.",
+    "Mapa sprawdza, czy reklamacja jest kompletna, i obsługuje dopytanie klienta o brakujące informacje.",
+    "Konsultant lub serwis ocenia zasadność reklamacji i jest rozgałęzienie: uznana / odrzucona.",
+    "Uznana reklamacja ma wybrany sposób załatwienia: naprawa, wymiana, obniżka ceny albo zwrot pieniędzy.",
+    "Mapa uwzględnia ustawowy termin 14 dni na odpowiedź i reakcję, gdy się zbliża.",
+    "Klient dostaje informację o decyzji z uzasadnieniem.",
+    "Mapa obsługuje odesłanie produktu (kurier, odbiór) i sytuację, gdy produkt nie dotrze."
+  ],
+  "stage2": [
+    "Przypadki użycia obejmują zgłoszenie reklamacji, rozpatrzenie przez konsultanta i sprawdzenie statusu przez klienta.",
+    "Model danych ma co najmniej klienta, zamówienie, reklamację (z opisem, statusem i terminem) i decyzję.",
+    "Reklamacja ma opisane statusy i przejścia (np. zgłoszona, w rozpatrzeniu, uznana, odrzucona, zamknięta).",
+    "Reguły biznesowe opisują termin 14 dni i warunki uznania reklamacji (np. okres gwarancji).",
+    "Role i uprawnienia rozróżniają klienta, konsultanta i serwis.",
+    "Wizja określa cel aplikacji i mierzalną korzyść (np. odsetek reklamacji rozpatrzonych w terminie)."
+  ]
+}
