@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Koszty AI{% endblock %}
+{% macro usd(v) %}{{ '$%.4f'|format(v or 0) }}{% endmacro %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Koszty AI</h1><p class="muted">Każde wywołanie API Anthropic: tokeny i koszt wg cennika z chwili wywołania (USD). Liczą się też odpowiedzi odrzucone przez walidację — za nie też się płaci.</p></div>
+  <a class="btn" href="{{ url_for('admin.index') }}">← Panel administratora</a>
+</div>
+<section class="stat-grid" aria-label="Koszt w okresach">
+  {% for label, calls, cost in periods %}
+  <div class="card stat"><span class="muted">{{ label }}</span><strong>{{ usd(cost) }}</strong><small>{{ calls }} {{ calls|plural_word('wywołanie', 'wywołania', 'wywołań') }}</small></div>
+  {% endfor %}
+</section>
+<section class="card" style="margin-top:1rem">
+  <h2>Według funkcji (30 dni)</h2>
+  {% if by_feature %}
+  <div class="table-wrap"><table class="versions">
+    <tr><th>Funkcja</th><th>Wywołania</th><th>Tokeny wej. / wyj.</th><th>Koszt</th><th>Średnio na wywołanie</th></tr>
+    {% for feature, calls, tin, tout, cost in by_feature %}
+    <tr><td>{{ features.get(feature, feature) }}</td><td>{{ calls }}</td><td>{{ tin }} / {{ tout }}</td>
+      <td>{{ usd(cost) }}</td><td>{{ usd((cost or 0) / calls) }}</td></tr>
+    {% endfor %}
+  </table></div>
+  {% else %}<p class="muted">Brak wywołań AI w ostatnich 30 dniach.</p>{% endif %}
+</section>
+<section class="card" style="margin-top:1rem">
+  <h2>Według użytkownika (30 dni)</h2>
+  {% if by_user %}
+  <div class="table-wrap"><table class="versions">
+    <tr><th>Użytkownik</th><th>Wywołania</th><th>Koszt</th></tr>
+    {% for email, calls, cost in by_user %}
+    <tr><td>{{ email or '— bez konta / usunięte —' }}</td><td>{{ calls }}</td><td>{{ usd(cost) }}</td></tr>
+    {% endfor %}
+  </table></div>
+  {% else %}<p class="muted">Brak danych.</p>{% endif %}
+</section>
+<section class="card" style="margin-top:1rem">
+  <h2>Cennik</h2>
+  <p class="muted">Modele w użyciu: <span class="mono">{{ model }}</span> (oceny, pytania, raporty) i <span class="mono">{{ chat_model }}</span> (czat trenera). Zmiana: zmienne <span class="mono">ANTHROPIC_MODEL</span> / <span class="mono">ANTHROPIC_CHAT_MODEL</span> w Coolify.</p>
+  <div class="table-wrap"><table class="versions">
+    <tr><th>Model</th><th>Wejście (1 mln tokenów)</th><th>Wyjście (1 mln tokenów)</th></tr>
+    {% for name, (pin, pout) in prices.items() %}
+    <tr><td class="mono">{{ name }}{% if name in (model, chat_model) %} <span class="badge ok">w użyciu</span>{% endif %}</td><td>${{ '%.2f'|format(pin) }}</td><td>${{ '%.2f'|format(pout) }}</td></tr>
+    {% endfor %}
+  </table></div>
+  {% if unpriced %}<p class="alert error">{{ unpriced }} {{ unpriced|plural_word('wywołanie', 'wywołania', 'wywołań') }} modelu spoza cennika — koszt nieznany; dopisz model w <span class="mono">app/ai/pricing.py</span>.</p>{% endif %}
+  <p class="field-help">Rzeczywisty rachunek (podatki, rabaty) jest w konsoli Anthropic; tu — szacunek wg cen katalogowych.</p>
+</section>
+{% endblock %}

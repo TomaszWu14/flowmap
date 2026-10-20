@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 import anthropic
-from flask import current_app
+from flask import current_app, has_request_context
 from pydantic import BaseModel, ValidationError
 
 from .schemas import AiDraft, AiFill, AiNextQuestion, AiReview, Option, Question, StepSpec
@@ -140,8 +140,25 @@ def compact_graph(graph: dict) -> str:
     return json.dumps({"nodes": nodes, "edges": edges}, ensure_ascii=False)
 
 
-def _api_call(client, **kwargs):
-    """messages.create with API failures turned into Polish AIError messages."""
+def _log_usage(feature: str, model: str, usage) -> None:
+    """Record a billed call. Committed at once: a later AIError must not roll back what was paid for."""
+    from flask_login import current_user
+
+    from ..extensions import db
+    from ..models import AiUsage
+    from .pricing import cost_usd
+
+    if usage is None:
+        return
+    tokens_in, tokens_out = usage.input_tokens or 0, usage.output_tokens or 0
+    user_id = current_user.id if has_request_context() and current_user.is_authenticated else None
+    db.session.add(AiUsage(user_id=user_id, feature=feature, model=model, input_tokens=tokens_in,
+                           output_tokens=tokens_out, cost_usd=cost_usd(model, tokens_in, tokens_out)))
+    db.session.commit()  # session is clean here: spend_ai_request() commits right before every AI call
+
+
+def _api_call(client, feature: str = "", **kwargs):
+    """messages.create with API failures turned into Polish AIError messages; every response is cost-logged."""
     try:
         response = client.messages.create(**kwargs)
     except anthropic.APITimeoutError as exc:
@@ -154,6 +171,8 @@ def _api_call(client, **kwargs):
         raise AIError(f"błąd API {exc.status_code}") from exc
     except anthropic.APIConnectionError as exc:
         raise AIError("brak połączenia z API") from exc
+    _log_usage(feature or kwargs.get("tools", [{}])[0].get("name", "other"), kwargs.get("model", ""),
+               getattr(response, "usage", None))
     if response.stop_reason == "refusal":
         raise AIError("model odmówił odpowiedzi")
     return response

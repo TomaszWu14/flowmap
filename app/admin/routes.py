@@ -8,9 +8,10 @@ from flask_login import current_user, login_required
 from sqlalchemy import func, or_
 
 from .. import audit, settings
+from ..ai.pricing import FEATURES, PRICES
 from ..auth.tokens import make_reset_token
 from ..extensions import db
-from ..models import AuditEvent, Project, QuestionLog, User, utcnow
+from ..models import AiUsage, AuditEvent, Project, QuestionLog, User, utcnow
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -41,6 +42,7 @@ def index():
         "projects_new": Project.query.filter(Project.created_at >= week_ago).count(),
         "answers": QuestionLog.query.filter(QuestionLog.answer != "").count(),
         "ai_today": sum(u.ai_usage_count for u in users if u.ai_usage_date == date.today()),
+        "ai_cost_30d": _cost_since(utcnow() - timedelta(days=30))[1],
     }
     config = {
         "ai_key": bool(current_app.config["ANTHROPIC_API_KEY"]),
@@ -52,6 +54,35 @@ def index():
     }
     return render_template("admin/index.html", users=users, stats=stats, config_info=config,
                            project_counts=project_counts, today=date.today())
+
+
+def _cost_since(since):
+    """(calls, cost in USD) of AI calls made since the given moment."""
+    calls, cost = db.session.query(func.count(AiUsage.id), func.sum(AiUsage.cost_usd)).filter(
+        AiUsage.created_at >= since).one()
+    return calls, cost or 0.0
+
+
+@bp.get("/koszty")
+@admin_required
+def costs():
+    now = utcnow()
+    month = now - timedelta(days=30)
+    periods = [(label, *_cost_since(since)) for label, since in (
+        ("Dziś", now.replace(hour=0, minute=0, second=0, microsecond=0)), ("7 dni", now - timedelta(days=7)),
+        ("30 dni", month), ("Od początku", now.replace(year=2000)))]
+    by_feature = (db.session.query(AiUsage.feature, func.count(AiUsage.id), func.sum(AiUsage.input_tokens),
+                                   func.sum(AiUsage.output_tokens), func.sum(AiUsage.cost_usd))
+                  .filter(AiUsage.created_at >= month).group_by(AiUsage.feature)
+                  .order_by(func.sum(AiUsage.cost_usd).desc()).all())
+    by_user = (db.session.query(User.email, func.count(AiUsage.id), func.sum(AiUsage.cost_usd))
+               .outerjoin(User, AiUsage.user_id == User.id).filter(AiUsage.created_at >= month)
+               .group_by(User.email).order_by(func.sum(AiUsage.cost_usd).desc()).limit(20).all())
+    unpriced = AiUsage.query.filter(AiUsage.cost_usd.is_(None)).count()
+    return render_template("admin/costs.html", periods=periods, by_feature=by_feature, by_user=by_user,
+                           features=FEATURES, prices=PRICES, unpriced=unpriced,
+                           model=current_app.config["ANTHROPIC_MODEL"],
+                           chat_model=current_app.config["ANTHROPIC_CHAT_MODEL"])
 
 
 @bp.get("/zdarzenia")
