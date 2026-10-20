@@ -17,7 +17,7 @@ mapie i raport z rekomendacją.
    trenera i przełącznik trybu wyłączone; panel „Zadanie” zamiast „Oddaj etap” pokazuje „Oddaję”.
 3. Koniec: „Oddaję” albo upływ czasu. Serwer pilnuje: `project_for(..., "edit")` dla projektu z zakończoną
    (lub przeterminowaną) sesją → 403 „Czas minął — mapa jest zablokowana”; `can_edit = False` w szablonach.
-4. Rozmowa (`/p/<id>/rekrutacja`): przy pierwszym wejściu po zakończeniu — `spend_ai_request` ×3, ocena mapy
+4. Rozmowa (`/p/<id>/rekrutacja`): przycisk „Rozpocznij rozmowę” po zakończeniu (GET nie zużywa limitu AI) — `spend_ai_request` ×3, ocena mapy
    (`grade_exercise`, etap 1, zapis jako `ExerciseAttempt` — widać w „Postępie”) i jedno wywołanie Opus tworzące
    5 pytań o decyzje na tej mapie (celuje w braki z oceny). Pytania po kolei; odpowiedź 1–1500 znaków, bez edycji.
 5. Raport po 5. odpowiedzi (Opus, strict `recruit_report`): każda odpowiedź 0–5 + komentarz, wynik rozmowy
@@ -43,6 +43,12 @@ Start (projekt, sesja, termin), blokada po terminie i po „Oddaję” (403 na e
 podpowiedzi/trener/tryb wyłączone w sesji, bez klucza przycisk wyłączony, uprawnienia (obcy 404); PR 2 z
 podrobionym klientem: pytania, kolejność odpowiedzi, limit długości, raport i wyliczenie wyniku, błąd AI.
 Playwright (oba motywy, 1440/390, 0 błędów JS), 5 kontroli CI, wdrożenie.
+
+## Po przeglądzie kodu (2026-10-20)
+
+W trakcie sesji zablokowane po stronie serwera (`graph.forbid_assist`): oddawanie etapu ćwiczenia, przegląd i
+uzupełnianie AI, podpowiedzi, tryb, „Oceń z AI” (do oddania). Mapę edytuje i na pytania odpowiada tylko kandydat
+(`recruit.user_id`). Przyciski wywołujące AI mają `data-once` (blokada podwójnego kliknięcia po stronie klienta).
 
 ## Poza zakresem
 

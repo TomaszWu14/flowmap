@@ -148,8 +148,7 @@ def panel(project_id):
 @login_required
 def toggle_mode(project_id):
     project = g.project_for(project_id, "edit")
-    if project.recruit:
-        abort(403, "W trybie rekrutacyjnym tryb pracy jest stały.")
+    g.forbid_assist(project)
     project.learning = not project.learning
     db.session.commit()
     return redirect(url_for("flow.view", project_id=project.id))
@@ -159,8 +158,7 @@ def toggle_mode(project_id):
 @login_required
 def hint(project_id):
     project = g.project_for(project_id, "edit")
-    if project.recruit:
-        abort(403, "W trybie rekrutacyjnym podpowiedzi są wyłączone.")
+    g.forbid_assist(project)
     log = db.session.get(QuestionLog, request.form.get("log_id", type=int) or 0)
     if log is None or log.project_id != project.id or log.answer:
         abort(404)
@@ -456,6 +454,7 @@ def guard_fix(project_id):
 @login_required
 def guard_review(project_id):
     project = g.project_for(project_id, "edit")
+    g.forbid_assist(project)
     graph = project.graph()
     report = guard.report(graph)
     error, log, suggestions = None, None, None
@@ -482,6 +481,7 @@ MAX_FILL = 12
 def guard_fill(project_id):
     """AI proposes how to close every open branch in one request; nothing changes until accepted."""
     project = g.project_for(project_id, "edit")
+    g.forbid_assist(project)
     slots = open_slots(project)[:MAX_FILL]
     if not slots:
         return _guard_html(project, error="Nie ma otwartych gałęzi do uzupełnienia.")
@@ -503,6 +503,7 @@ def guard_fill(project_id):
 @login_required
 def guard_fill_apply(project_id):
     project = g.project_for(project_id, "edit")
+    g.forbid_assist(project)
     log = db.session.get(QuestionLog, request.form.get("log_id", type=int) or 0)
     if log is None or log.project_id != project.id or log.kind != "fill":
         abort(404)
@@ -541,6 +542,7 @@ def guard_fill_apply(project_id):
 @login_required
 def guard_apply(project_id):
     project = g.project_for(project_id, "edit")
+    g.forbid_assist(project)
     log = db.session.get(QuestionLog, request.form.get("log_id", type=int) or 0)
     idx = request.form.get("index", type=int)
     if log is None or log.project_id != project.id or log.kind != "review" or idx is None:

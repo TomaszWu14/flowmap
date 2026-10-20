@@ -25,7 +25,7 @@
     {% elif not a %}
       <p class="muted">Jeszcze nie oddano. Oczekiwania eksperta pojawią się po pierwszym oddaniu.</p>
     {% else %}
-      <p class="muted">Ostatnie oddanie: {{ a.score }}/100 · najlepsze: {{ s.best }}/100{% if a.feedback.mode == 'work' %} · oddane w trybie Praca (z gotowymi propozycjami){% endif %}</p>
+      <p class="muted">Ostatnie oddanie: {{ a.score }}/100 · najlepsze: {{ s.best }}/100{% if a.feedback.mode == 'work' %} · oddane w trybie Praca (z gotowymi propozycjami){% elif a.feedback.mode == 'recruit' %} · tryb rekrutacyjny (<a href="{{ url_for('recruit.view', project_id=project.id) }}">raport rekrutera</a>){% endif %}</p>
       <h3>Oczekiwania eksperta</h3>
       <div class="table-wrap"><table class="versions">
         <tr><th>Oczekiwanie</th><th>Ocena</th><th>Komentarz</th></tr>
@@ -38,8 +38,8 @@
       <h3>Najważniejsze poprawki</h3>
       <ol>{% for t in a.feedback.fixes %}<li>{{ t }}</li>{% endfor %}</ol>
     {% endif %}
-    {% if s.open and project.can_edit %}
-    <form method="post" action="{{ url_for('exercises.submit', project_id=project.id) }}">
+    {% if s.open and project.can_edit and not project.recruit %}
+    <form method="post" data-once action="{{ url_for('exercises.submit', project_id=project.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="stage" value="{{ s.number }}">
       <button class="btn{{ ' primary' if not a }}" type="submit"{% if not ai %} disabled title="Oddanie wymaga AI (klucz ANTHROPIC_API_KEY)"{% endif %}>{{ 'Oddaj ponownie' if a else 'Oddaj etap %d'|format(s.number) }}</button>

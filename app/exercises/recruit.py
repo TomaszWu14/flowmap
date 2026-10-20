@@ -48,15 +48,16 @@ def view(project_id):
     project, session = _session(project_id)
     return render_template("exercises/recruit.html", project=project, session=session,
                            ex=catalog.get(project.exercise_key), ai=ai_enabled(), total=interview.QUESTIONS,
-                           answer_max=interview.ANSWER_MAX, recommendations=interview.RECOMMENDATIONS)
+                           answer_max=interview.ANSWER_MAX, recommendations=interview.RECOMMENDATIONS,
+                           map_pct=round(100 * interview.MAP_WEIGHT))
 
 
 @bp.post("/p/<int:project_id>/rekrutacja/oddaj")
 @login_required
 def finish(project_id):
     project, session = _session(project_id)
-    if project.current_role == "viewer":
-        abort(403)
+    if session.user_id != current_user.id:
+        abort(403, "Mapę oddaje tylko kandydat.")
     if session.finished_at is None:
         session.finished_at = min(utcnow(), session.deadline)
         db.session.commit()
@@ -64,10 +65,10 @@ def finish(project_id):
 
 
 def _candidate(project_id):
-    """The session's interview steps: map handed in, caller is not a viewer."""
+    """The session's interview steps: map handed in, caller is the candidate."""
     project, session = _session(project_id)
-    if project.current_role == "viewer":
-        abort(403)
+    if session.user_id != current_user.id:
+        abort(403, "Na pytania rekrutera odpowiada tylko kandydat.")
     if not session.ended:
         abort(400, "Najpierw oddaj mapę.")
     return project, session, catalog.get(project.exercise_key) or abort(404)
@@ -122,6 +123,7 @@ def _report(project, session, ex):
 @bp.post("/p/<int:project_id>/rekrutacja/odpowiedz")
 @login_required
 def answer(project_id):
+    # ponytail: double submit is stopped client-side (data-once); add a row lock if concurrent clients ever matter
     project, session, ex = _candidate(project_id)
     if session.questions is None or len(session.answers) >= interview.QUESTIONS:
         abort(400, "Nie ma pytania, na które można odpowiedzieć.")
