@@ -16,6 +16,7 @@ from . import catalog, progress
 from .grading import VERDICTS, grade
 
 bp = Blueprint("exercises", __name__)
+RECRUIT_MINUTES = (30, 45, 60)
 
 
 @bp.get("/cwiczenia")
@@ -25,19 +26,24 @@ def index():
                 .join(Project, ExerciseAttempt.project_id == Project.id)
                 .filter(ExerciseAttempt.user_id == current_user.id).group_by(Project.exercise_key).all())
     return render_template("exercises/index.html", exercises=catalog.all_exercises(), best=best,
-                           levels=catalog.LEVELS)
+                           levels=catalog.LEVELS, ai=ai_enabled(), recruit_minutes=RECRUIT_MINUTES)
 
 
 @bp.post("/cwiczenia/<key>/start")
 @login_required
 def start(key):
-    ex = catalog.get(key) or abort(404)
+    project = new_exercise_project(catalog.get(key) or abort(404))
+    db.session.commit()
+    return redirect(url_for("flow.view", project_id=project.id))
+
+
+def new_exercise_project(ex) -> Project:
+    """Exercise project in learning mode; the caller commits."""
     project = create_project(current_user, ex.title, ex.start_sentence, "quick")
     project.learning = True
     project.exercise_key = ex.key
     audit.log("exercise_started", ex.key)
-    db.session.commit()
-    return redirect(url_for("flow.view", project_id=project.id))
+    return project
 
 
 @bp.get("/p/<int:project_id>/cwiczenie/zadanie")

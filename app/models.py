@@ -105,6 +105,7 @@ class Project(db.Model):
     members = db.relationship("ProjectMember", back_populates="project", cascade="all, delete-orphan",
                               order_by="ProjectMember.id")
     comments = db.relationship("Comment", cascade="all, delete-orphan")
+    recruit = db.relationship("RecruitSession", uselist=False, cascade="all, delete-orphan")
 
     def node_by_key(self, key: str):
         return next((n for n in self.nodes if n.key == key), None)
@@ -240,6 +241,26 @@ class ExerciseAttempt(db.Model):
     score = db.Column(db.Integer, nullable=False)  # 0-100
     feedback = db.Column(db.JSON, nullable=False)
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+
+
+class RecruitSession(db.Model):
+    """Timed recruitment case on an exercise project: map against the clock, then an AI interview."""
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False, unique=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"), index=True)
+    minutes = db.Column(db.Integer, nullable=False)
+    started_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+    deadline = db.Column(db.DateTime, nullable=False)
+    finished_at = db.Column(db.DateTime)  # "Oddaję" pressed; None while running or when time simply ran out
+    grade = db.Column(db.JSON)  # map grading feedback (exercises/grading.py)
+    questions = db.Column(db.JSON)
+    answers = db.Column(db.JSON, nullable=False, default=list, server_default="[]")
+    report = db.Column(db.JSON)
+
+    @property
+    def ended(self) -> bool:
+        return self.finished_at is not None or utcnow() >= self.deadline
 
 
 class Comment(db.Model):

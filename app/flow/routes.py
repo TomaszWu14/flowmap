@@ -148,6 +148,8 @@ def panel(project_id):
 @login_required
 def toggle_mode(project_id):
     project = g.project_for(project_id, "edit")
+    if project.recruit:
+        abort(403, "W trybie rekrutacyjnym tryb pracy jest stały.")
     project.learning = not project.learning
     db.session.commit()
     return redirect(url_for("flow.view", project_id=project.id))
@@ -157,6 +159,8 @@ def toggle_mode(project_id):
 @login_required
 def hint(project_id):
     project = g.project_for(project_id, "edit")
+    if project.recruit:
+        abort(403, "W trybie rekrutacyjnym podpowiedzi są wyłączone.")
     log = db.session.get(QuestionLog, request.form.get("log_id", type=int) or 0)
     if log is None or log.project_id != project.id or log.answer:
         abort(404)

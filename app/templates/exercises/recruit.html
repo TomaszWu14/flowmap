@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Rekrutacja — {{ project.name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Tryb rekrutacyjny: {{ ex.title if ex else project.name }}</h1>
+    <p class="muted">Mapa procesu na czas ({{ session.minutes }} min), potem 5 pytań rekrutera AI o Twoje decyzje i raport.</p></div>
+  <div class="row"><a class="btn" href="{{ url_for('flow.view', project_id=project.id) }}">Mapa</a>
+    <a class="btn" href="{{ url_for('exercises.progress_page') }}">Postęp</a></div>
+</div>
+{% if not session.ended %}
+<section class="card">
+  <h2>Trwa — pozostało <span class="recruit-timer badge" role="timer" data-deadline="{{ session.deadline.isoformat(timespec='seconds') }}Z">⏱ {{ session.minutes }}:00</span></h2>
+  <p>Zbuduj mapę od zdania „{{ project.start_sentence }}”. Podpowiedzi i trener są wyłączone. Gdy czas minie, mapa zablokuje się sama.</p>
+  {% if project.current_role != 'viewer' %}
+  <form method="post" action="{{ url_for('recruit.finish', project_id=project.id) }}" data-confirm="Oddać mapę? Po oddaniu nie da się jej zmienić.">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn primary" type="submit">Oddaję</button>
+  </form>
+  {% endif %}
+</section>
+{% else %}
+<section class="card">
+  <h2>Mapa oddana {{ (session.finished_at or session.deadline).strftime('%d.%m.%Y %H:%M') }}</h2>
+  <p class="muted">{{ 'Oddana przed czasem.' if session.finished_at and session.finished_at < session.deadline else 'Czas minął.' }}
+    Mapa jest zablokowana — możesz ją oglądać, ale nie zmieniać.</p>
+  <p>Rozmowa z rekruterem AI pojawi się tutaj.</p>
+</section>
+{% endif %}
+{% endblock %}

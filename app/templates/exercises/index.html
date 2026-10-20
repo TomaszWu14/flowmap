@@ -2,7 +2,8 @@
 {% block title %}Ćwiczenia{% endblock %}
 {% block content %}
 <div class="page-head">
-  <div><h1>Ćwiczenia</h1><p class="muted">Gotowe zadania z różnych dziedzin. Najpierw rysujesz mapę procesu, potem projektujesz aplikację — każdy etap oddajesz do oceny.</p></div>
+  <div><h1>Ćwiczenia</h1><p class="muted">Gotowe zadania z różnych dziedzin. Najpierw rysujesz mapę procesu, potem projektujesz aplikację — każdy etap oddajesz do oceny.
+    Tryb rekrutacyjny: mapa na czas, potem rozmowa z rekruterem AI{% if not ai %} (wymaga AI — administrator musi ustawić klucz ANTHROPIC_API_KEY){% endif %}.</p></div>
   <div class="row"><a class="btn" href="{{ url_for('exercises.progress_page') }}">Postęp</a>
     <a class="btn" href="{{ url_for('projects.index') }}">← Projekty</a></div>
 </div>
@@ -16,10 +17,21 @@
       <span class="badge">{{ levels[ex.level] }}</span>
       {% if best.get(ex.key) is not none %}<span class="badge ok">najlepszy wynik: {{ best[ex.key] }}/100</span>{% endif %}
     </div>
-    <form method="post" action="{{ url_for('exercises.start', key=ex.key) }}" style="margin-top:.6rem">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button class="btn primary small" type="submit">Rozpocznij</button>
-    </form>
+    <div class="row" style="margin-top:.6rem;align-items:flex-end">
+      <form method="post" action="{{ url_for('exercises.start', key=ex.key) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn primary small" type="submit">Rozpocznij</button>
+      </form>
+      <form method="post" action="{{ url_for('recruit.start', key=ex.key) }}" class="row recruit-start"
+            data-confirm="Tryb rekrutacyjny: mapa na czas bez podpowiedzi, potem 5 pytań rekrutera AI. Zużywa 3 zapytania z dziennego limitu AI. Zaczynamy?">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="sr-only" for="minutes-{{ ex.key }}">Czas na mapę</label>
+        <select id="minutes-{{ ex.key }}" name="minutes"{% if not ai %} disabled{% endif %}>
+          {% for m in recruit_minutes %}<option value="{{ m }}"{% if m == 45 %} selected{% endif %}>{{ m }} min</option>{% endfor %}
+        </select>
+        <button class="btn small" type="submit"{% if not ai %} disabled title="Tryb rekrutacyjny wymaga AI (klucz ANTHROPIC_API_KEY)"{% endif %}>Tryb rekrutacyjny</button>
+      </form>
+    </div>
   </article>
   {% endfor %}
 </div>

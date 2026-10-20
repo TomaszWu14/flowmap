@@ -217,4 +217,18 @@
     const gallery = [...document.querySelectorAll("[data-gallery]")].find((g) => g.querySelector("[data-image-input]"));
     if (files.length && gallery) { ev.preventDefault(); uploadImages(gallery, files); }
   });
+
+  // Recruitment mode countdown; the server enforces the deadline, the page reloads to show the locked map.
+  document.querySelectorAll("[data-deadline]").forEach((el) => {
+    const end = Date.parse(el.dataset.deadline);
+    let timer = null;
+    const tick = () => {
+      const left = Math.max(0, Math.round((end - Date.now()) / 1000));
+      el.textContent = "⏱ " + Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0");
+      el.classList.toggle("urgent", left <= 300);
+      if (left === 0 && timer) { clearInterval(timer); el.textContent = "⏱ Czas minął"; setTimeout(() => location.reload(), 1500); }
+    };
+    tick();
+    if (end > Date.now()) timer = setInterval(tick, 1000);
+  });
 })();

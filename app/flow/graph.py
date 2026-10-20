@@ -39,8 +39,11 @@ def project_for(project_id: int, need: str) -> Project:
         abort(404)
     if ROLE_RANK[role] < NEED_RANK[need]:
         abort(403)
+    locked = project.recruit is not None and project.recruit.ended  # recruitment case: time is up
+    if locked and need == "edit":
+        abort(403, "Czas minął — mapa jest zablokowana.")
     project.current_role = role  # for templates
-    project.can_edit = role != "viewer"
+    project.can_edit = role != "viewer" and not locked
     return project
 
 
