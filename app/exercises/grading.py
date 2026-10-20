@@ -62,12 +62,12 @@ def grade(project, ex: Exercise, stage: int, spec) -> dict:
                 f"Mapa procesu, z której powstał projekt (JSON):\n{compact_graph(graph)}")
     prompt = _prompt("grade_exercise", title=ex.title, brief=ex.brief, start_sentence=ex.start_sentence,
                      stage_name="mapa procesu" if stage == 1 else "projekt aplikacji",
-                     expectations="\n".join(f"{i}. {text}" for i, text in enumerate(expected)),
+                     expectations="\n".join(f"{i}. {e.text}" for i, e in enumerate(expected)),
                      count=len(expected), work=work, rules_summary=f"{rules['label']} {rules['score']}/100")
     result = call_tool(prompt, TOOL, _grade_model(len(expected)))
     by_index = {v.index: v for v in result.expectations}
     return {"score": result.score, "rules_score": rules["score"],
             "mode": "learning" if project.learning else "work",
-            "expectations": [{"text": text, "verdict": by_index[i].verdict, "comment": by_index[i].comment}
-                             for i, text in enumerate(expected)],
+            "expectations": [{"text": e.text, "topic": e.topic, "verdict": by_index[i].verdict,
+                              "comment": by_index[i].comment} for i, e in enumerate(expected)],
             "strengths": result.strengths, "fixes": result.fixes}

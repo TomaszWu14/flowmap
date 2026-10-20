@@ -25,19 +25,20 @@ def test_submit_stage1(auth_client, app, monkeypatch):
     _, p = start(auth_client)
     ex = catalog.get("urlopy")
     results = auth_client.get(f"/p/{p.id}/cwiczenie").get_data(as_text=True)
-    assert ex.brief in results and ex.stage1[0] not in results  # hidden before the first submission
+    assert ex.brief in results and ex.stage1[0].text not in results  # hidden before the first submission
     calls = fake(monkeypatch, app, graded())
     r = submit(auth_client, p)
     assert r.status_code == 302 and r.headers["Location"].endswith(f"/p/{p.id}/cwiczenie")
     prompt = calls[0]["messages"][0]["content"]
-    assert ex.brief in prompt and ex.stage1[-1] in prompt and ex.start_sentence in prompt
+    assert ex.brief in prompt and ex.stage1[-1].text in prompt and ex.start_sentence in prompt
     assert calls[0]["model"] == app.config["ANTHROPIC_MODEL"]
     [a] = attempts(p)
     assert (a.stage, a.score, a.feedback["mode"]) == (1, 70, "learning")
-    assert a.feedback["expectations"][0] == {"text": ex.stage1[0], "verdict": "partial", "comment": "uwaga 0"}
+    assert a.feedback["expectations"][0] == {"text": ex.stage1[0].text, "topic": "przebieg", "verdict": "partial",
+                                         "comment": "uwaga 0"}
     assert Project.query.get(p.id).exercise_stage == 2
     html = auth_client.get(f"/p/{p.id}/cwiczenie").get_data(as_text=True)
-    assert ex.stage1[0] in html and "Popraw C" in html and "70/100" in html and ex.stage2[0] not in html
+    assert ex.stage1[0].text in html and "Popraw C" in html and "70/100" in html and ex.stage2[0].text not in html
     assert "Etap 2 z 2" in auth_client.get(f"/p/{p.id}/cwiczenie/zadanie").get_data(as_text=True)
 
 
@@ -50,7 +51,7 @@ def test_stage2_locked_then_graded_with_spec(auth_client, app, monkeypatch):
     calls = fake(monkeypatch, app, graded(stage=2, score=55), graded(score=80))
     submit(auth_client, p, stage=2)
     prompt = calls[0]["messages"][0]["content"]
-    assert catalog.get("urlopy").stage2[0] in prompt and "classDiagram" in prompt
+    assert catalog.get("urlopy").stage2[0].text in prompt and "classDiagram" in prompt
     submit(auth_client, p, stage=1)  # resubmitting stage 1 keeps stage 2 open
     assert [(a.stage, a.score) for a in attempts(p)] == [(1, 40), (2, 55), (1, 80)]
     assert Project.query.get(p.id).exercise_stage == 2

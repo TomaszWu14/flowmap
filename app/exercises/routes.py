@@ -1,5 +1,7 @@
 """Exercises: catalogue of fixed tasks, starting one as a learning-mode project, the task panel on the map."""
 
+from statistics import mean
+
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import func
@@ -8,9 +10,9 @@ from .. import audit
 from ..ai.client import AIError, ai_enabled, spend_ai_request
 from ..extensions import db
 from ..flow import graph as g
-from ..models import ExerciseAttempt, Project
+from ..models import Evaluation, ExerciseAttempt, Project
 from ..projects.service import create_project
-from . import catalog
+from . import catalog, progress
 from .grading import VERDICTS, grade
 
 bp = Blueprint("exercises", __name__)
@@ -96,3 +98,35 @@ def submit(project_id):
     db.session.commit()
     flash(f"Etap {stage} oceniony: {feedback['score']}/100.", "success")
     return back
+
+
+@bp.get("/postep")
+@login_required
+def progress_page():
+    rows = (db.session.query(ExerciseAttempt, Project.exercise_key)
+            .join(Project, ExerciseAttempt.project_id == Project.id)
+            .filter(ExerciseAttempt.user_id == current_user.id).order_by(ExerciseAttempt.id).all())
+    stages: dict[tuple, dict] = {}  # (exercise key, stage) -> first, best, count
+    for a, key in rows:
+        s = stages.setdefault((key, a.stage), {"first": a.score, "best": a.score, "count": 0})
+        s["best"] = max(s["best"], a.score)
+        s["count"] += 1
+    exercises = catalog.all_exercises()
+    topic_of_text = {e.text: e.topic for ex in exercises for e in ex.stage1 + ex.stage2}
+    latest_attempts = progress.latest(rows, lambda r: (r[1], r[0].stage))
+    topics = progress.topic_stats([a.feedback for a, _ in latest_attempts], topic_of_text)
+    evaluations = Evaluation.query.filter_by(user_id=current_user.id).order_by(Evaluation.id).all()
+    latest_evals = progress.latest(evaluations, lambda e: (e.project_id, e.kind))
+    stats = topics + progress.criteria_stats([e.details for e in latest_evals])
+    strong, weak = progress.strengths_and_weaknesses(stats)
+    weak_topics = [t["code"] for t in sorted(topics, key=lambda t: t["value"]) if t["value"] < progress.STRONG]
+    score = {ex.key: round(mean(s["best"] for (k, _), s in stages.items() if k == ex.key))
+             for ex in exercises if any(k == ex.key for k, _ in stages)}
+    projects = {p.exercise_key: p for p in Project.query.filter(Project.owner_id == current_user.id,
+                                                                 Project.exercise_key.isnot(None))
+                .order_by(Project.id)}
+    return render_template("exercises/progress.html", exercises=exercises, stages=stages, score=score,
+                           strong=strong, weak=weak, trend=progress.trend([a.score for a, _ in rows]),
+                           attempts=len(rows), evaluated=len({e.project_id for e in latest_evals}),
+                           pick=progress.recommend(exercises, score, weak_topics), projects=projects,
+                           levels=catalog.LEVELS, strong_at=progress.STRONG)

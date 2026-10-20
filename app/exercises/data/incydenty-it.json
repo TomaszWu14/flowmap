@@ -6,21 +6,63 @@
   "brief": "Jesteś analitykiem w dziale IT banku spółdzielczego. Awarie zgłaszane są telefonicznie, mailem i na komunikatorze, a informatycy rozwiązują je w kolejności, w jakiej sobie przypomną. Gdy w zeszłym miesiącu padł system obsługi kasy, nikt nie wiedział, kto ma powiadomić oddziały i kiedy eskalować do dostawcy. Kierownik IT chce procesu obsługi incydentów zgodnego z dobrą praktyką (ITIL) i z umownymi czasami reakcji. Opisz proces od zgłoszenia problemu do zamknięcia incydentu, a potem zaprojektuj aplikację.",
   "start_sentence": "Użytkownik zgłasza awarię systemu",
   "stage1": [
-    "Zgłoszenie jest rejestrowane i kategoryzowane, a priorytet wynika z wpływu i pilności.",
-    "Pierwsza linia próbuje rozwiązać incydent i jest rozgałęzienie na przekazanie do drugiej linii lub dostawcy.",
-    "Mapa uwzględnia czasy reakcji i rozwiązania (SLA) oraz eskalację po ich przekroczeniu.",
-    "Incydent krytyczny ma osobną ścieżkę: powiadomienie kierownictwa i użytkowników, komunikaty o postępie.",
-    "Rozwiązanie jest potwierdzane przez zgłaszającego przed zamknięciem; jest ścieżka ponownego otwarcia.",
-    "Mapa obsługuje powtarzające się incydenty (powiązanie z problemem lub analiza przyczyny).",
-    "Role: zgłaszający, pierwsza linia, druga linia, dostawca zewnętrzny, kierownik dyżuru."
+    {
+      "text": "Zgłoszenie jest rejestrowane i kategoryzowane, a priorytet wynika z wpływu i pilności.",
+      "topic": "reguly"
+    },
+    {
+      "text": "Pierwsza linia próbuje rozwiązać incydent i jest rozgałęzienie na przekazanie do drugiej linii lub dostawcy.",
+      "topic": "decyzje"
+    },
+    {
+      "text": "Mapa uwzględnia czasy reakcji i rozwiązania (SLA) oraz eskalację po ich przekroczeniu.",
+      "topic": "terminy"
+    },
+    {
+      "text": "Incydent krytyczny ma osobną ścieżkę: powiadomienie kierownictwa i użytkowników, komunikaty o postępie.",
+      "topic": "komunikacja"
+    },
+    {
+      "text": "Rozwiązanie jest potwierdzane przez zgłaszającego przed zamknięciem; jest ścieżka ponownego otwarcia.",
+      "topic": "wyjatki"
+    },
+    {
+      "text": "Mapa obsługuje powtarzające się incydenty (powiązanie z problemem lub analiza przyczyny).",
+      "topic": "wyjatki"
+    },
+    {
+      "text": "Role: zgłaszający, pierwsza linia, druga linia, dostawca zewnętrzny, kierownik dyżuru.",
+      "topic": "role"
+    }
   ],
   "stage2": [
-    "Przypadki użycia obejmują zgłoszenie, przyjęcie i kategoryzację, przekazanie, rozwiązanie i potwierdzenie.",
-    "Model danych ma co najmniej zgłoszenie (z priorytetem, kategorią i terminami SLA), użytkownika, grupę wsparcia i historię działań.",
-    "Incydent ma opisane statusy i przejścia (np. nowy, przypisany, w toku, oczekuje na użytkownika, rozwiązany, zamknięty, ponownie otwarty).",
-    "Reguły biznesowe opisują macierz priorytetów (wpływ × pilność) i czasy SLA dla każdego priorytetu.",
-    "Projekt opisuje powiadomienia (przypisanie, zbliżający się termin SLA, rozwiązanie) i kanały.",
-    "Role i uprawnienia rozróżniają zgłaszającego, linie wsparcia i kierownika.",
-    "Wizja określa cel i mierzalną korzyść (np. odsetek incydentów rozwiązanych w SLA, średni czas rozwiązania)."
+    {
+      "text": "Przypadki użycia obejmują zgłoszenie, przyjęcie i kategoryzację, przekazanie, rozwiązanie i potwierdzenie.",
+      "topic": "przypadki"
+    },
+    {
+      "text": "Model danych ma co najmniej zgłoszenie (z priorytetem, kategorią i terminami SLA), użytkownika, grupę wsparcia i historię działań.",
+      "topic": "dane"
+    },
+    {
+      "text": "Incydent ma opisane statusy i przejścia (np. nowy, przypisany, w toku, oczekuje na użytkownika, rozwiązany, zamknięty, ponownie otwarty).",
+      "topic": "statusy"
+    },
+    {
+      "text": "Reguły biznesowe opisują macierz priorytetów (wpływ × pilność) i czasy SLA dla każdego priorytetu.",
+      "topic": "reguly"
+    },
+    {
+      "text": "Projekt opisuje powiadomienia (przypisanie, zbliżający się termin SLA, rozwiązanie) i kanały.",
+      "topic": "komunikacja"
+    },
+    {
+      "text": "Role i uprawnienia rozróżniają zgłaszającego, linie wsparcia i kierownika.",
+      "topic": "uprawnienia"
+    },
+    {
+      "text": "Wizja określa cel i mierzalną korzyść (np. odsetek incydentów rozwiązanych w SLA, średni czas rozwiązania).",
+      "topic": "wizja"
+    }
   ]
 }

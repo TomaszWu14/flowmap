@@ -8,7 +8,8 @@ from app.models import ExerciseAttempt, Project
 from tests.conftest import PASSWORD, make_user
 
 VALID = {"key": "x", "title": "T", "domain": "HR", "level": "podstawowy", "brief": "Zadanie.",
-         "start_sentence": "Ktoś coś robi", "stage1": ["Mapa ma start"], "stage2": ["Są przypadki użycia"]}
+         "start_sentence": "Ktoś coś robi", "stage1": [{"text": "Mapa ma start", "topic": "przebieg"}],
+         "stage2": [{"text": "Są przypadki użycia", "topic": "przypadki"}]}
 
 
 def test_repository_exercises_are_valid():
@@ -21,6 +22,7 @@ def test_repository_exercises_are_valid():
 
 @pytest.mark.parametrize("broken", [
     {"title": None}, {"level": "ekspert"}, {"stage1": []}, {"key": "inny"}, {"extra": 1},
+    {"stage1": [{"text": "x", "topic": "nieznany"}]}, {"stage2": ["bez tematu"]},
 ])
 def test_broken_file_names_the_file(tmp_path, broken):
     (tmp_path / "x.json").write_text(json.dumps({**VALID, **broken}), encoding="utf-8")
@@ -32,7 +34,7 @@ def test_catalog_lists_exercises_without_expectations(auth_client):
     html = auth_client.get("/cwiczenia").get_data(as_text=True)
     ex = catalog.get("urlopy")
     assert ex.title in html and catalog.get("reklamacje").title in html
-    assert ex.stage1[0] not in html and ex.stage2[0] not in html
+    assert ex.stage1[0].text not in html and ex.stage2[0].text not in html
     assert 'href="/cwiczenia"' in auth_client.get("/projekty").get_data(as_text=True)
 
 
@@ -57,7 +59,7 @@ def test_task_button_and_panel(auth_client):
     ex = catalog.get("urlopy")
     assert f"/p/{p.id}/cwiczenie/zadanie" in auth_client.get(f"/p/{p.id}").get_data(as_text=True)
     html = auth_client.get(f"/p/{p.id}/cwiczenie/zadanie").get_data(as_text=True)
-    assert ex.brief in html and "Etap 1 z 2" in html and ex.stage1[0] not in html
+    assert ex.brief in html and "Etap 1 z 2" in html and ex.stage1[0].text not in html
     auth_client.post("/projekty/nowy", data={"name": "Zwykły", "start_sentence": "Klient coś robi", "mode": "quick",
                                              "template": "auto"})
     plain = Project.query.order_by(Project.id.desc()).first()

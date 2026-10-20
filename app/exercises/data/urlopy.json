@@ -6,20 +6,59 @@
   "brief": "Pracujesz jako analityk w firmie produkcyjnej zatrudniającej 300 osób. Dziś wnioski urlopowe krążą na papierze: pracownik wypełnia formularz, zanosi go kierownikowi, a kadry przepisują dane do arkusza. Wnioski giną, kierownicy nie widzą, kto z zespołu jest już na urlopie, a pracownicy dopytują kadry o pozostałe dni. Zarząd chce prostej aplikacji do składania i akceptowania wniosków. Twoim zadaniem jest opisać proces od chwili, gdy pracownik chce wziąć urlop, do chwili, gdy urlop jest zatwierdzony albo odrzucony, a potem zaprojektować aplikację, która go obsłuży.",
   "start_sentence": "Pracownik chce wziąć urlop",
   "stage1": [
-    "Pracownik sprawdza liczbę dostępnych dni urlopu przed złożeniem wniosku.",
-    "Kierownik akceptuje albo odrzuca wniosek, a odrzucenie ma podany powód.",
-    "Mapa uwzględnia kolizję z urlopami innych osób z zespołu lub minimalną obsadę.",
-    "Po akceptacji kadry (albo system) aktualizują saldo dni urlopu.",
-    "Pracownik dostaje informację o decyzji.",
-    "Mapa obsługuje brak odpowiedzi kierownika w terminie (przypomnienie lub zastępca).",
-    "Każdy krok ma przypisanego wykonawcę: pracownik, kierownik, kadry lub system."
+    {
+      "text": "Pracownik sprawdza liczbę dostępnych dni urlopu przed złożeniem wniosku.",
+      "topic": "przebieg"
+    },
+    {
+      "text": "Kierownik akceptuje albo odrzuca wniosek, a odrzucenie ma podany powód.",
+      "topic": "decyzje"
+    },
+    {
+      "text": "Mapa uwzględnia kolizję z urlopami innych osób z zespołu lub minimalną obsadę.",
+      "topic": "reguly"
+    },
+    {
+      "text": "Po akceptacji kadry (albo system) aktualizują saldo dni urlopu.",
+      "topic": "przebieg"
+    },
+    {
+      "text": "Pracownik dostaje informację o decyzji.",
+      "topic": "komunikacja"
+    },
+    {
+      "text": "Mapa obsługuje brak odpowiedzi kierownika w terminie (przypomnienie lub zastępca).",
+      "topic": "terminy"
+    },
+    {
+      "text": "Każdy krok ma przypisanego wykonawcę: pracownik, kierownik, kadry lub system.",
+      "topic": "role"
+    }
   ],
   "stage2": [
-    "Przypadki użycia obejmują złożenie wniosku, decyzję kierownika i podgląd salda.",
-    "Model danych ma co najmniej pracownika, wniosek urlopowy (z datami i statusem) i saldo urlopu.",
-    "Wniosek ma jasno opisane statusy i przejścia między nimi (np. złożony, zaakceptowany, odrzucony, anulowany).",
-    "Reguły biznesowe opisują, że nie można wnioskować o więcej dni niż saldo i o daty w przeszłości.",
-    "Role i uprawnienia rozróżniają pracownika, kierownika i kadry.",
-    "Wizja określa cel aplikacji i mierzalną korzyść (np. czas akceptacji, brak zgubionych wniosków)."
+    {
+      "text": "Przypadki użycia obejmują złożenie wniosku, decyzję kierownika i podgląd salda.",
+      "topic": "przypadki"
+    },
+    {
+      "text": "Model danych ma co najmniej pracownika, wniosek urlopowy (z datami i statusem) i saldo urlopu.",
+      "topic": "dane"
+    },
+    {
+      "text": "Wniosek ma jasno opisane statusy i przejścia między nimi (np. złożony, zaakceptowany, odrzucony, anulowany).",
+      "topic": "statusy"
+    },
+    {
+      "text": "Reguły biznesowe opisują, że nie można wnioskować o więcej dni niż saldo i o daty w przeszłości.",
+      "topic": "reguly"
+    },
+    {
+      "text": "Role i uprawnienia rozróżniają pracownika, kierownika i kadry.",
+      "topic": "uprawnienia"
+    },
+    {
+      "text": "Wizja określa cel aplikacji i mierzalną korzyść (np. czas akceptacji, brak zgubionych wniosków).",
+      "topic": "wizja"
+    }
   ]
 }
