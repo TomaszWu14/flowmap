@@ -1,6 +1,6 @@
 # Tryb rekrutacyjny — projekt
 
-Data: 2026-10-20 · Status: zatwierdzony w rozmowie · Podprojekt 4, część 4 z 4
+Data: 2026-10-20 · Status: zrealizowany (PR #64, PR 2) · Podprojekt 4, część 4 z 4
 
 Część 3 „Portfolio” **pominięta** — portfolio autora istnieje poza FlowMap (portfolio.twapp.pl).
 

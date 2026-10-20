@@ -232,6 +232,9 @@ form.chat-form { max-width: none; }
 .delta { color: var(--ok); font-weight: 700; }
 .recruit-start { flex-wrap: nowrap; gap: .4rem; }
 .recruit-start select { width: auto; }
+.interview { padding-left: 1.2rem; display: grid; gap: 1rem; }
+.interview .q { font-weight: 600; margin: 0 0 .3rem; }
+.interview .a { margin: 0; padding: .5rem .7rem; border-left: 3px solid var(--line); white-space: pre-wrap; }
 .recruit-timer { font-variant-numeric: tabular-nums; font-size: .85rem; }
 .recruit-timer.urgent { color: var(--danger); border-color: var(--danger); }
 .top-fix { background: var(--accent-soft); border-radius: 10px; padding: .6rem .8rem; }
