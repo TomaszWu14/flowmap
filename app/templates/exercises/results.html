@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Ćwiczenie — {{ project.name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ ex.title }}</h1>
+    <div class="row"><a class="btn small" href="{{ url_for('flow.view', project_id=project.id) }}">Mapa</a>
+      <a class="btn small" href="{{ url_for('design.view', project_id=project.id) }}">Projekt aplikacji</a>
+      <a class="btn small" href="{{ url_for('trainer.score', project_id=project.id) }}">Ocena</a>
+      <span class="btn small primary" aria-current="page">Ćwiczenie</span></div></div>
+  <a class="btn" href="{{ url_for('exercises.index') }}">← Ćwiczenia</a>
+</div>
+<section class="card">
+  <p class="row"><span class="badge">{{ ex.domain }}</span> <span class="badge">Etap {{ project.exercise_stage }} z {{ stages|length }}</span></p>
+  <p>{{ ex.brief }}</p>
+</section>
+<div class="score-grid" style="margin-top:1rem">
+  {% for s in stages %}{% set a = s.latest %}
+  <section class="card score-card" aria-labelledby="stage-{{ s.number }}">
+    <div class="row" style="justify-content:space-between">
+      <h2 id="stage-{{ s.number }}">Etap {{ s.number }}: {{ 'mapa procesu' if s.number == 1 else 'projekt aplikacji' }}</h2>
+      {% if a %}<span class="score"><span class="score-ring" style="--p: {{ a.score }}"><span>{{ a.score }}</span></span>/ 100</span>{% endif %}
+    </div>
+    {% if not s.open %}
+      <p class="muted">Etap otworzy się po pierwszym oddaniu etapu 1.</p>
+    {% elif not a %}
+      <p class="muted">Jeszcze nie oddano. Oczekiwania eksperta pojawią się po pierwszym oddaniu.</p>
+    {% else %}
+      <p class="muted">Ostatnie oddanie: {{ a.score }}/100 · najlepsze: {{ s.best }}/100{% if a.feedback.mode == 'work' %} · oddane w trybie Praca (z gotowymi propozycjami){% endif %}</p>
+      <h3>Oczekiwania eksperta</h3>
+      <div class="table-wrap"><table class="versions">
+        <tr><th>Oczekiwanie</th><th>Ocena</th><th>Komentarz</th></tr>
+        {% for e in a.feedback.expectations %}
+        <tr><td>{{ e.text }}</td><td class="{{ 'ok' if e.verdict == 'met' }}">{{ verdicts[e.verdict] }}</td><td>{{ e.comment }}</td></tr>
+        {% endfor %}
+      </table></div>
+      <h3>Mocne strony</h3>
+      <ul>{% for t in a.feedback.strengths %}<li>{{ t }}</li>{% endfor %}</ul>
+      <h3>Najważniejsze poprawki</h3>
+      <ol>{% for t in a.feedback.fixes %}<li>{{ t }}</li>{% endfor %}</ol>
+    {% endif %}
+    {% if s.open and project.can_edit %}
+    <form method="post" action="{{ url_for('exercises.submit', project_id=project.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="stage" value="{{ s.number }}">
+      <button class="btn{{ ' primary' if not a }}" type="submit"{% if not ai %} disabled title="Oddanie wymaga AI (klucz ANTHROPIC_API_KEY)"{% endif %}>{{ 'Oddaj ponownie' if a else 'Oddaj etap %d'|format(s.number) }}</button>
+    </form>
+    {% endif %}
+    {% if s.attempts|length > 1 %}
+    <details><summary>Historia oddań ({{ s.attempts|length }})</summary>
+      <ul>{% for h in s.attempts %}<li>{{ h.created_at.strftime('%Y-%m-%d %H:%M') }} — {{ h.score }}/100{% if h.feedback.mode == 'work' %} <span class="badge">Praca</span>{% endif %}</li>{% endfor %}</ul>
+    </details>
+    {% endif %}
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -11,5 +11,14 @@
   {% else %}
     <p class="muted">Na karcie <a href="{{ url_for('design.view', project_id=project.id) }}">Projekt aplikacji</a> opisz przypadki użycia, klasy, reguły i wizję.</p>
   {% endif %}
+  {% if project.can_edit %}
+  <form method="post" action="{{ url_for('exercises.submit', project_id=project.id) }}" class="stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="stage" value="{{ project.exercise_stage }}">
+    <button class="btn primary" type="submit"{% if not ai %} disabled aria-describedby="submit-help"{% endif %}>Oddaj etap {{ project.exercise_stage }}</button>
+    <p class="field-help" id="submit-help">{% if ai %}Ocenia AI (Opus) według oczekiwań eksperta; zużywa 1 zapytanie z dziennego limitu. Możesz oddawać wielokrotnie.{% else %}Oddanie wymaga AI — administrator musi ustawić klucz ANTHROPIC_API_KEY i włączyć AI. Do tego czasu korzystaj z karty „Ocena” (reguły).{% endif %}</p>
+  </form>
+  {% endif %}
+  <p><a href="{{ url_for('exercises.results', project_id=project.id) }}">Wyniki i oczekiwania eksperta →</a></p>
   <p class="field-help">Oczekiwania eksperta zobaczysz po pierwszym oddaniu etapu.</p>
 </section>
