@@ -3,7 +3,8 @@
 {% block content %}
 <div class="page-head">
   <div><h1>Ćwiczenia</h1><p class="muted">Gotowe zadania z różnych dziedzin. Najpierw rysujesz mapę procesu, potem projektujesz aplikację — każdy etap oddajesz do oceny.</p></div>
-  <a class="btn" href="{{ url_for('projects.index') }}">← Projekty</a>
+  <div class="row"><a class="btn" href="{{ url_for('exercises.progress_page') }}">Postęp</a>
+    <a class="btn" href="{{ url_for('projects.index') }}">← Projekty</a></div>
 </div>
 <div class="grid-cards">
   {% for ex in exercises %}

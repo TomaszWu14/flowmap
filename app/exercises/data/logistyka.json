@@ -6,19 +6,55 @@
   "brief": "Jesteś analitykiem w centrum dystrybucyjnym sieci sklepów. Ciężarówki przyjeżdżają bez awizacji i czekają godzinami na rampę, magazynierzy przeliczają towar na papierze, a różnice względem zamówienia wychodzą dopiero przy inwentaryzacji. Towar leży w strefie przyjęć po kilka dni, zanim trafi na regał. Kierownik magazynu chce szybkiego i kontrolowanego przyjęcia dostaw. Opisz proces od awizacji dostawy do odłożenia towaru na miejsce składowania, a potem zaprojektuj aplikację.",
   "start_sentence": "Dostawca awizuje dostawę towaru",
   "stage1": [
-    "Dostawa jest awizowana z wyprzedzeniem i dostaje okno czasowe oraz rampę.",
-    "Mapa obsługuje przyjazd bez awizacji albo poza oknem czasowym.",
-    "Towar jest sprawdzany ilościowo i jakościowo względem zamówienia lub awizacji.",
-    "Mapa obsługuje rozbieżności: brak, nadwyżkę, uszkodzenie — z protokołem i informacją do dostawcy.",
-    "Przyjęty towar jest rejestrowany w systemie, a nośniki (palety) dostają etykiety.",
-    "Towar jest odkładany na wskazane miejsce składowania i potwierdzany skanem."
+    {
+      "text": "Dostawa jest awizowana z wyprzedzeniem i dostaje okno czasowe oraz rampę.",
+      "topic": "przebieg"
+    },
+    {
+      "text": "Mapa obsługuje przyjazd bez awizacji albo poza oknem czasowym.",
+      "topic": "wyjatki"
+    },
+    {
+      "text": "Towar jest sprawdzany ilościowo i jakościowo względem zamówienia lub awizacji.",
+      "topic": "przebieg"
+    },
+    {
+      "text": "Mapa obsługuje rozbieżności: brak, nadwyżkę, uszkodzenie — z protokołem i informacją do dostawcy.",
+      "topic": "wyjatki"
+    },
+    {
+      "text": "Przyjęty towar jest rejestrowany w systemie, a nośniki (palety) dostają etykiety.",
+      "topic": "przebieg"
+    },
+    {
+      "text": "Towar jest odkładany na wskazane miejsce składowania i potwierdzany skanem.",
+      "topic": "przebieg"
+    }
   ],
   "stage2": [
-    "Przypadki użycia obejmują awizację, rezerwację rampy, kontrolę przyjęcia, zgłoszenie rozbieżności i odłożenie towaru.",
-    "Model danych ma co najmniej dostawcę, awizację z pozycjami, przyjęcie, paletę lub nośnik i lokalizację magazynową.",
-    "Przyjęcie ma opisane statusy i przejścia (np. awizowane, na rampie, w kontroli, przyjęte z rozbieżnością, przyjęte, odłożone).",
-    "Reguły biznesowe opisują tolerancję rozbieżności i zasady wyboru miejsca składowania.",
-    "Role rozróżniają dostawcę, planistę przyjęć, magazyniera i kierownika zmiany.",
-    "Wizja określa cel i mierzalną korzyść (np. czas od przyjazdu do odłożenia, odsetek dostaw bez rozbieżności)."
+    {
+      "text": "Przypadki użycia obejmują awizację, rezerwację rampy, kontrolę przyjęcia, zgłoszenie rozbieżności i odłożenie towaru.",
+      "topic": "przypadki"
+    },
+    {
+      "text": "Model danych ma co najmniej dostawcę, awizację z pozycjami, przyjęcie, paletę lub nośnik i lokalizację magazynową.",
+      "topic": "dane"
+    },
+    {
+      "text": "Przyjęcie ma opisane statusy i przejścia (np. awizowane, na rampie, w kontroli, przyjęte z rozbieżnością, przyjęte, odłożone).",
+      "topic": "statusy"
+    },
+    {
+      "text": "Reguły biznesowe opisują tolerancję rozbieżności i zasady wyboru miejsca składowania.",
+      "topic": "reguly"
+    },
+    {
+      "text": "Role rozróżniają dostawcę, planistę przyjęć, magazyniera i kierownika zmiany.",
+      "topic": "uprawnienia"
+    },
+    {
+      "text": "Wizja określa cel i mierzalną korzyść (np. czas od przyjazdu do odłożenia, odsetek dostaw bez rozbieżności).",
+      "topic": "wizja"
+    }
   ]
 }

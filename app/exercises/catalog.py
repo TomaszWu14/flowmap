@@ -8,6 +8,21 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 DATA_DIR = Path(__file__).parent / "data"
 STAGES = 2
 LEVELS = {"podstawowy": "Podstawowy", "zaawansowany": "Zaawansowany"}
+TOPICS = {  # shared across exercises so verdicts add up on the progress page
+    "przebieg": "Przebieg i kroki", "role": "Role w procesie", "decyzje": "Decyzje i rozgałęzienia",
+    "wyjatki": "Wyjątki i błędy", "terminy": "Terminy i eskalacje", "komunikacja": "Powiadomienia i komunikacja",
+    "przypadki": "Przypadki użycia", "dane": "Model danych", "statusy": "Statusy i przejścia",
+    "reguly": "Reguły biznesowe", "uprawnienia": "Role i uprawnienia w aplikacji", "integracje": "Integracje",
+    "wizja": "Wizja i korzyść",
+}
+Topic = Literal[tuple(TOPICS)]
+
+
+class Expectation(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    text: str = Field(min_length=1, max_length=500)
+    topic: Topic
 
 
 class Exercise(BaseModel):
@@ -19,10 +34,10 @@ class Exercise(BaseModel):
     level: Literal["podstawowy", "zaawansowany"]
     brief: str = Field(min_length=1, max_length=3000)
     start_sentence: str = Field(min_length=1, max_length=500)
-    stage1: list[str] = Field(min_length=1)  # expert expectations for the map
-    stage2: list[str] = Field(min_length=1)  # expert expectations for the app design
+    stage1: list[Expectation] = Field(min_length=1)  # expert expectations for the map
+    stage2: list[Expectation] = Field(min_length=1)  # expert expectations for the app design
 
-    def expectations(self, stage: int) -> list[str]:
+    def expectations(self, stage: int) -> list[Expectation]:
         return self.stage1 if stage == 1 else self.stage2
 
 
@@ -52,4 +67,4 @@ def get(key: str | None) -> Exercise | None:
 
 
 def all_exercises() -> list[Exercise]:
-    return list(_catalog.values())
+    return sorted(_catalog.values(), key=lambda e: (e.level != "podstawowy", e.title))  # basics first

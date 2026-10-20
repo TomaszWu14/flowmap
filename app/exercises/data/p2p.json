@@ -6,21 +6,63 @@
   "brief": "Jesteś analitykiem w firmie usługowej z 15 oddziałami. Każdy oddział kupuje sam: materiały biurowe, sprzęt IT, usługi serwisowe. Zamówienia składa się mailem, faktury trafiają do księgowości bez potwierdzenia, że towar dotarł, a firma płaci za rzeczy, których nie zamówiła albo nie dostała. Dyrektor finansowy chce jednego procesu zakupowego z akceptacją wydatków i kontrolą faktur. Opisz proces od zgłoszenia zapotrzebowania do zapłaty dostawcy, a potem zaprojektuj aplikację, która go poprowadzi.",
   "start_sentence": "Pracownik zgłasza zapotrzebowanie na zakup",
   "stage1": [
-    "Zapotrzebowanie zawiera opis, ilość, szacowany koszt i miejsce powstawania kosztów.",
-    "Akceptacja zależy od kwoty (progi: przełożony, dyrektor, zarząd) i jest rozgałęzienie na odrzucenie.",
-    "Dział zakupów wybiera dostawcę (z listy zatwierdzonych albo przez zapytanie ofertowe) i wystawia zamówienie.",
-    "Przyjęcie towaru lub usługi jest potwierdzane osobnym krokiem (dostawa częściowa, uszkodzona lub niezgodna).",
-    "Księgowość uzgadnia fakturę z zamówieniem i przyjęciem (zasada trzech dokumentów) i obsługuje rozbieżność.",
-    "Płatność następuje w terminie z faktury i jest krok zaksięgowania.",
-    "Mapa rozdziela role: zgłaszający, akceptujący, zakupy, magazyn lub odbiorca, księgowość, dostawca."
+    {
+      "text": "Zapotrzebowanie zawiera opis, ilość, szacowany koszt i miejsce powstawania kosztów.",
+      "topic": "przebieg"
+    },
+    {
+      "text": "Akceptacja zależy od kwoty (progi: przełożony, dyrektor, zarząd) i jest rozgałęzienie na odrzucenie.",
+      "topic": "decyzje"
+    },
+    {
+      "text": "Dział zakupów wybiera dostawcę (z listy zatwierdzonych albo przez zapytanie ofertowe) i wystawia zamówienie.",
+      "topic": "przebieg"
+    },
+    {
+      "text": "Przyjęcie towaru lub usługi jest potwierdzane osobnym krokiem (dostawa częściowa, uszkodzona lub niezgodna).",
+      "topic": "wyjatki"
+    },
+    {
+      "text": "Księgowość uzgadnia fakturę z zamówieniem i przyjęciem (zasada trzech dokumentów) i obsługuje rozbieżność.",
+      "topic": "reguly"
+    },
+    {
+      "text": "Płatność następuje w terminie z faktury i jest krok zaksięgowania.",
+      "topic": "terminy"
+    },
+    {
+      "text": "Mapa rozdziela role: zgłaszający, akceptujący, zakupy, magazyn lub odbiorca, księgowość, dostawca.",
+      "topic": "role"
+    }
   ],
   "stage2": [
-    "Przypadki użycia obejmują zgłoszenie zapotrzebowania, akceptację, wystawienie zamówienia, przyjęcie i uzgodnienie faktury.",
-    "Model danych ma co najmniej zapotrzebowanie, zamówienie (z pozycjami), dostawcę, przyjęcie i fakturę z powiązaniami.",
-    "Zamówienie ma opisane statusy i przejścia (np. utworzone, wysłane, częściowo przyjęte, przyjęte, zafakturowane, zamknięte).",
-    "Reguły biznesowe opisują progi akceptacji kwotowej i tolerancję rozbieżności faktury wobec zamówienia.",
-    "Uprawnienia rozdzielają obowiązki: ta sama osoba nie zgłasza, nie akceptuje i nie płaci.",
-    "Projekt uwzględnia integrację z systemem księgowym lub bankiem przy płatności.",
-    "Wizja określa cel i mierzalną korzyść (np. odsetek faktur bez rozbieżności, czas od zapotrzebowania do zamówienia)."
+    {
+      "text": "Przypadki użycia obejmują zgłoszenie zapotrzebowania, akceptację, wystawienie zamówienia, przyjęcie i uzgodnienie faktury.",
+      "topic": "przypadki"
+    },
+    {
+      "text": "Model danych ma co najmniej zapotrzebowanie, zamówienie (z pozycjami), dostawcę, przyjęcie i fakturę z powiązaniami.",
+      "topic": "dane"
+    },
+    {
+      "text": "Zamówienie ma opisane statusy i przejścia (np. utworzone, wysłane, częściowo przyjęte, przyjęte, zafakturowane, zamknięte).",
+      "topic": "statusy"
+    },
+    {
+      "text": "Reguły biznesowe opisują progi akceptacji kwotowej i tolerancję rozbieżności faktury wobec zamówienia.",
+      "topic": "reguly"
+    },
+    {
+      "text": "Uprawnienia rozdzielają obowiązki: ta sama osoba nie zgłasza, nie akceptuje i nie płaci.",
+      "topic": "uprawnienia"
+    },
+    {
+      "text": "Projekt uwzględnia integrację z systemem księgowym lub bankiem przy płatności.",
+      "topic": "integracje"
+    },
+    {
+      "text": "Wizja określa cel i mierzalną korzyść (np. odsetek faktur bez rozbieżności, czas od zapotrzebowania do zamówienia).",
+      "topic": "wizja"
+    }
   ]
 }

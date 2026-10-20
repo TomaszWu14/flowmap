@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Postęp{% endblock %}
+{% macro bars(items, empty) %}
+  {% if items %}
+  <ul class="bars">
+    {% for s in items %}
+    <li><div class="row" style="justify-content:space-between"><span>{{ s.label }}</span><strong>{{ s.value }}%</strong></div>
+      <div class="bar" aria-hidden="true"><span style="width: {{ s.value }}%" class="{{ 'ok' if s.value >= strong_at else 'low' }}"></span></div>
+      <span class="field-help">{{ s.source }} · {{ s.count|plural('ocena', 'oceny', 'ocen') if s.source == 'ocena projektów' else s.count|plural('oczekiwanie', 'oczekiwania', 'oczekiwań') }}</span></li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="muted">{{ empty }}</p>{% endif %}
+{% endmacro %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Postęp</h1><p class="muted">Wyniki ćwiczeń i ocen projektów, liczone bez AI z ostatnich ocen.</p></div>
+  <div class="row"><a class="btn" href="{{ url_for('exercises.index') }}">Ćwiczenia</a>
+    <a class="btn" href="{{ url_for('projects.index') }}">← Projekty</a></div>
+</div>
+<div class="stat-tiles">
+  <div class="card stat"><span class="stat-value">{{ score|length }} / {{ exercises|length }}</span><span class="muted">ćwiczeń z oddaniem</span></div>
+  <div class="card stat"><span class="stat-value">{{ attempts }}</span><span class="muted">oddań do oceny</span></div>
+  <div class="card stat"><span class="stat-value">{{ (score.values()|sum / score|length)|round|int if score else '–' }}</span><span class="muted">średni najlepszy wynik</span></div>
+  <div class="card stat"><span class="stat-value">{% if trend %}{{ '+' if trend.delta > 0 }}{{ trend.delta }}{% else %}–{% endif %}</span>
+    <span class="muted">{% if trend %}{{ 'średnia 5 ostatnich vs 5 wcześniejszych' if trend.window == 5 else 'ostatnie vs pierwsze oddanie' }}{% else %}trend po 2 oddaniach{% endif %}</span></div>
+</div>
+{% if pick %}{% set ex, why = pick %}
+<section class="card recommend">
+  <h2>Co ćwiczyć dalej: {{ ex.title }}</h2>
+  <p class="row"><span class="badge">{{ ex.domain }}</span> <span class="badge">{{ levels[ex.level] }}</span></p>
+  <p>{{ why }}</p>
+  <div class="row">
+    {% set p = projects.get(ex.key) %}
+    {% if p %}<a class="btn primary" href="{{ url_for('flow.view', project_id=p.id) }}">Kontynuuj</a>{% endif %}
+    <form method="post" action="{{ url_for('exercises.start', key=ex.key) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn{{ ' primary' if not p }}" type="submit">{{ 'Zacznij od nowa' if p else 'Rozpocznij' }}</button>
+    </form>
+  </div>
+</section>
+{% endif %}
+<div class="score-grid" style="margin-top:1rem">
+  <section class="card"><h2>Mocne strony</h2>{{ bars(strong, 'Jeszcze za mało ocen — mocne strony pojawią się po kilku oddaniach.') }}</section>
+  <section class="card"><h2>Do poprawy</h2>{{ bars(weak, 'Nic poniżej ' ~ strong_at ~ '% — tak trzymaj.' if strong else 'Jeszcze za mało ocen.') }}</section>
+</div>
+<section class="card" style="margin-top:1rem">
+  <h2>Ćwiczenia</h2>
+  <div class="table-wrap"><table class="versions">
+    <tr><th>Ćwiczenie</th><th>Mapa</th><th>Projekt</th><th></th></tr>
+    {% for ex in exercises %}{% set p = projects.get(ex.key) %}
+    <tr><td>{{ ex.title }} <span class="badge">{{ levels[ex.level] }}</span></td>
+      {% for n in (1, 2) %}{% set s = stages.get((ex.key, n)) %}
+      <td>{% if s %}{% if s.best > s.first %}{{ s.first }} → {{ s.best }} <span class="delta">+{{ s.best - s.first }}</span>{% else %}{{ s.best }}{% endif %}{% else %}<span class="muted">—</span>{% endif %}</td>
+      {% endfor %}
+      <td>{% if p %}<a href="{{ url_for('exercises.results', project_id=p.id) }}">Wyniki</a>{% endif %}</td></tr>
+    {% endfor %}
+  </table></div>
+  <p class="field-help">Wynik etapu: pierwszy → najlepszy (mapa = etap 1, projekt aplikacji = etap 2). Oceny projektów: {{ evaluated }} — z karty „Ocena” każdego projektu.</p>
+</section>
+{% endblock %}
