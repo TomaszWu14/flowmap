@@ -219,10 +219,6 @@ form.vision-form { max-width: none; }
 .chat-msg.user { background: var(--accent-soft); justify-self: end; }
 .chat-msg.assistant { background: var(--surface-2); justify-self: start; }
 form.chat-form { max-width: none; }
-.stat-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 1rem; margin-bottom: 1rem; }
-@media (max-width: 480px) { .stat-tiles { grid-template-columns: 1fr 1fr; gap: .6rem; } .stat-value { font-size: 1.4rem; } }
-.stat { display: grid; gap: .2rem; }
-.stat-value { font-size: 1.8rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .recommend { border-left: 4px solid var(--accent); }
 .bars { list-style: none; padding: 0; margin: 0; display: grid; gap: .8rem; }
 .bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; margin: .25rem 0; }

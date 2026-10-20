@@ -3,6 +3,7 @@ from datetime import timedelta
 from app.extensions import db
 from app.models import Project, RecruitSession, utcnow
 from tests.conftest import PASSWORD, make_user
+from tests.test_collaborators import team  # noqa: F401
 
 
 def enable_ai(app):
@@ -94,3 +95,46 @@ def test_ordinary_exercise_unchanged_and_stranger_404(auth_client, client, app):
     client.post("/login", data={"email": other.email, "password": PASSWORD})
     assert client.get(f"/p/{p.id}/rekrutacja").status_code == 404
     assert client.post(f"/p/{p.id}/rekrutacja/oddaj").status_code == 404
+
+
+def test_no_graded_feedback_or_ai_help_during_the_case(auth_client, app):
+    """Code review 2026-10-20: the results page, guard AI and "Oceń z AI" leaked expert feedback mid-case."""
+    enable_ai(app)
+    _, p = start_recruit(auth_client)
+    assert "Oddaj etap" not in auth_client.get(f"/p/{p.id}/cwiczenie").get_data(as_text=True)
+    assert auth_client.post(f"/p/{p.id}/cwiczenie/oddaj", data={"stage": 1}).status_code == 403
+    for route in ("guard/review", "guard/fill", "guard/fill/apply", "guard/apply"):
+        assert auth_client.post(f"/p/{p.id}/{route}").status_code == 403, route
+    guard = auth_client.get(f"/p/{p.id}/guard").get_data(as_text=True)
+    assert "Uruchom przegląd AI" not in guard and "przegląd AI jest wyłączony" in guard
+    assert auth_client.post(f"/p/{p.id}/ocena/ai").status_code == 403
+    assert "Oceń z AI" not in auth_client.get(f"/p/{p.id}/ocena").get_data(as_text=True)
+    auth_client.post(f"/p/{p.id}/rekrutacja/oddaj")
+    assert auth_client.post(f"/p/{p.id}/ocena/ai").status_code == 302  # fine once handed in
+
+
+def test_only_the_candidate_edits_and_answers(team, app):  # noqa: F811
+    from app.models import RecruitSession
+
+    enable_ai(app)
+    p = team["project"]
+    p.exercise_key = "urlopy"
+    now = utcnow()
+    db.session.add(RecruitSession(project_id=p.id, user_id=p.owner_id, minutes=30, started_at=now,
+                                  deadline=now + timedelta(minutes=30)))
+    db.session.commit()
+    r = team["editor"].post(f"/p/{p.id}/layout")
+    assert r.status_code == 403 and "tylko kandydat" in r.get_data(as_text=True)
+    assert 'data-readonly="1"' in team["editor"].get(f"/p/{p.id}").get_data(as_text=True)
+    assert team["editor"].post(f"/p/{p.id}/rekrutacja/oddaj").status_code == 403
+    assert team["owner"].post(f"/p/{p.id}/layout").status_code != 403
+    team["owner"].post(f"/p/{p.id}/rekrutacja/oddaj")
+    assert team["editor"].post(f"/p/{p.id}/rekrutacja/rozmowa").status_code == 403
+
+
+def test_progress_never_continues_into_a_locked_recruitment_project(auth_client, app):
+    enable_ai(app)
+    _, p = start_recruit(auth_client)
+    auth_client.post(f"/p/{p.id}/rekrutacja/oddaj")
+    html = auth_client.get("/postep").get_data(as_text=True)
+    assert f'href="/p/{p.id}"' not in html

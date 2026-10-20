@@ -76,6 +76,7 @@ def results(project_id):
 @login_required
 def submit(project_id):
     project = g.project_for(project_id, "edit")
+    g.forbid_assist(project)  # recruitment: the map is graded once, after "Oddaję" (exercises/recruit.py)
     ex = catalog.get(project.exercise_key) or abort(404)
     stage = request.form.get("stage", type=int)
     if stage not in range(1, project.exercise_stage + 1):
@@ -128,9 +129,9 @@ def progress_page():
     weak_topics = [t["code"] for t in sorted(topics, key=lambda t: t["value"]) if t["value"] < progress.STRONG]
     score = {ex.key: round(mean(s["best"] for (k, _), s in stages.items() if k == ex.key))
              for ex in exercises if any(k == ex.key for k, _ in stages)}
-    projects = {p.exercise_key: p for p in Project.query.filter(Project.owner_id == current_user.id,
-                                                                 Project.exercise_key.isnot(None))
-                .order_by(Project.id)}
+    continuable = Project.query.filter(Project.owner_id == current_user.id, Project.exercise_key.isnot(None),
+                                       ~Project.recruit.has())  # recruitment projects are locked
+    projects = {p.exercise_key: p for p in continuable.order_by(Project.id)}
     return render_template("exercises/progress.html", exercises=exercises, stages=stages, score=score,
                            strong=strong, weak=weak, trend=progress.trend([a.score for a, _ in rows]),
                            attempts=len(rows), evaluated=len({e.project_id for e in latest_evals}),

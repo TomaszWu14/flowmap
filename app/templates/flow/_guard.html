@@ -78,7 +78,7 @@
       <input type="hidden" name="index" value="all">
       <button class="btn primary" type="submit">Dodaj wszystkie</button>
     </form>
-  {% elif todo %}
+  {% elif todo and not project.recruit %}
     <p class="muted">AI zaproponuje dalszy ciąg dla wszystkich otwartych gałęzi naraz — każdą zatwierdzasz osobno.</p>
     <button class="btn" type="button" hx-post="{{ url_for('flow.guard_fill', project_id=project.id) }}" hx-target="#panel-body"
             hx-indicator="this">Uzupełnij otwarte gałęzie</button>
@@ -104,6 +104,8 @@
       {% endfor %}
     </ul>
     {% else %}<p class="muted">AI nie znalazło brakujących wyjątków.</p>{% endif %}
+  {% elif project.recruit %}
+    <p class="muted">W trybie rekrutacyjnym przegląd AI jest wyłączony.</p>
   {% elif ai and project.can_edit %}
     <p class="muted">AI przejrzy mapę i zaproponuje brakujące wyjątki do dodania.</p>
     <button class="btn" type="button" hx-post="{{ url_for('flow.guard_review', project_id=project.id) }}" hx-target="#panel-body">Uruchom przegląd AI</button>

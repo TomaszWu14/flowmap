@@ -17,13 +17,13 @@
   <div class="row"><a class="btn" href="{{ url_for('exercises.index') }}">Ćwiczenia</a>
     <a class="btn" href="{{ url_for('projects.index') }}">← Projekty</a></div>
 </div>
-<div class="stat-tiles">
-  <div class="card stat"><span class="stat-value">{{ score|length }} / {{ exercises|length }}</span><span class="muted">ćwiczeń z oddaniem</span></div>
-  <div class="card stat"><span class="stat-value">{{ attempts }}</span><span class="muted">oddań do oceny</span></div>
-  <div class="card stat"><span class="stat-value">{{ (score.values()|sum / score|length)|round|int if score else '–' }}</span><span class="muted">średni najlepszy wynik</span></div>
-  <div class="card stat"><span class="stat-value">{% if trend %}{{ '+' if trend.delta > 0 }}{{ trend.delta }}{% else %}–{% endif %}</span>
-    <span class="muted">{% if trend %}{{ 'średnia 5 ostatnich vs 5 wcześniejszych' if trend.window == 5 else 'ostatnie vs pierwsze oddanie' }}{% else %}trend po 2 oddaniach{% endif %}</span></div>
-</div>
+<section class="stat-grid" aria-label="Podsumowanie" style="margin-bottom:1rem">
+  <div class="card stat"><span class="muted">Ćwiczenia z oddaniem</span><strong>{{ score|length }} / {{ exercises|length }}</strong><small>z katalogu</small></div>
+  <div class="card stat"><span class="muted">Oddania do oceny</span><strong>{{ attempts }}</strong><small>łącznie</small></div>
+  <div class="card stat"><span class="muted">Średni najlepszy wynik</span><strong>{{ (score.values()|sum / score|length)|round|int if score else '–' }}</strong><small>na 100</small></div>
+  <div class="card stat"><span class="muted">Trend</span><strong>{% if trend %}{{ '+' if trend.delta > 0 }}{{ trend.delta }}{% else %}–{% endif %}</strong>
+    <small>{% if trend %}{{ 'średnia 5 ostatnich vs 5 wcześniejszych' if trend.window == 5 else 'ostatnie vs pierwsze oddanie' }}{% else %}po 2 oddaniach{% endif %}</small></div>
+</section>
 {% if pick %}{% set ex, why = pick %}
 <section class="card recommend">
   <h2>Co ćwiczyć dalej: {{ ex.title }}</h2>

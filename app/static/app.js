@@ -8,7 +8,11 @@
 
   document.addEventListener("submit", (ev) => {
     const msg = ev.target.dataset && ev.target.dataset.confirm;
-    if (msg && !window.confirm(msg)) ev.preventDefault();
+    if (msg && !window.confirm(msg)) { ev.preventDefault(); return; }
+    // data-once: forms that spend AI requests — a double click must not send (and pay) twice
+    if (ev.target.dataset && "once" in ev.target.dataset) {
+      setTimeout(() => ev.target.querySelectorAll("button[type=submit]").forEach((b) => { b.disabled = true; }), 0);
+    }
   });
 
   document.addEventListener("click", (ev) => {

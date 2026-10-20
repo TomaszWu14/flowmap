@@ -53,6 +53,7 @@ def score_now(project_id):
 @login_required
 def score_ai(project_id):
     project = g.project_for(project_id, "view")
+    g.forbid_assist(project, running_only=True)
     g.ensure_spec(project)
     results = evaluate(project)
     reason = spend_ai_request()

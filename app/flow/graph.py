@@ -39,12 +39,24 @@ def project_for(project_id: int, need: str) -> Project:
         abort(404)
     if ROLE_RANK[role] < NEED_RANK[need]:
         abort(403)
-    locked = project.recruit is not None and project.recruit.ended  # recruitment case: time is up
+    recruit = project.recruit  # recruitment case: only the candidate edits, and only until time is up
+    locked = recruit is not None and (recruit.ended or recruit.user_id != current_user.id)
     if locked and need == "edit":
-        abort(403, "Czas minął — mapa jest zablokowana.")
+        abort(403, "Czas minął — mapa jest zablokowana." if recruit.ended
+               else "W trybie rekrutacyjnym mapę edytuje tylko kandydat.")
     project.current_role = role  # for templates
     project.can_edit = role != "viewer" and not locked
     return project
+
+
+def forbid_assist(project: Project, running_only: bool = False) -> None:
+    """Recruitment case: no hints, AI suggestions or graded feedback for the candidate.
+
+    running_only: the help is harmless once the map is handed in (e.g. "Oceń z AI").
+    """
+    recruit = project.recruit
+    if recruit is not None and not (running_only and recruit.ended):
+        abort(403, "W trybie rekrutacyjnym ta pomoc jest wyłączona.")
 
 
 def owned_node(project: Project, key: str) -> Node:
