@@ -13,7 +13,8 @@ VALID = {"key": "x", "title": "T", "domain": "HR", "level": "podstawowy", "brief
 
 def test_repository_exercises_are_valid():
     exercises = catalog.load(catalog.DATA_DIR)
-    assert {"urlopy", "reklamacje"} <= set(exercises)
+    assert set(exercises) == {"urlopy", "reklamacje", "p2p", "o2c", "onboarding", "incydenty-it", "logistyka"}
+    assert {ex.level for ex in exercises.values()} == {"podstawowy", "zaawansowany"}
     for key, ex in exercises.items():
         assert ex.key == key and ex.stage1 and ex.stage2
 

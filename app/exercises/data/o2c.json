@@ -1,0 +1,26 @@
+{
+  "key": "o2c",
+  "title": "Zamówienie klienta do zapłaty (O2C)",
+  "domain": "Sprzedaż",
+  "level": "zaawansowany",
+  "brief": "Jesteś analitykiem w hurtowni materiałów budowlanych sprzedającej firmom wykonawczym na kredyt kupiecki. Handlowcy przyjmują zamówienia telefonicznie, nie sprawdzając limitu kredytowego ani dostępności towaru. Część zamówień jest wysyłana niekompletna, faktury wychodzą z opóźnieniem, a należności przeterminowane rosną. Zarząd chce uporządkować drogę od zamówienia klienta do wpływu pieniędzy. Opisz ten proces, a potem zaprojektuj aplikację, która go obsłuży.",
+  "start_sentence": "Klient składa zamówienie na towar",
+  "stage1": [
+    "Zamówienie jest sprawdzane pod kątem limitu kredytowego klienta i zaległych płatności, z rozgałęzieniem na blokadę.",
+    "Mapa sprawdza dostępność towaru i obsługuje brak: dostawę częściową, zamiennik albo termin późniejszy.",
+    "Klient dostaje potwierdzenie zamówienia z terminem dostawy.",
+    "Magazyn kompletuje i wydaje towar, a wysyłka ma dokument wydania.",
+    "Faktura jest wystawiana po wydaniu towaru, zgodnie z tym, co faktycznie wydano.",
+    "Mapa obsługuje brak zapłaty w terminie: przypomnienie, wezwanie, wstrzymanie kolejnych zamówień.",
+    "Mapa obsługuje zwrot lub reklamację towaru i korektę faktury."
+  ],
+  "stage2": [
+    "Przypadki użycia obejmują przyjęcie zamówienia, kontrolę kredytu, wydanie towaru, fakturowanie i windykację.",
+    "Model danych ma co najmniej klienta (z limitem kredytowym), zamówienie z pozycjami, wydanie, fakturę i płatność.",
+    "Zamówienie ma opisane statusy i przejścia (np. przyjęte, zablokowane, potwierdzone, częściowo wydane, wydane, zafakturowane, opłacone).",
+    "Reguły biznesowe opisują limit kredytowy, blokadę przy zaległościach i termin płatności.",
+    "Role rozróżniają handlowca, dział kredytów lub finansów, magazyn i klienta.",
+    "Projekt uwzględnia integrację ze stanami magazynowymi i systemem księgowym.",
+    "Wizja określa cel i mierzalną korzyść (np. DSO, odsetek zamówień zrealizowanych w całości)."
+  ]
+}
