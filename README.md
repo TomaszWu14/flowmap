@@ -1,5 +1,22 @@
 # FlowMap
 
+[![CI](https://github.com/TomaszWu14/flowmap/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/TomaszWu14/flowmap/actions/workflows/ci.yml)
+[![Security](https://github.com/TomaszWu14/flowmap/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/TomaszWu14/flowmap/actions/workflows/security.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+> **English summary.** FlowMap is a Flask web app for designing new applications through an
+> **interactive process map**. You type one sentence ("A customer wants to book a salon visit"),
+> the app keeps asking "what happens next?" with 3–5 suggested answers, and the map (Cytoscape.js)
+> grows live. A completeness guard scores the map 0–100 and highlights gaps (branches without an end,
+> missing error paths, steps without an actor). From the finished map FlowMap derives a technical
+> specification (entities, screens, roles, statuses, integrations), UML views (class, use case,
+> sequence, state, C4 context — Mermaid), BPMN 2.0 XML and a ready-to-paste ZIP package for
+> AI code generators. It also has a learning mode: fixed exercises (O2C, P2P, IT incidents…),
+> rule-based scoring with an optional AI review, a progress page and a timed recruitment mode.
+> Works without an API key (rules + templates); with one it uses Claude via the `anthropic` SDK.
+> Stack: Python 3.12, Flask, SQLAlchemy/Alembic, HTMX, PostgreSQL, pytest (380+ tests), ruff,
+> security scans in CI (gitleaks, Bandit, Semgrep, pip-audit, Trivy). The UI is in Polish.
+
 Aplikacja webowa do projektowania nowych aplikacji przez **interaktywną mapę procesu**.
 
 Wpisujesz jedno zdanie, np. „Klient chce umówić wizytę w salonie”. FlowMap pyta krok po kroku
@@ -25,6 +42,9 @@ i gotowe polecenie dla generatora kodu (Claude Code, Lovable, Bolt).
   ekrany, role z uprawnieniami, statusy, powiadomienia, integracje, wymagania niefunkcjonalne. Ręczne
   zmiany przetrwają zmiany mapy, wskaźnik „Gotowość dla Claude Code” pokazuje braki. Opcjonalny przegląd
   techniczny AI tworzy propozycje do zatwierdzenia (AI niczego nie zmienia samo).
+- **Projekt aplikacji** — zakładka z widokami UML wyprowadzonymi ze specyfikacji (diagram klas, przypadków
+  użycia, sekwencji, stanów, kontekstu C4 — podgląd Mermaid, plik `UML.md`), strażnik UML z wyjaśnieniem
+  „dlaczego” przy każdym problemie i opcjonalny szkic wizji/zakresu MVP od AI.
 - **Paczka dla Claude Code** — ZIP ze specyfikacją, modelem danych i poleceniem do wklejenia
   (`/p/<id>/eksport/claude-code.zip`).
 - **Tryb bez AI** — bez klucza API aplikacja działa na regułach i 3 szablonach procesów
@@ -35,9 +55,16 @@ i gotowe polecenie dla generatora kodu (Claude Code, Lovable, Bolt).
 - **Historia** — porównanie dwóch wersji mapy (dodane, usunięte i zmienione kroki z podświetleniem).
 - **Własne szablony** — gotową mapę zapisujesz jako szablon; tryb bez AI podpowiada z niej kroki.
 - **Eksport zadań** — Jira (CSV), Linear (CSV), GitHub Issues (JSONL + polecenie `gh`).
+- **Ocena i trener** — zakładka „Ocena”: wynik 0–100 za mapę i projekt aplikacji z listą kryteriów (reguły,
+  opcjonalnie z jakościową oceną AI) i historią; czat „Trener” znający mapę, strażników i ostatnią ocenę.
+- **Ćwiczenia** — katalog 7 zadań (m.in. O2C, P2P, wniosek urlopowy, incydent IT, reklamacja, przyjęcie
+  dostawy, onboarding) uruchamianych jako projekt w trybie nauki; strona **Postęp** (`/postep`) z trendem,
+  mocnymi stronami i tym, co ćwiczyć dalej; **tryb rekrutacyjny** — ćwiczenie na czas, po czasie mapa
+  się blokuje i zaczyna się rozmowa z AI zakończona raportem.
+- **Grafiki** — zrzuty ekranu, zdjęcia stanowisk i skany przy krokach oraz materiały projektu (okładka, galeria).
 - **Konto** — „Nie pamiętam hasła” (link e-mailem przez SMTP albo jednorazowy link od admina).
 - Publiczna strona z przykładowym projektem: `/przyklad`.
-- **Panel administratora** `/admin`: statystyki; ustawienia bez redeployu (rejestracja, wyłącznik AI, limit AI);
+- **Panel administratora** `/admin`: statystyki; ustawienia bez redeployu (rejestracja, wyłącznik AI, limit AI); koszty AI (`/admin/koszty`: tokeny i koszt per funkcja);
   lista kont z blokowaniem, nadawaniem uprawnień i linkiem do ustawienia hasła; dziennik zdarzeń
   (`/admin/zdarzenia`). Treści cudzych projektów nie widać. Uprawnienia nadaje tylko `flask set-admin`
   (albo `flask create-user --admin`).
@@ -114,13 +141,20 @@ proponuje aktualizacje. Zgłaszanie podatności i szczegóły: [SECURITY.md](SEC
 
 ```
 app/
-  __init__.py  config.py  models.py  extensions.py
-  auth/      logowanie, rejestracja
-  projects/  lista, tworzenie, kopia, wersje
-  flow/      mapa, pytania (questions.py), strażnik (guard.py), symulacja, historia (graph.py)
-  export/    Markdown, Mermaid, BPMN, prompt, JSON, przykład publiczny
-  ai/        client.py (SDK), schemas.py (Pydantic), rules.py (pytania bez AI), templates.py (szablony)
-  prompts/   system.md, next_step.md, review.md
+  __init__.py  config.py  models.py  extensions.py  settings.py  audit.py  mail.py  text.py
+  auth/       logowanie, rejestracja, reset hasła
+  admin/      panel administratora, koszty AI, dziennik zdarzeń
+  projects/   lista, tworzenie, kopia, wersje
+  flow/       mapa, pytania (questions.py), strażnik (guard.py), symulacja, historia i porównanie wersji
+  spec/       specyfikacja techniczna: wyprowadzanie z mapy, edycja, gotowość, przegląd AI, paczka ZIP
+  design/     projekt aplikacji: widoki UML (Mermaid), strażnik UML, wizja/MVP
+  trainer/    ocena (reguły + AI) i czat trenera
+  exercises/  ćwiczenia (data/*.json), postęp, tryb rekrutacyjny
+  share/  comments/  media/   link do podglądu i współpracownicy, komentarze, grafiki
+  export/     Markdown, Mermaid, BPMN, prompt, JSON, zadania (Jira/Linear/GitHub), przykład publiczny
+  ai/         client.py (SDK), schemas.py (Pydantic), rules.py (pytania bez AI), templates.py, pricing.py
+  prompts/    prompty AI (*.md)
+  static/  templates/
 migrations/  tests/  Dockerfile  docker-compose.yml  docs/WDROZENIE.md
 ```
 
