@@ -9,3 +9,4 @@ instance/
 *.db
 screenshots/
 .superpowers/
+docs/superpowers/
