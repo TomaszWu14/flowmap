@@ -46,8 +46,8 @@
         </td>
         <td>{{ project_counts.get(u.id, 0) }}</td>
         <td>{{ u.ai_usage_count if u.ai_usage_date == today else 0 }}</td>
-        <td class="muted">{{ u.last_login_at.strftime('%d.%m.%Y %H:%M') if u.last_login_at else '—' }}</td>
-        <td class="muted">{{ u.created_at.strftime('%d.%m.%Y') }}</td>
+        <td class="muted">{{ u.last_login_at|local('%d.%m.%Y %H:%M') if u.last_login_at else '—' }}</td>
+        <td class="muted">{{ u.created_at|local('%d.%m.%Y') }}</td>
         <td>
           <div class="row">
             <form method="post" action="{{ url_for('admin.reset_link', user_id=u.id) }}">

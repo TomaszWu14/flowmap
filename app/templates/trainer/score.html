@@ -60,7 +60,7 @@
   <div class="table-wrap"><table class="versions">
     <tr><th>Kiedy</th><th>Mapa procesu</th><th>Projekt aplikacji</th></tr>
     {% for when, map_score, design_score, source in history %}
-    <tr class="history-row"><td>{{ when.strftime('%Y-%m-%d %H:%M') }}{% if source == 'mixed' %} <span class="badge">AI</span>{% endif %}</td><td>{{ map_score }}</td><td>{{ design_score if design_score is not none else '—' }}</td></tr>
+    <tr class="history-row"><td>{{ when|local('%Y-%m-%d %H:%M') }}{% if source == 'mixed' %} <span class="badge">AI</span>{% endif %}</td><td>{{ map_score }}</td><td>{{ design_score if design_score is not none else '—' }}</td></tr>
     {% endfor %}
   </table></div>
 </section>

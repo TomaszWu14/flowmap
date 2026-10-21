@@ -25,7 +25,7 @@
       <span class="badge">{{ steps.get(p.id, 0)|kroki }}</span>
     </div>
     <div class="row" style="justify-content:space-between;margin-top:.6rem">
-      <p class="muted" style="font-size:.8rem;margin:0">Zmieniono {{ p.updated_at.strftime('%d.%m.%Y %H:%M') }}</p>
+      <p class="muted" style="font-size:.8rem;margin:0">Zmieniono {{ p.updated_at|local('%d.%m.%Y %H:%M') }}</p>
       <form method="post" action="{{ url_for('projects.delete', project_id=p.id) }}"
             data-confirm="Usunąć projekt „{{ p.name }}”? Tego nie da się cofnąć.">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

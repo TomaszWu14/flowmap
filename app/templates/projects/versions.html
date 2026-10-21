@@ -16,7 +16,7 @@
       <tr class="{{ 'current-row' if v.id == project.version_cursor_id }}">
         <td>{{ v.description }}{% if v.id == project.version_cursor_id %} <span class="badge ok">bieżąca</span>{% endif %}</td>
         <td>{{ v.snapshot.nodes|length }}</td>
-        <td class="muted">{{ v.created_at.strftime('%d.%m %H:%M:%S') }}</td>
+        <td class="muted">{{ v.created_at|local('%d.%m %H:%M:%S') }}</td>
         <td class="row">
           {% if not loop.last %}<a class="btn small" href="{{ url_for('projects.compare', project_id=project.id, do=v.id) }}">Zmiany</a>{% endif %}
           {% if v.id != project.version_cursor_id and project.can_edit %}
