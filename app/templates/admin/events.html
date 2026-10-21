@@ -21,7 +21,7 @@
     <tbody>
     {% for e in rows %}
       <tr>
-        <td class="muted">{{ e.created_at.strftime('%d.%m %H:%M:%S') }}</td>
+        <td class="muted">{{ e.created_at|local('%d.%m %H:%M:%S') }}</td>
         <td><span class="badge {{ 'ok' if e.action in ('login', 'register') }}" {% if e.action in ('login_failed', 'login_blocked', 'user_blocked') %}style="color:var(--danger)"{% endif %}>{{ actions.get(e.action, e.action) }}</span></td>
         <td>{{ e.actor_email or '—' }}</td>
         <td>{{ e.target }}</td>

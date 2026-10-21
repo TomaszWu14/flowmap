@@ -47,7 +47,7 @@
     {% endif %}
     {% if s.attempts|length > 1 %}
     <details><summary>Historia oddań ({{ s.attempts|length }})</summary>
-      <ul>{% for h in s.attempts %}<li>{{ h.created_at.strftime('%Y-%m-%d %H:%M') }} — {{ h.score }}/100{% if h.feedback.mode == 'work' %} <span class="badge">Praca</span>{% endif %}</li>{% endfor %}</ul>
+      <ul>{% for h in s.attempts %}<li>{{ h.created_at|local('%Y-%m-%d %H:%M') }} — {{ h.score }}/100{% if h.feedback.mode == 'work' %} <span class="badge">Praca</span>{% endif %}</li>{% endfor %}</ul>
     </details>
     {% endif %}
   </section>

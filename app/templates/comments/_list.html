@@ -5,7 +5,7 @@
   {% for c in comments %}
   <li class="{{ 'resolved' if c.resolved }}">
     <div class="comment-meta"><strong>{{ c.author.email if c.author else 'konto usunięte' }}</strong>
-      <span class="muted">{{ c.created_at.strftime('%d.%m %H:%M') }}</span>
+      <span class="muted">{{ c.created_at|local('%d.%m %H:%M') }}</span>
       {% if c.resolved %}<span class="badge ok">rozwiązany</span>{% endif %}</div>
     <p>{{ c.body }}</p>
     <div class="row">

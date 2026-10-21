@@ -36,7 +36,7 @@
 </section>
 {% endif %}
 <section class="card" style="margin-top:1rem">
-  <h2>Mapa oddana {{ (session.finished_at or session.deadline).strftime('%d.%m.%Y %H:%M') }}</h2>
+  <h2>Mapa oddana {{ (session.finished_at or session.deadline)|local('%d.%m.%Y %H:%M') }}</h2>
   <p class="muted">{{ 'Oddana przed czasem.' if session.finished_at and session.finished_at < session.deadline else 'Czas minął.' }}
     Mapa jest zablokowana — możesz ją oglądać, ale nie zmieniać.
     {% if session.grade %}Ocena mapy według oczekiwań eksperta: <strong>{{ session.grade.score }}/100</strong>

@@ -1,4 +1,7 @@
-"""Polish plurals for UI text."""
+"""Polish plurals and local time for UI text."""
+
+from datetime import UTC, datetime
+from zoneinfo import ZoneInfo
 
 
 def plural_word(n: int, one: str, few: str, many: str) -> str:
@@ -14,3 +17,11 @@ def plural(n: int, one: str, few: str, many: str) -> str:
 
 def steps_label(n: int) -> str:
     return plural(n, "krok", "kroki", "kroków")
+
+
+WARSAW = ZoneInfo("Europe/Warsaw")
+
+
+def local_time(value: datetime, fmt: str = "%d.%m.%Y %H:%M") -> str:
+    """Format a naive-UTC timestamp from the DB in Polish local time (CET/CEST)."""
+    return value.replace(tzinfo=UTC).astimezone(WARSAW).strftime(fmt)
