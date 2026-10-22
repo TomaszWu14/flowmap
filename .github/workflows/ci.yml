@@ -33,4 +33,4 @@ jobs:
           cache-dependency-path: requirements*.txt
       - run: pip install -r requirements-dev.txt
       - run: python -m playwright install --with-deps chromium
-      - run: pytest e2e -q -p no:warnings
+      - run: python -m pytest e2e -q -p no:warnings  # -m: repo root on sys.path (e2e imports tests.*)
