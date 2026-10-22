@@ -10,7 +10,7 @@ from ..extensions import db
 from ..models import NODE_TYPE_LABELS, NODE_TYPES, QuestionLog
 from ..trainer.hints import HINT_LEVELS, guide_text, visible_options
 from . import graph as g
-from . import guard
+from . import guard, timing
 from . import lanes as lanes_mod
 from . import questions as q
 from .pictograms import PICTOGRAMS, icon_for
@@ -224,6 +224,10 @@ def edit_node(project_id, key):
     if node.type in ("decision", "parallel"):  # a parallel gateway without paths is a join
         branches = [b.strip()[:100] for b in (f.get("branches") or "").split(",") if b.strip()]
         g.set_node_data(node, branches=list(dict.fromkeys(branches)))
+    if "minutes" in f or "cost" in f:  # empty field = not measured
+        minutes, cost = f.get("minutes", type=int), f.get("cost", type=float)
+        g.set_node_data(node, minutes=minutes if minutes is not None and 0 <= minutes <= 525_600 else None,
+                        cost=round(cost, 2) if cost is not None and 0 <= cost <= 10_000_000 else None)
     if "icon" in f:  # "" = automatic, otherwise a known pictogram
         icon = f.get("icon") if f.get("icon") in PICTOGRAMS else None
         g.set_node_data(node, icon=icon)
@@ -384,7 +388,8 @@ def _guard_html(project, **kw):
     ctx["handoffs"] = lanes_mod.lanes_info(project.graph(), project.display)["handoffs"]
     report = guard.report(project.graph(), open_comment_counts(project))
     return render_template("flow/_guard.html", project=project, report=report, ai=ai_enabled(),
-                           titles={n.key: n.title for n in project.nodes}, todo=open_questions(project), **ctx)
+                           titles={n.key: n.title for n in project.nodes}, todo=open_questions(project),
+                           timing=timing.analyze(project.graph()), **ctx)
 
 
 def open_slots(project) -> list[dict]:

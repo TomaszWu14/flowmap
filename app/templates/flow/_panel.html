@@ -148,6 +148,15 @@
         </fieldset>
         {% endif %}
         <label>Opis <textarea name="description" maxlength="2000">{{ node.description or '' }}</textarea></label>
+        {% if node.type in ('user_action', 'screen', 'automation', 'integration', 'wait') %}
+        <div class="row">
+          <label style="max-width:11rem">Czas (min) <input type="number" name="minutes" min="0" max="525600" step="1"
+            value="{{ node.data.minutes if node.data and node.data.minutes is not none }}" placeholder="np. 15"></label>
+          <label style="max-width:11rem">Koszt (zł) <input type="number" name="cost" min="0" max="10000000" step="0.01"
+            value="{{ node.data.cost if node.data and node.data.cost is not none }}" placeholder="np. 12,50"></label>
+        </div>
+        <span class="field-help">Ile trwa krok (czekanie też) i ile kosztuje jedna sprawa — strażnik policzy czas procesu i wąskie gardła.</span>
+        {% endif %}
         <label>Dane wejściowe (po przecinku) <input name="inputs" value="{{ (node.inputs or [])|join(', ') }}"></label>
         <label>Dane wyjściowe / co widać (po przecinku) <input name="outputs" value="{{ (node.outputs or [])|join(', ') }}"></label>
         {% if node.type in ('decision', 'parallel') %}
