@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}AS-IS / TO-BE — {{ project.name }}{% endblock %}
+{% macro delta(a, b, unit='', lower_is_better=true) %}
+  {%- if a is none or b is none %}<span class="muted">—</span>
+  {%- else %}{% set d = b - a %}
+    <span class="{{ 'better' if (d < 0) == lower_is_better and d != 0 else ('worse' if d != 0) }}">
+      {{ '+' if d > 0 }}{{ d|round(2) if d is float else d }}{{ unit }}</span>
+  {%- endif %}
+{% endmacro %}
+{% block content %}
+<div class="page-head">
+  <div><h1>AS-IS / TO-BE</h1>
+    <p class="muted">Stan obecny procesu („jak jest”) obok stanu docelowego („jak ma być”) — tego, co jest teraz na mapie.</p></div>
+  <div class="row"><a class="btn" href="{{ url_for('projects.versions', project_id=project.id) }}">Wersje</a>
+    <a class="btn" href="{{ url_for('flow.view', project_id=project.id) }}">← Mapa</a></div>
+</div>
+{% if not pinned %}
+<section class="card">
+  <h2>Najpierw wskaż stan obecny</h2>
+  <ol>
+    <li>Narysuj proces tak, jak działa dziś.</li>
+    <li>W <a href="{{ url_for('projects.versions', project_id=project.id) }}">historii wersji</a> kliknij „Ustaw jako AS-IS” przy tej wersji.</li>
+    <li>Poprawiaj mapę dalej — to będzie TO-BE. Tu zobaczysz różnicę w krokach, czasie, koszcie i przekazaniach.</li>
+  </ol>
+  <p class="muted">Jeśli AS-IS był ustawiony, a wersja zniknęła (cofnięcie i nowa zmiana usuwają późniejsze wersje), wskaż go ponownie.</p>
+</section>
+{% else %}
+<section class="card">
+  <h2>Zmiana procesu</h2>
+  <p class="muted">AS-IS: „{{ pinned.description }}” z {{ pinned.created_at|local }}.</p>
+  <div class="table-wrap"><table class="versions">
+    <tr><th></th><th>AS-IS</th><th>TO-BE</th><th>Różnica</th></tr>
+    <tr><td>Kroki</td><td>{{ before.steps }}</td><td>{{ after.steps }}</td><td>{{ delta(before.steps, after.steps) }}</td></tr>
+    <tr><td>Przekazania między stanowiskami</td><td>{{ before.handoffs }}</td><td>{{ after.handoffs }}</td><td>{{ delta(before.handoffs, after.handoffs) }}</td></tr>
+    <tr><td>Czas sprawy (ścieżka główna)</td><td>{{ before.minutes|czas if before.minutes is not none else '—' }}</td>
+      <td>{{ after.minutes|czas if after.minutes is not none else '—' }}</td><td>{{ delta(before.minutes, after.minutes, ' min') }}</td></tr>
+    <tr><td>Koszt sprawy</td><td>{{ '%.2f zł'|format(before.cost) if before.cost is not none else '—' }}</td>
+      <td>{{ '%.2f zł'|format(after.cost) if after.cost is not none else '—' }}</td>
+      <td>{{ delta(before.cost, after.cost, ' zł') }}</td></tr>
+  </table></div>
+  {% if before.minutes is none and after.minutes is none %}<p class="field-help">Wpisz czas i koszt kroków w „Edytuj krok”, żeby zobaczyć zysk z usprawnienia.</p>{% endif %}
+  <div class="compare-grid" style="margin-top:1rem">
+    <div>
+      <h3>Nowe kroki ({{ diff.added|length }})</h3>
+      {% if diff.added %}<ul>{% for n in diff.added %}<li class="better">{{ n.title }}</li>{% endfor %}</ul>{% else %}<p class="muted">Brak.</p>{% endif %}
+    </div>
+    <div>
+      <h3>Usunięte kroki ({{ diff.removed|length }})</h3>
+      {% if diff.removed %}<ul>{% for n in diff.removed %}<li>{{ n.title }}</li>{% endfor %}</ul>{% else %}<p class="muted">Brak.</p>{% endif %}
+    </div>
+  </div>
+  {% if diff.changed %}<p class="muted">Zmienione kroki: {{ diff.changed|map(attribute='node')|map(attribute='title')|join(', ') }}.</p>{% endif %}
+</section>
+<section class="card" style="margin-top:1rem">
+  <div class="compare-grid">
+    <figure><figcaption>AS-IS — jak jest</figcaption><pre class="mermaid" data-source="{{ mermaid_old }}">{{ mermaid_old }}</pre></figure>
+    <figure><figcaption>TO-BE — jak ma być</figcaption><pre class="mermaid" data-source="{{ mermaid_new }}">{{ mermaid_new }}</pre></figure>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
+{% block scripts %}{% if pinned %}
+<script src="{{ url_for('static', filename='vendor/mermaid.min.js') }}"></script> {# nosemgrep: var-in-script-tag — src from url_for(); CSP script-src 'self' blocks inline scripts #}
+<script src="{{ url_for('static', filename='design.js') }}"></script> {# nosemgrep: var-in-script-tag — src from url_for(); CSP script-src 'self' blocks inline scripts #}
+{% endif %}{% endblock %}
