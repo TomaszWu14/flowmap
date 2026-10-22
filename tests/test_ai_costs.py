@@ -5,7 +5,7 @@ import pytest
 from app.ai import client as ai
 from app.ai.pricing import cost_usd
 from app.extensions import db
-from app.models import AiUsage, User
+from app.models import AiCache, AiUsage, User
 from tests.test_exercise_grading import graded, submit
 from tests.test_exercises import start
 
@@ -36,6 +36,7 @@ def test_every_call_is_logged_even_when_the_answer_is_rejected(auth_client, app,
     assert (row.feature, row.model, row.input_tokens, row.output_tokens, row.user_id) == (
         "grade_exercise", "claude-sonnet-5-5", 3000, 1200, user.id)
     assert row.cost_usd == pytest.approx(3000 * 2e-6 + 1200 * 10e-6)
+    AiCache.query.delete()  # same map: otherwise served from cache without a call
     fake_with_usage(monkeypatch, app, graded(drop=1))  # invalid twice -> AIError, but both calls were billed
     submit(auth_client, p)
     assert AiUsage.query.count() == 3

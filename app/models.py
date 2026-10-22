@@ -264,6 +264,15 @@ class RecruitSession(db.Model):
         return self.finished_at is not None or utcnow() >= self.deadline
 
 
+class AiCache(db.Model):
+    """Validated tool payload per (model, tool, prompt) hash: the same map asked again is not billed twice."""
+
+    key = db.Column(db.String(64), primary_key=True)
+    tool = db.Column(db.String(60), nullable=False)
+    payload = db.Column(db.JSON, nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False, index=True)
+
+
 class AiUsage(db.Model):
     """One billed Anthropic API call: tokens and the cost at list price when it was made (app/ai/pricing.py)."""
 
