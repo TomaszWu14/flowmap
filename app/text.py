@@ -1,6 +1,6 @@
 """Polish plurals and local time for UI text."""
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, time
 from zoneinfo import ZoneInfo
 
 
@@ -25,3 +25,13 @@ WARSAW = ZoneInfo("Europe/Warsaw")
 def local_time(value: datetime, fmt: str = "%d.%m.%Y %H:%M") -> str:
     """Format a naive-UTC timestamp from the DB in Polish local time (CET/CEST)."""
     return value.replace(tzinfo=UTC).astimezone(WARSAW).strftime(fmt)
+
+
+def warsaw_today() -> date:
+    """Calendar day in Poland — daily limits and "today" stats reset at Polish midnight, not UTC."""
+    return datetime.now(WARSAW).date()
+
+
+def warsaw_midnight_utc(day: date) -> datetime:
+    """Polish midnight of the day as naive UTC, comparable with DB timestamps."""
+    return datetime.combine(day, time(), WARSAW).astimezone(UTC).replace(tzinfo=None)

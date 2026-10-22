@@ -46,6 +46,7 @@ class Config:
     ANTHROPIC_CHAT_MODEL = os.environ.get("ANTHROPIC_CHAT_MODEL", "claude-sonnet-5-5")  # trainer chat
     AI_TIMEOUT_SECONDS = float(os.environ.get("AI_TIMEOUT_SECONDS", "60"))
     AI_DAILY_LIMIT = int(os.environ.get("AI_DAILY_LIMIT", "100"))
+    AI_MONTHLY_BUDGET_USD = float(os.environ.get("AI_MONTHLY_BUDGET_USD", "0"))  # 0 = no FlowMap cap
 
 
 class TestConfig(Config):

@@ -34,9 +34,30 @@ def spend_ai_request() -> str | None:
         return "AI wymaga klucza ANTHROPIC_API_KEY"
     if not settings.get("ai_enabled"):
         return "AI jest wyłączone przez administratora"
+    budget = settings.ai_monthly_budget()
+    if budget and month_cost_usd() >= budget:
+        return "Miesięczny budżet AI został wyczerpany — administrator może go podnieść"
     allowed = current_user.consume_ai_request(settings.ai_daily_limit())
     db.session.commit()
     return None if allowed else "Dzienny limit zapytań do AI został wyczerpany"
+
+
+def month_cost_usd() -> float:
+    """Estimated spend since the start of the current Polish calendar month."""
+    from sqlalchemy import func
+
+    from ..extensions import db
+    from ..models import AiUsage
+    from ..text import warsaw_midnight_utc, warsaw_today
+
+    start = warsaw_midnight_utc(warsaw_today().replace(day=1))
+    return db.session.query(func.sum(AiUsage.cost_usd)).filter(AiUsage.created_at >= start).scalar() or 0.0
+
+
+def model(kind: str = "ai_model") -> str:
+    from .. import settings
+
+    return settings.get(kind)
 
 
 def _client() -> anthropic.Anthropic:
@@ -206,7 +227,7 @@ def call_tool(prompt: str, tool: dict, model_cls: type[BaseModel]) -> BaseModel:
     for _attempt in range(2):
         response = _api_call(
             client,
-            model=current_app.config["ANTHROPIC_MODEL"],
+            model=model(),
             max_tokens=8000,
             system=system,
             tools=[tool],

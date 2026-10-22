@@ -8,6 +8,8 @@
     <a class="btn" href="{{ url_for('projects.index') }}">← Projekty</a></div>
 </div>
 
+{% if config_info.budget and config_info.month_cost >= 0.8 * config_info.budget %}<div class="alert error" role="alert">
+  Wykorzystano {{ (config_info.month_cost / config_info.budget * 100)|round|int }}% miesięcznego budżetu AI (${{ '%.2f'|format(config_info.month_cost) }} z ${{ '%g'|format(config_info.budget) }}){% if config_info.month_cost >= config_info.budget %} — AI jest wstrzymane do końca miesiąca{% endif %}.</div>{% endif %}
 {% if ai_error %}<div class="alert error" role="alert">AI nie działa: {{ ai_error.target }} ({{ ai_error.created_at|local('%d.%m %H:%M') }}).
   Szczegóły w <a href="{{ url_for('admin.events') }}">dzienniku zdarzeń</a>.</div>{% endif %}
 
@@ -29,6 +31,14 @@
       Podpowiedzi AI włączone {% if not config_info.ai_key %}<span class="muted">(brak <span class="mono">ANTHROPIC_API_KEY</span> — działa tryb reguł)</span>{% else %}<span class="muted">· {{ config_info.model }}</span>{% endif %}</label>
     {% if not config_info.ai_key and config_info.ai_enabled %}<input type="hidden" name="ai_enabled" value="on">{% endif %}
     <label style="max-width:260px">Limit zapytań AI na osobę dziennie <input type="number" name="ai_daily_limit" min="0" max="10000" value="{{ config_info.ai_limit }}"></label>
+    <label style="max-width:260px">Miesięczny budżet AI (USD, 0 = bez limitu) <input type="number" name="ai_monthly_budget" min="0" max="10000" step="0.5" value="{{ '%g'|format(config_info.budget) }}">
+      <small class="muted">W tym miesiącu: ${{ '%.2f'|format(config_info.month_cost) }}. To limit FlowMap — limit konta ustawiasz w konsoli Anthropic.</small></label>
+    <div class="row">
+      {% for name, label in [('ai_model', 'Model: oceny, pytania, raporty'), ('ai_chat_model', 'Model: czat trenera')] %}
+      <label style="max-width:260px">{{ label }}
+        <select name="{{ name }}">{% for m in config_info.models %}<option value="{{ m }}" {{ 'selected' if m == config_info[name.replace('ai_', '')] }}>{{ m }}</option>{% endfor %}</select></label> {# nosemgrep: unquoted-attribute-var — constant boolean attribute word, not user data #}
+      {% endfor %}
+    </div>
     <div class="row"><button class="btn primary" type="submit">Zapisz ustawienia</button><span class="badge">Środowisko: {{ config_info.env }}</span></div>
   </form>
   <p class="muted" style="margin:.6rem 0 0;font-size:.85rem">Klucz API ustawiasz w Coolify (<span class="mono">ANTHROPIC_API_KEY</span>) — sekretów nie trzymamy w bazie.</p>

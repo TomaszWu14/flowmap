@@ -1,10 +1,11 @@
 import secrets
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime
 
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from .extensions import db, login_manager
+from .text import warsaw_today
 
 NODE_TYPES = ("start", "user_action", "screen", "automation", "decision", "parallel", "wait", "integration", "end")
 NODE_TYPE_LABELS = {  # BPMN vocabulary, so every click teaches the right term
@@ -63,7 +64,7 @@ class User(UserMixin, db.Model):
 
     def consume_ai_request(self, daily_limit: int) -> bool:
         """Increment today's AI counter; False when the limit is reached."""
-        today = date.today()
+        today = warsaw_today()
         if self.ai_usage_date != today:
             self.ai_usage_date = today
             self.ai_usage_count = 0

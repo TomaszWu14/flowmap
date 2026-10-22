@@ -1,6 +1,6 @@
 """Administrator panel: stats and user management. Project contents stay private to their owners."""
 
-from datetime import date, timedelta
+from datetime import timedelta
 from functools import wraps
 
 from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
@@ -8,10 +8,12 @@ from flask_login import current_user, login_required
 from sqlalchemy import func, or_
 
 from .. import audit, settings
+from ..ai.client import month_cost_usd
 from ..ai.pricing import FEATURES, PRICES
 from ..auth.tokens import make_reset_token
 from ..extensions import db
 from ..models import AiUsage, AuditEvent, Project, QuestionLog, User, utcnow
+from ..text import warsaw_midnight_utc, warsaw_today
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -41,21 +43,25 @@ def index():
         "projects_complete": Project.query.filter_by(status="complete").count(),
         "projects_new": Project.query.filter(Project.created_at >= week_ago).count(),
         "answers": QuestionLog.query.filter(QuestionLog.answer != "").count(),
-        "ai_today": sum(u.ai_usage_count for u in users if u.ai_usage_date == date.today()),
+        "ai_today": sum(u.ai_usage_count for u in users if u.ai_usage_date == warsaw_today()),
         "ai_cost_30d": _cost_since(utcnow() - timedelta(days=30))[1],
     }
     config = {
         "ai_key": bool(current_app.config["ANTHROPIC_API_KEY"]),
         "ai_enabled": bool(settings.get("ai_enabled")),
-        "model": current_app.config["ANTHROPIC_MODEL"],
+        "model": settings.get("ai_model"),
+        "chat_model": settings.get("ai_chat_model"),
+        "models": list(PRICES),
         "ai_limit": settings.ai_daily_limit(),
+        "budget": settings.ai_monthly_budget(),
+        "month_cost": month_cost_usd(),
         "signup": settings.signup_open(),
         "env": current_app.config["APP_ENV"],
     }
     ai_error = AuditEvent.query.filter(AuditEvent.action == "ai_error", AuditEvent.created_at >= utcnow() - timedelta(
         days=1)).order_by(AuditEvent.created_at.desc()).first()
     return render_template("admin/index.html", users=users, stats=stats, config_info=config,
-                           project_counts=project_counts, today=date.today(), ai_error=ai_error)
+                           project_counts=project_counts, today=warsaw_today(), ai_error=ai_error)
 
 
 def _cost_since(since):
@@ -71,8 +77,9 @@ def costs():
     now = utcnow()
     month = now - timedelta(days=30)
     periods = [(label, *_cost_since(since)) for label, since in (
-        ("Dziś", now.replace(hour=0, minute=0, second=0, microsecond=0)), ("7 dni", now - timedelta(days=7)),
-        ("30 dni", month), ("Od początku", now.replace(year=2000)))]
+        ("Dziś", warsaw_midnight_utc(warsaw_today())), ("7 dni", now - timedelta(days=7)),
+        ("Ten miesiąc", warsaw_midnight_utc(warsaw_today().replace(day=1))), ("30 dni", month),
+        ("Od początku", now.replace(year=2000)))]
     by_feature = (db.session.query(AiUsage.feature, func.count(AiUsage.id), func.sum(AiUsage.input_tokens),
                                    func.sum(AiUsage.output_tokens), func.sum(AiUsage.cost_usd))
                   .filter(AiUsage.created_at >= month).group_by(AiUsage.feature)
@@ -83,8 +90,8 @@ def costs():
     unpriced = AiUsage.query.filter(AiUsage.cost_usd.is_(None)).count()
     return render_template("admin/costs.html", periods=periods, by_feature=by_feature, by_user=by_user,
                            features=FEATURES, prices=PRICES, unpriced=unpriced,
-                           model=current_app.config["ANTHROPIC_MODEL"],
-                           chat_model=current_app.config["ANTHROPIC_CHAT_MODEL"])
+                           model=settings.get("ai_model"), chat_model=settings.get("ai_chat_model"),
+                           budget=settings.ai_monthly_budget())
 
 
 @bp.get("/zdarzenia")
@@ -106,13 +113,22 @@ def events():
 @admin_required
 def save_settings():
     limit = request.form.get("ai_daily_limit", type=int)
-    if limit is None or not 0 <= limit <= 10000:
-        flash("Limit AI musi być liczbą od 0 do 10000.", "error")
+    budget = request.form.get("ai_monthly_budget", settings.ai_monthly_budget(), type=float)
+    models = {k: request.form.get(k, settings.get(k)) for k in ("ai_model", "ai_chat_model")}
+    error = ("Limit AI musi być liczbą od 0 do 10000." if limit is None or not 0 <= limit <= 10000 else
+             "Budżet musi być kwotą od 0 do 10000 USD." if budget is None or not 0 <= budget <= 10000 else
+             "Wybierz model z cennika." if any(m not in PRICES for m in models.values()) else None)
+    if error:
+        flash(error, "error")
         return redirect(url_for("admin.index"))
     settings.set_value("allow_signup", request.form.get("allow_signup") == "on")
     settings.set_value("ai_enabled", request.form.get("ai_enabled") == "on")
     settings.set_value("ai_daily_limit", limit)
-    summary = f"rejestracja={settings.signup_open()}, ai={settings.get('ai_enabled')}, limit={limit}"
+    settings.set_value("ai_monthly_budget", budget)
+    for key, value in models.items():
+        settings.set_value(key, value)
+    summary = (f"rejestracja={settings.signup_open()}, ai={settings.get('ai_enabled')}, limit={limit}, "
+               f"budżet=${budget:g}, model={models['ai_model']}, czat={models['ai_chat_model']}")
     audit.log("settings_changed", summary)
     db.session.commit()
     flash("Ustawienia zapisane.", "success")
