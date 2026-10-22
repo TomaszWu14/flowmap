@@ -269,6 +269,85 @@ def _edge(plane, element_id: str, points: list[tuple[float, float]]) -> None:
         ET.SubElement(edge, f"{{{DI}}}waypoint", {"x": f"{px:g}", "y": f"{py:g}"})
 
 
+# --- BPMN import ---------------------------------------------------------------
+
+BPMN_IMPORT_TYPES = {
+    "startEvent": "start", "endEvent": "end", "exclusiveGateway": "decision", "inclusiveGateway": "decision",
+    "eventBasedGateway": "decision", "complexGateway": "decision", "parallelGateway": "parallel",
+    "intermediateCatchEvent": "wait", "intermediateThrowEvent": "automation", "boundaryEvent": "wait",
+    "task": "user_action", "userTask": "user_action", "manualTask": "user_action", "callActivity": "user_action",
+    "subProcess": "user_action", "serviceTask": "automation", "scriptTask": "automation",
+    "businessRuleTask": "automation", "sendTask": "automation", "receiveTask": "wait",
+}
+BPMN_IMPORT_MAX_NODES = 300
+
+
+def parse_bpmn(data: bytes) -> tuple[str, dict]:
+    """(process name, graph dict) from a BPMN 2.0 file (Camunda Modeler, bpmn.io, Signavio…).
+
+    Actor = name of the lane holding the element, else the name of its pool. Sequence and message flows both
+    become connections; decision branches come from the labels of outgoing flows. Raises ValueError (Polish).
+    """
+    # nosemgrep: use-defused-xml-parse — expat in Python ≥ 3.7.1 never resolves external entities (no XXE)
+    # and its built-in amplification limits stop "billion laughs"; uploads are capped by MAX_CONTENT_LENGTH.
+    try:
+        root = ET.fromstring(data)  # nosec B314 — see above
+    except ET.ParseError as exc:
+        raise ValueError("Plik nie jest poprawnym XML-em BPMN.") from exc
+    if root.tag != f"{{{BPMN}}}definitions":
+        raise ValueError("To nie jest plik BPMN 2.0 (brak elementu definitions).")
+    pool_name = {p.get("processRef"): p.get("name") or "" for p in root.iter(f"{{{BPMN}}}participant")}
+    processes = root.findall(f"{{{BPMN}}}process")
+    if not processes:
+        raise ValueError("Plik BPMN nie zawiera procesu.")
+    nodes, edges, actor, keys = [], [], {}, {}
+    for proc in processes:
+        for lane in proc.iter(f"{{{BPMN}}}lane"):
+            for ref in lane.findall(f"{{{BPMN}}}flowNodeRef"):
+                actor[(ref.text or "").strip()] = lane.get("name") or ""
+        for el in proc.iter():
+            tag = el.tag.split("}")[-1]
+            if tag not in BPMN_IMPORT_TYPES or not el.get("id"):
+                continue
+            node_type = BPMN_IMPORT_TYPES[tag]
+            if tag == "intermediateCatchEvent" and el.find(f"{{{BPMN}}}messageEventDefinition") is not None:
+                node_type = "wait"
+            key = f"b{len(keys) + 1}"
+            keys[el.get("id")] = key
+            fallback = {"start": "Start", "end": "Koniec", "decision": "Decyzja?", "parallel": "Równolegle"}
+            title = " ".join((el.get("name") or fallback.get(node_type, tag)).split())[:200]
+            nodes.append({"key": key, "type": node_type, "title": title,
+                          "actor": (actor.get(el.get("id")) or pool_name.get(proc.get("id"), ""))[:100],
+                          "description": "", "inputs": [], "outputs": [], "data": {}})
+    if len(nodes) > BPMN_IMPORT_MAX_NODES:
+        raise ValueError(f"Za duży proces: {len(nodes)} elementów (limit {BPMN_IMPORT_MAX_NODES}).")
+    if not nodes:
+        raise ValueError("Plik BPMN nie zawiera żadnych kroków.")
+    for flow in [*root.iter(f"{{{BPMN}}}sequenceFlow"), *root.iter(f"{{{BPMN}}}messageFlow")]:
+        source, target = keys.get(flow.get("sourceRef")), keys.get(flow.get("targetRef"))
+        if source and target:
+            edges.append({"source": source, "target": target, "label": (flow.get("name") or "")[:100],
+                          "condition": ""})
+    by_key = {n["key"]: n for n in nodes}
+    for n in nodes:
+        if n["type"] == "decision":  # every outgoing flow is a branch and needs a label
+            outs = [e for e in edges if e["source"] == n["key"]]
+            for i, e in enumerate(outs, 1):
+                e["label"] = e["label"] or f"wariant {i}"
+            n["data"] = {"branches": list(dict.fromkeys(e["label"] for e in outs))[:10] or ["tak", "nie"]}
+        elif n["type"] == "parallel":
+            outs = [e for e in edges if e["source"] == n["key"]]
+            if len(outs) > 1:
+                n["data"] = {"branches": [e["label"] or by_key[e["target"]]["title"][:100] for e in outs][:10]}
+    if not any(n["type"] == "start" for n in nodes):
+        nodes.insert(0, {"key": "b0", "type": "start", "title": "Start", "actor": nodes[0]["actor"], "description": "",
+                         "inputs": [], "outputs": [], "data": {}})
+        edges.insert(0, {"source": "b0", "target": nodes[1]["key"], "label": "", "condition": ""})
+    name = next((p.get("name") for p in processes if p.get("name")), "") or next(
+        (v for v in pool_name.values() if v), "") or "Proces z BPMN"
+    return name[:200], {"nodes": nodes, "edges": edges}
+
+
 # --- Markdown specification ----------------------------------------------------
 
 def _md(text: str) -> str:
