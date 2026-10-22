@@ -39,7 +39,7 @@
               <textarea name="{{ f }}" rows="{{ 3 if f == 'problem' else 4 }}"{{ ' readonly' if not can_edit }}>{{ spec.vision[f] if f == 'problem' else spec.vision[f]|join('\n') }}</textarea></label>
           {% endfor %}
           {% if can_edit %}<div class="row"><button class="btn primary" type="submit">Zapisz wizję</button>
-            {% if ai %}<button class="btn" type="submit" formaction="{{ url_for('design.vision_ai', project_id=project.id) }}">Uzupełnij z AI</button>{% endif %}</div>{% endif %}
+            {% if ai %}<button class="btn" type="submit" formaction="{{ url_for('design.vision_ai', project_id=project.id) }}" data-ai>Uzupełnij z AI</button>{% endif %}</div>{% endif %}
         </form>
       {% endif %}
       {% for d in diagrams %}

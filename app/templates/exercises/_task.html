@@ -15,14 +15,14 @@
   <form method="post" data-once action="{{ url_for('recruit.finish', project_id=project.id) }}" class="stack"
         data-confirm="Oddać mapę? Po oddaniu nie da się jej zmienić.">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    {% if project.can_edit %}<button class="btn primary" type="submit">Oddaję</button>{% endif %}
+    {% if project.can_edit %}<button class="btn primary" type="submit" data-ai="AI ocenia mapę… (ok. 30 s)">Oddaję</button>{% endif %}
     <p class="field-help">Tryb rekrutacyjny: {{ project.recruit.minutes }} min. Po oddaniu (albo gdy minie czas) rekruter AI zada 5 pytań o Twoje decyzje. <a href="{{ url_for('recruit.view', project_id=project.id) }}">Szczegóły →</a></p>
   </form>
   {% elif project.can_edit %}
   <form method="post" data-once action="{{ url_for('exercises.submit', project_id=project.id) }}" class="stack">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="stage" value="{{ project.exercise_stage }}">
-    <button class="btn primary" type="submit"{% if not ai %} disabled aria-describedby="submit-help"{% endif %}>Oddaj etap {{ project.exercise_stage }}</button>
+    <button class="btn primary" type="submit" data-ai{% if not ai %} disabled aria-describedby="submit-help"{% endif %}>Oddaj etap {{ project.exercise_stage }}</button>
     <p class="field-help" id="submit-help">{% if ai %}Ocenia AI według oczekiwań eksperta; zużywa 1 zapytanie z dziennego limitu. Możesz oddawać wielokrotnie.{% else %}Oddanie wymaga AI — administrator musi ustawić klucz ANTHROPIC_API_KEY i włączyć AI. Do tego czasu korzystaj z karty „Ocena” (reguły).{% endif %}</p>
   </form>
   {% endif %}

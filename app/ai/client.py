@@ -157,6 +157,26 @@ def _log_usage(feature: str, model: str, usage) -> None:
     db.session.commit()  # session is clean here: spend_ai_request() commits right before every AI call
 
 
+def _status_error(exc: anthropic.APIStatusError) -> AIError:
+    """Polish message for an API error; account-level failures also go to the admin's event log."""
+    text = str(exc.message).lower()
+    if "usage limit" in text or "credit balance" in text:
+        error = AIError("wyczerpany limit wydatków na koncie API — administrator musi go podnieść")
+    elif exc.status_code == 529 or "overloaded" in text:
+        return AIError("API jest przeciążone, spróbuj za chwilę")
+    elif exc.status_code >= 500:
+        return AIError(f"chwilowy błąd po stronie API ({exc.status_code}), spróbuj za chwilę")
+    else:
+        error = AIError(f"błąd API {exc.status_code}")
+    current_app.logger.warning("AI API error %s: %s", exc.status_code, exc.message)
+    from .. import audit
+    from ..extensions import db
+
+    audit.log("ai_error", str(error))
+    db.session.commit()  # session is clean here: spend_ai_request() commits right before every AI call
+    return error
+
+
 def _api_call(client, feature: str = "", **kwargs):
     """messages.create with API failures turned into Polish AIError messages; every response is cost-logged."""
     try:
@@ -168,7 +188,7 @@ def _api_call(client, feature: str = "", **kwargs):
     except anthropic.AuthenticationError as exc:
         raise AIError("nieprawidłowy klucz API") from exc
     except anthropic.APIStatusError as exc:
-        raise AIError(f"błąd API {exc.status_code}") from exc
+        raise _status_error(exc) from exc
     except anthropic.APIConnectionError as exc:
         raise AIError("brak połączenia z API") from exc
     _log_usage(feature or kwargs.get("tools", [{}])[0].get("name", "other"), kwargs.get("model", ""),

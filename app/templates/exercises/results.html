@@ -42,7 +42,7 @@
     <form method="post" data-once action="{{ url_for('exercises.submit', project_id=project.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="stage" value="{{ s.number }}">
-      <button class="btn{{ ' primary' if not a }}" type="submit"{% if not ai %} disabled title="Oddanie wymaga AI (klucz ANTHROPIC_API_KEY)"{% endif %}>{{ 'Oddaj ponownie' if a else 'Oddaj etap %d'|format(s.number) }}</button>
+      <button class="btn{{ ' primary' if not a }}" type="submit" data-ai{% if not ai %} disabled title="Oddanie wymaga AI (klucz ANTHROPIC_API_KEY)"{% endif %}>{{ 'Oddaj ponownie' if a else 'Oddaj etap %d'|format(s.number) }}</button>
     </form>
     {% endif %}
     {% if s.attempts|length > 1 %}

@@ -15,7 +15,7 @@
   {% if can_answer %}
   <form method="post" data-once action="{{ url_for('recruit.finish', project_id=project.id) }}" data-confirm="Oddać mapę? Po oddaniu nie da się jej zmienić.">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button class="btn primary" type="submit">Oddaję</button>
+    <button class="btn primary" type="submit" data-ai="AI ocenia mapę… (ok. 30 s)">Oddaję</button>
   </form>
   {% endif %}
 </section>
@@ -45,7 +45,7 @@
     {% if can_answer %}
     <form method="post" data-once action="{{ url_for('recruit.start_interview', project_id=project.id) }}" class="stack">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button class="btn primary" type="submit"{% if not ai %} disabled{% endif %}>Rozpocznij rozmowę</button>
+      <button class="btn primary" type="submit" data-ai="Rekruter przygotowuje pytania…"{% if not ai %} disabled{% endif %}>Rozpocznij rozmowę</button>
       <p class="field-help">{% if ai %}Rekruter oceni mapę i zada {{ total }} pytań o Twoje decyzje — kolejno, bez możliwości poprawiania odpowiedzi. Zużywa 3 zapytania z dziennego limitu AI.{% else %}Rozmowa wymaga AI — administrator musi ustawić klucz ANTHROPIC_API_KEY i włączyć AI.{% endif %}</p>
     </form>
     {% endif %}
@@ -65,7 +65,7 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <label class="sr-only" for="answer-text">Twoja odpowiedź</label>
             <textarea id="answer-text" name="text" rows="5" maxlength="{{ answer_max }}" required placeholder="Odpowiedz jak na rozmowie: konkretnie, z odniesieniem do mapy i uzasadnieniem."></textarea>
-            <button class="btn primary" type="submit">{{ 'Odpowiedz i zakończ rozmowę' if i + 1 == total else 'Odpowiedz' }}</button>
+            <button class="btn primary" type="submit"{% if i + 1 == total %} data-ai{% endif %}>{{ 'Odpowiedz i zakończ rozmowę' if i + 1 == total else 'Odpowiedz' }}</button>
           </form>
           {% endif %}</li>
         {% endif %}
@@ -74,7 +74,7 @@
     {% if session.answers|length == total and not rep and can_answer %}
     <form method="post" data-once action="{{ url_for('recruit.make_report', project_id=project.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button class="btn primary" type="submit"{% if not ai %} disabled{% endif %}>Wygeneruj raport</button>
+      <button class="btn primary" type="submit" data-ai="Rekruter pisze raport…"{% if not ai %} disabled{% endif %}>Wygeneruj raport</button>
     </form>
     {% endif %}
   {% endif %}
