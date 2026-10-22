@@ -171,8 +171,13 @@ def copy(project_id):
 @bp.get("/p/<int:project_id>/wersje")
 @login_required
 def versions(project_id):
+    from ..models import ClientReview
+
     project = g.project_for(project_id, "view")
-    return render_template("projects/versions.html", project=project,
+    reviews: dict[int, list] = {}
+    for r in ClientReview.query.filter_by(project_id=project.id).order_by(ClientReview.id):
+        reviews.setdefault(r.version_id, []).append(r)
+    return render_template("projects/versions.html", project=project, reviews=reviews,
                            versions=sorted(project.versions, key=lambda v: v.id, reverse=True))
 
 

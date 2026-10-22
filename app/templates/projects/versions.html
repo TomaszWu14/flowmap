@@ -16,7 +16,9 @@
     {% for v in versions %}
       <tr class="{{ 'current-row' if v.id == project.version_cursor_id }}">
         <td>{{ v.description }}{% if v.id == project.version_cursor_id %} <span class="badge ok">bieżąca</span>{% endif %}
-          {% if v.id == (project.display or {}).get('as_is') %} <span class="badge">AS-IS</span>{% endif %}</td>
+          {% if v.id == (project.display or {}).get('as_is') %} <span class="badge">AS-IS</span>{% endif %}
+          {% for r in reviews.get(v.id, []) %}<br><span class="{{ 'better' if r.decision == 'accept' else 'worse' }}" title="{{ r.comment }}">
+            {{ '✓' if r.decision == 'accept' else '✎' }} {{ r.name }}: {{ 'akceptuje' if r.decision == 'accept' else 'prosi o zmiany' }}{% if r.comment %} — „{{ r.comment|truncate(80) }}”{% endif %}</span>{% endfor %}</td>
         <td>{{ v.snapshot.nodes|length }}</td>
         <td class="muted">{{ v.created_at|local('%d.%m %H:%M:%S') }}</td>
         <td class="row">

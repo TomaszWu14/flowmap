@@ -24,6 +24,30 @@
     <div id="map" data-readonly="1" data-graph-url="{{ url_for('share.graph_json', token=token) }}"></div>
   </div>
 </section>
+<section class="card" style="margin-top:1rem" id="opinia" aria-labelledby="opinia-h">
+  <h2 id="opinia-h">Twoja decyzja</h2>
+  <p class="muted">Obejrzyj mapę (możesz też „Przejdź proces”) i daj znać autorowi: akceptujesz tę wersję czy potrzebne są zmiany.</p>
+  <form method="post" action="{{ url_for('share.review', token=token) }}" class="stack" style="max-width:640px">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Imię lub firma <input name="name" maxlength="100" required autocomplete="name"></label>
+    <fieldset class="row"><legend class="sr-only">Decyzja</legend>
+      <label class="radio"><input type="radio" name="decision" value="accept" required> Akceptuję tę wersję</label>
+      <label class="radio"><input type="radio" name="decision" value="changes"> Proszę o zmiany</label>
+    </fieldset>
+    <label>Komentarz <span class="muted">(przy zmianach — co poprawić)</span>
+      <textarea name="comment" maxlength="2000"></textarea></label>
+    <div><button class="btn primary" type="submit">Wyślij decyzję</button></div>
+  </form>
+  {% if reviews %}
+  <h3>Dotychczasowe decyzje</h3>
+  <ul class="review-list">
+    {% for r in reviews %}<li><strong>{{ r.name }}</strong> —
+      {% if r.decision == 'accept' %}<span class="better">akceptuje</span>{% else %}<span class="worse">prosi o zmiany</span>{% endif %}
+      <span class="muted">· {{ r.created_at|local }}{% if r.version_label %} · wersja „{{ r.version_label }}”{% endif %}</span>
+      {% if r.comment %}<br>{{ r.comment }}{% endif %}</li>{% endfor %}
+  </ul>
+  {% endif %}
+</section>
 <section class="card" style="margin-top:1rem">
   <h2>Specyfikacja</h2>
   <pre class="code">{{ spec }}</pre>
