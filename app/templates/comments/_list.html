@@ -1,6 +1,7 @@
 {% set open_count = comments|rejectattr('resolved')|list|length %}
 <h3>Komentarze{% if open_count %} <span class="badge">{{ open_count }} otwarte</span>{% endif %}</h3>
 {% if error %}<div class="alert error" role="alert">{{ error }}</div>{% endif %}
+{% if notice %}<div class="alert info" role="status">{{ notice }}</div>{% endif %}
 <ul class="comment-list">
   {% for c in comments %}
   <li class="{{ 'resolved' if c.resolved }}">
@@ -25,6 +26,6 @@
 </ul>
 <form hx-post="{{ url_for('comments.add_comment', project_id=project.id, key=node_key) }}" hx-target="#comments" class="comment-form">
   <label class="sr-only" for="comment-body">Nowy komentarz</label>
-  <textarea id="comment-body" name="body" maxlength="2000" required placeholder="Uwaga, pytanie, pomysł…"></textarea>
+  <textarea id="comment-body" name="body" maxlength="2000" required placeholder="Uwaga, pytanie, pomysł… Wpisz @e-mail osoby z projektu, żeby ją powiadomić."></textarea>
   <button class="btn small primary" type="submit">Dodaj komentarz</button>
 </form>

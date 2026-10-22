@@ -147,3 +147,12 @@ def test_bpmn_import_draws_the_map(page, tmp_path):
     steps = page.evaluate("window.flowMap.cy.nodes().map(n => n.id()).filter(id => !id.startsWith('lane'))")
     assert len(steps) == 5  # plus lane bands for "Sprzedawca" and "Magazyn" from the file
     assert page.errors == []
+
+
+def test_step_link_from_mention_opens_the_step(page):
+    register_and_new_map(page)
+    key = page.evaluate("window.flowMap.cy.nodes().filter(n => !n.id().startsWith('lane'))[0].id()")
+    page.goto(page.url.split("#")[0] + f"#krok-{key}")
+    page.reload()
+    page.wait_for_function(f"window.flowMap && window.flowMap.cy.getElementById('{key}').hasClass('focus')")
+    assert page.errors == []

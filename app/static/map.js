@@ -589,6 +589,14 @@
     });
   }
 
+  // "#krok-KEY" (link from a mention e-mail): open and centre that step once the map is drawn.
+  document.addEventListener("flowmap:loaded", function fromHash() {
+    document.removeEventListener("flowmap:loaded", fromHash);
+    const m = /^#krok-([\w-]+)$/.exec(location.hash);
+    const node = m && cy.getElementById(m[1]);
+    if (node && node.nonempty()) { cy.animate({ center: { eles: node } }, { duration: 250 }); openNode(node); }
+  });
+
   // Whole map as PNG (2x for print), on the current theme's background.
   document.addEventListener("click", (ev) => {
     const btn = ev.target.closest("[data-export-png]");
