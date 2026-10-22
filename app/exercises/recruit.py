@@ -6,9 +6,10 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, u
 from flask_login import current_user, login_required
 
 from ..ai.client import AIError, ai_enabled, spend_ai_request
+from ..export import builders
 from ..extensions import db
 from ..flow import graph as g
-from ..models import ExerciseAttempt, RecruitSession, utcnow
+from ..models import ExerciseAttempt, RecruitSession, Version, utcnow
 from . import catalog, interview
 from .grading import grade
 from .routes import RECRUIT_MINUTES, new_exercise_project
@@ -50,6 +51,31 @@ def view(project_id):
                            ex=catalog.get(project.exercise_key), ai=ai_enabled(), total=interview.QUESTIONS,
                            answer_max=interview.ANSWER_MAX, recommendations=interview.RECOMMENDATIONS,
                            map_pct=round(100 * interview.MAP_WEIGHT))
+
+
+PAUSE_SECONDS = 180  # a gap this long between edits is shown as thinking time
+
+
+@bp.get("/p/<int:project_id>/rekrutacja/przebieg")
+@login_required
+def replay(project_id):
+    """How the map was built: every saved change with its time from the start, after the session ended."""
+    project, session = _session(project_id)
+    if not session.ended:
+        abort(403, "Przebieg jest dostępny po oddaniu mapy.")
+    end = session.finished_at or session.deadline
+    versions = (Version.query.filter(Version.project_id == project.id, Version.created_at >= session.started_at,
+                                     Version.created_at <= end).order_by(Version.id).all())
+    steps, prev = [], session.started_at
+    for v in versions:
+        steps.append({"v": v, "offset": int((v.created_at - session.started_at).total_seconds()),
+                      "pause": (v.created_at - prev).total_seconds() >= PAUSE_SECONDS,
+                      "nodes": sum(1 for n in v.snapshot.get("nodes", []) if n["type"] != "start")})
+        prev = v.created_at
+    chosen = next((s for s in steps if s["v"].id == request.args.get("v", type=int)), steps[-1] if steps else None)
+    return render_template("exercises/replay.html", project=project, session=session, steps=steps, chosen=chosen,
+                           mermaid=chosen and builders.to_mermaid(chosen["v"].snapshot),
+                           total=int((end - session.started_at).total_seconds()))
 
 
 @bp.post("/p/<int:project_id>/rekrutacja/oddaj")

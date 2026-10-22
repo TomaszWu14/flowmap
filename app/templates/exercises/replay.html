@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Przebieg — {{ project.name }}{% endblock %}
+{% macro clock(s) %}{{ '%d:%02d'|format(s // 60, s % 60) }}{% endmacro %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Przebieg budowania mapy</h1>
+    <p class="muted">{{ steps|length }} {{ steps|length|plural_word('zmiana', 'zmiany', 'zmian') }} w {{ clock(total) }} min
+      (limit {{ session.minutes }} min). Kliknij moment, żeby zobaczyć mapę z tej chwili.</p></div>
+  <a class="btn" href="{{ url_for('recruit.view', project_id=project.id) }}">← Rozmowa i raport</a>
+</div>
+{% if not steps %}
+<section class="card"><p class="muted">W czasie sesji nie zapisano żadnej zmiany mapy.</p></section>
+{% else %}
+<div class="replay-grid">
+  <section class="card">
+    <h2>Oś czasu</h2>
+    <ol class="replay-list">
+      {% for s in steps %}
+      <li class="{{ 'current' if s.v.id == chosen.v.id }}">
+        {% if s.pause %}<span class="badge">przerwa</span>{% endif %}
+        <a href="{{ url_for('recruit.replay', project_id=project.id, v=s.v.id) }}"{% if s.v.id == chosen.v.id %} aria-current="step"{% endif %}>
+          <span class="mono">{{ clock(s.offset) }}</span> {{ s.v.description }}</a>
+        <span class="muted">· {{ s.nodes|kroki }}</span>
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+  <section class="card">
+    <h2>Mapa o {{ clock(chosen.offset) }}</h2>
+    <pre class="mermaid" data-source="{{ mermaid }}">{{ mermaid }}</pre>
+  </section>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}{% if steps %}
+<script src="{{ url_for('static', filename='vendor/mermaid.min.js') }}"></script> {# nosemgrep: var-in-script-tag — src from url_for(); CSP script-src 'self' blocks inline scripts #}
+<script src="{{ url_for('static', filename='design.js') }}"></script> {# nosemgrep: var-in-script-tag — src from url_for(); CSP script-src 'self' blocks inline scripts #}
+{% endif %}{% endblock %}
