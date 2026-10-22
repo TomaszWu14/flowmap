@@ -411,3 +411,4 @@ kbd { font: inherit; font-size: .75rem; border: 1px solid var(--line); border-bo
 .program-step.done .program-dot { background: var(--ok); border-color: var(--ok); color: #fff; }
 .program-step.next .program-dot { border-color: var(--accent, var(--info)); color: var(--ink); }
 .program-step.later { opacity: .65; }
+.worse { color: var(--danger); } .better { color: var(--ok); }
