@@ -131,3 +131,19 @@ def test_png_download_and_report_page(page):
     page.emulate_media(media="print")
     assert not page.locator(".topbar").is_visible()
     assert page.errors == []
+
+
+def test_bpmn_import_draws_the_map(page, tmp_path):
+    from tests.test_bpmn_import import CAMUNDA
+
+    register_and_new_map(page)
+    f = tmp_path / "proces.bpmn"
+    f.write_bytes(CAMUNDA)
+    page.goto("/projekty/import")
+    page.set_input_files("input[name=file]", str(f))
+    page.get_by_role("button", name="Importuj").click()
+    page.wait_for_url("**/p/*")
+    page.wait_for_function("window.flowMap && window.flowMap.cy.nodes().length > 0")
+    steps = page.evaluate("window.flowMap.cy.nodes().map(n => n.id()).filter(id => !id.startsWith('lane'))")
+    assert len(steps) == 5  # plus lane bands for "Sprzedawca" and "Magazyn" from the file
+    assert page.errors == []

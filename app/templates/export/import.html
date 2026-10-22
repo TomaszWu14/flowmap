@@ -3,10 +3,11 @@
 {% block content %}
 <div class="card" style="max-width:520px;margin:0 auto">
   <h1>Import projektu</h1>
-  <p class="muted">Wybierz plik <span class="mono">.flowmap.json</span> wyeksportowany z FlowMap. Powstanie nowy projekt.</p>
+  <p class="muted">Wybierz plik <span class="mono">.flowmap.json</span> wyeksportowany z FlowMap albo diagram
+    <span class="mono">.bpmn</span> z Camunda Modeler, bpmn.io lub Signavio. Powstanie nowy projekt.</p>
   <form method="post" enctype="multipart/form-data" class="stack">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <label>Plik JSON <input type="file" name="file" accept="application/json,.json" required></label>
+    <label>Plik JSON lub BPMN <input type="file" name="file" accept="application/json,.json,.bpmn,.xml" required></label>
     <button class="btn primary" type="submit">Importuj</button>
   </form>
   <p class="muted" style="margin-top:1rem"><a href="{{ url_for('projects.index') }}">← Projekty</a></p>

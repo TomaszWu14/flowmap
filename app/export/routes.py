@@ -104,9 +104,11 @@ def _clean_data(data: dict) -> dict:
 def import_project():
     if request.method == "POST":
         upload = request.files.get("file")
+        if upload and (upload.filename or "").lower().endswith((".bpmn", ".xml")):
+            return _import_bpmn(upload.read())
         try:
             if not upload:
-                raise ValueError("Wybierz plik JSON.")
+                raise ValueError("Wybierz plik JSON albo BPMN.")
             parsed = builders.parse_project_file(json.load(upload.stream))
         except (ValueError, UnicodeDecodeError) as exc:
             flash(str(exc) if isinstance(exc, ValueError) and not isinstance(exc, json.JSONDecodeError)
@@ -130,6 +132,21 @@ def import_project():
         flash("Projekt zaimportowany.", "success")
         return redirect(url_for("flow.view", project_id=project.id))
     return render_template("export/import.html")
+
+
+def _import_bpmn(data: bytes):
+    """A diagram from Camunda Modeler / bpmn.io / Signavio becomes a new map (thorough mode, no template)."""
+    try:
+        name, graph = builders.parse_bpmn(data)
+    except ValueError as exc:
+        flash(str(exc), "error")
+        return redirect(url_for("export.import_project"))
+    start = next((n["title"] for n in graph["nodes"] if n["type"] == "start"), name)
+    project = project_from_graph(current_user, name, start, "thorough", None, graph, "Zaimportowano z BPMN")
+    audit.log("project_created", f"{project.name} (import BPMN)")
+    db.session.commit()
+    flash(f"Zaimportowano proces z BPMN: {len(graph['nodes'])} elementów. Ułóż mapę przyciskiem „Ułóż”.", "success")
+    return redirect(url_for("flow.view", project_id=project.id))
 
 
 # --- public example ---------------------------------------------------------------
