@@ -10,7 +10,7 @@ from ..export import builders
 from ..extensions import db
 from ..flow import graph as g
 from ..flow.routes import add_images, graph_payload, render_simulation
-from ..models import Project, ProjectMember, User
+from ..models import ClientReview, Project, ProjectMember, User, Version, utcnow
 
 bp = Blueprint("share", __name__)
 
@@ -117,8 +117,54 @@ def view(token):
     project = _shared(token)
     graph = project.graph()
     spec = builders.to_markdown(project.meta, graph, g.project_spec(project))
+    reviews = ClientReview.query.filter_by(project_id=project.id).order_by(ClientReview.id.desc()).limit(10).all()
     return render_template("share/view.html", project=project, token=token, spec=spec,
-                           mermaid=builders.to_mermaid(graph))
+                           mermaid=builders.to_mermaid(graph), reviews=reviews)
+
+
+REVIEWS_PER_DAY = 20  # per project: the link is public, a script must not flood the owner
+
+
+@bp.post("/s/<token>/opinia")
+def review(token):
+    """The client's verdict on the current version, without an account; the owner sees it in the version history."""
+    import smtplib
+    from datetime import timedelta
+
+    from flask import current_app
+
+    from ..mail import mail_enabled, send_mail
+
+    project = _shared(token)
+    name = (request.form.get("name") or "").strip()[:100]
+    decision = request.form.get("decision")
+    comment = (request.form.get("comment") or "").strip()[:2000]
+    recent = ClientReview.query.filter(ClientReview.project_id == project.id,
+                                       ClientReview.created_at >= utcnow() - timedelta(days=1)).count()
+    error = ("Podaj imię lub nazwę firmy." if not name else
+             "Wybierz decyzję." if decision not in ("accept", "changes") else
+             "Napisz, co zmienić." if decision == "changes" and not comment else
+             "Dziś przyjęto już dużo opinii do tego projektu — spróbuj jutro." if recent >= REVIEWS_PER_DAY else None)
+    if error:
+        flash(error, "error")
+        return redirect(url_for("share.view", token=token) + "#opinia")
+    version = db.session.get(Version, project.version_cursor_id or 0)
+    db.session.add(ClientReview(project_id=project.id, version_id=version.id if version else None,
+                                version_label=version.description if version else "", name=name, decision=decision,
+                                comment=comment))
+    verdict = "akceptuje wersję" if decision == "accept" else "prosi o zmiany"
+    audit.log("client_review", f"{project.name}: {name} {verdict}", email=name)
+    db.session.commit()
+    if mail_enabled():
+        # nosemgrep: flask-url-for-external-true — host from proxy (Traefik); fixed public URL: open decision
+        link = url_for("projects.versions", project_id=project.id, _external=True)
+        try:
+            send_mail(project.owner.email, f"FlowMap: {name} {verdict} „{project.name}”",
+                      f"{name} {verdict}{': ' + comment if comment else '.'}\n\nHistoria wersji: {link}\n")
+        except (OSError, smtplib.SMTPException) as exc:  # the verdict is saved either way
+            current_app.logger.warning("client review mail failed: %s", exc)
+    flash("Dziękujemy — decyzja zapisana. Autor mapy ją zobaczy.", "success")
+    return redirect(url_for("share.view", token=token) + "#opinia")
 
 
 @bp.get("/s/<token>/graph.json")

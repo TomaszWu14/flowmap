@@ -298,6 +298,19 @@ class Comment(db.Model):
     author = db.relationship("User")
 
 
+class ClientReview(db.Model):
+    """A client's verdict on the shared map (/s/<token>), without an account: accept or ask for changes."""
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False, index=True)
+    version_id = db.Column(db.Integer)  # no FK: versions may be dropped by undo; the label below survives
+    version_label = db.Column(db.String(300), default="")
+    name = db.Column(db.String(100), nullable=False)
+    decision = db.Column(db.String(10), nullable=False)  # accept | changes
+    comment = db.Column(db.Text, default="")
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+
+
 class QuestionLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.Integer, db.ForeignKey("project.id"), nullable=False, index=True)
