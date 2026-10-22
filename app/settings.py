@@ -9,6 +9,9 @@ DEFAULTS = {
     "allow_signup": ("ALLOW_SIGNUP", bool),
     "ai_daily_limit": ("AI_DAILY_LIMIT", int),
     "ai_enabled": (None, bool),  # kill switch; AI still needs ANTHROPIC_API_KEY
+    "ai_model": ("ANTHROPIC_MODEL", str),  # grading, questions, reports
+    "ai_chat_model": ("ANTHROPIC_CHAT_MODEL", str),  # trainer chat
+    "ai_monthly_budget": ("AI_MONTHLY_BUDGET_USD", float),  # USD per calendar month, 0 = no cap
 }
 
 
@@ -33,3 +36,7 @@ def signup_open() -> bool:
 
 def ai_daily_limit() -> int:
     return int(get("ai_daily_limit"))
+
+
+def ai_monthly_budget() -> float:
+    return float(get("ai_monthly_budget"))

@@ -36,7 +36,7 @@
 </section>
 <section class="card" style="margin-top:1rem">
   <h2>Cennik</h2>
-  <p class="muted">Modele w użyciu: <span class="mono">{{ model }}</span> (oceny, pytania, raporty) i <span class="mono">{{ chat_model }}</span> (czat trenera). Zmiana: zmienne <span class="mono">ANTHROPIC_MODEL</span> / <span class="mono">ANTHROPIC_CHAT_MODEL</span> w Coolify.</p>
+  <p class="muted">Modele w użyciu: <span class="mono">{{ model }}</span> (oceny, pytania, raporty) i <span class="mono">{{ chat_model }}</span> (czat trenera). Zmiana: ustawienia w <a href="{{ url_for('admin.index') }}">panelu administratora</a>{% if budget %} · miesięczny budżet ${{ '%g'|format(budget) }}{% endif %}.</p>
   <div class="table-wrap"><table class="versions">
     <tr><th>Model</th><th>Wejście (1 mln tokenów)</th><th>Wyjście (1 mln tokenów)</th></tr>
     {% for name, (pin, pout) in prices.items() %}
