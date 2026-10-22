@@ -1,6 +1,6 @@
 from app.exercises import catalog
 from app.extensions import db
-from app.models import ExerciseAttempt, Project
+from app.models import AiCache, ExerciseAttempt, Project
 from tests.test_collaborators import team  # noqa: F401
 from tests.test_exercises import start
 from tests.test_spec_review import fake
@@ -52,6 +52,7 @@ def test_stage2_locked_then_graded_with_spec(auth_client, app, monkeypatch):
     submit(auth_client, p, stage=2)
     prompt = calls[0]["messages"][0]["content"]
     assert catalog.get("urlopy").stage2[0].text in prompt and "classDiagram" in prompt
+    AiCache.query.delete()  # same map as the first submission: otherwise the cached grade comes back
     submit(auth_client, p, stage=1)  # resubmitting stage 1 keeps stage 2 open
     assert [(a.stage, a.score) for a in attempts(p)] == [(1, 40), (2, 55), (1, 80)]
     assert Project.query.get(p.id).exercise_stage == 2

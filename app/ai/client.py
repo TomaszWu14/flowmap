@@ -1,5 +1,6 @@
 """Anthropic calls. Every answer comes back as a tool call, validated by Pydantic."""
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -219,15 +220,34 @@ def _api_call(client, feature: str = "", **kwargs):
     return response
 
 
+CACHE_DAYS = 7
+
+
 def call_tool(prompt: str, tool: dict, model_cls: type[BaseModel]) -> BaseModel:
-    """One request + one retry when the tool payload fails validation."""
-    client = _client()
+    """One request + one retry when the tool payload fails validation; a fresh identical request is served from cache.
+
+    ponytail: a cache hit still uses one of the user's daily requests (spent by the caller) — it only saves money.
+    """
+    from datetime import timedelta
+
+    from ..extensions import db
+    from ..models import AiCache, utcnow
+
     system = _prompt("system")
+    name = model()
+    key = hashlib.sha256(json.dumps([name, tool, system, prompt], ensure_ascii=False).encode()).hexdigest()
+    cached = db.session.get(AiCache, key)
+    if cached is not None and cached.created_at >= utcnow() - timedelta(days=CACHE_DAYS):
+        try:
+            return model_cls.model_validate(cached.payload)
+        except ValidationError:
+            pass  # schema changed since: ask again
+    client = _client()
     last_error = "brak wywołania narzędzia"
     for _attempt in range(2):
         response = _api_call(
             client,
-            model=model(),
+            model=name,
             max_tokens=8000,
             system=system,
             tools=[tool],
@@ -239,10 +259,17 @@ def call_tool(prompt: str, tool: dict, model_cls: type[BaseModel]) -> BaseModel:
         if block is None:
             continue
         try:
-            return model_cls.model_validate(block.input)
+            result = model_cls.model_validate(block.input)
         except ValidationError as exc:
             last_error = f"niepoprawna odpowiedź ({exc.error_count()} błędów walidacji)"
             current_app.logger.warning("AI payload invalid: %s", exc)
+            continue
+        if cached is None:
+            cached = AiCache(key=key, tool=tool["name"])
+            db.session.add(cached)
+        cached.payload, cached.created_at = block.input, utcnow()
+        db.session.commit()
+        return result
     raise AIError(last_error)
 
 
