@@ -74,7 +74,7 @@ def report(project_id):
     from collections import Counter
 
     from ..comments.routes import open_comment_counts
-    from ..flow import guard
+    from ..flow import guard, timing
     from ..models import NODE_TYPE_LABELS
 
     project = g.project_for(project_id, "view")
@@ -84,7 +84,7 @@ def report(project_id):
     roles = Counter(n["actor"] for n in steps if n.get("actor"))
     return render_template("export/report.html", project=project, graph=graph, steps=steps, roles=roles,
                            mermaid=builders.to_mermaid(graph), labels=NODE_TYPE_LABELS,
-                           guard=guard.report(graph, open_comment_counts(project)),
+                           guard=guard.report(graph, open_comment_counts(project)), timing=timing.analyze(graph),
                            vision=spec.vision if spec else None)
 
 
@@ -94,6 +94,12 @@ def _clean_data(data: dict) -> dict:
         out["branches"] = [str(b)[:100] for b in data["branches"]][:10]
     if isinstance(data.get("tpl"), str):
         out["tpl"] = data["tpl"][:40]
+    if isinstance(data.get("icon"), str):
+        out["icon"] = data["icon"][:40]
+    if isinstance(data.get("minutes"), int) and 0 <= data["minutes"] <= 525_600:
+        out["minutes"] = data["minutes"]
+    if isinstance(data.get("cost"), int | float) and 0 <= data["cost"] <= 10_000_000:
+        out["cost"] = round(float(data["cost"]), 2)
     if isinstance(data.get("asked"), list):
         out["asked"] = [str(a)[:20] for a in data["asked"]][:10]
     return out
