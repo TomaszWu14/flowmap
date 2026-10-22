@@ -56,5 +56,22 @@
       "text": "Wizja określa cel i mierzalną korzyść (np. czas od przyjazdu do odłożenia, odsetek dostaw bez rozbieżności).",
       "topic": "wizja"
     }
+  ],
+  "solution": [
+    "s|start|Dostawca awizuje dostawę towaru|Dostawca|a",
+    "a|screen|Awizacja: zamówienie, palety, preferowany termin|Dostawca|b",
+    "b|automation|Przydział okna czasowego i rampy|System|c",
+    "c|wait|Przyjazd ciężarówki|Portier|d",
+    "d|decision|Czy przyjazd jest w oknie z awizacją?|Portier|e:tak;x1:nie",
+    "x1|user_action|Przydział wolnej rampy albo odesłanie|Kierownik zmiany|e",
+    "e|user_action|Rozładunek i kontrola ilościowa|Magazynier|f",
+    "f|user_action|Kontrola jakościowa|Magazynier|g",
+    "g|decision|Czy jest zgodność z zamówieniem?|System|h:tak;x2:nie",
+    "x2|user_action|Protokół rozbieżności (brak, nadwyżka, uszkodzenie)|Magazynier|x3",
+    "x3|integration|Informacja o rozbieżności do dostawcy|System|h",
+    "h|automation|Przyjęcie w systemie i etykiety palet|System|i",
+    "i|automation|Wskazanie miejsca składowania|System|j",
+    "j|user_action|Odłożenie i skan miejsca|Operator wózka|k1",
+    "k1|end|Towar na miejscu składowania|System|"
   ]
 }

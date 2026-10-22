@@ -388,3 +388,9 @@ kbd { font: inherit; font-size: .75rem; border: 1px solid var(--line); border-bo
   .report tr, .report li { break-inside: avoid; }
   .card { box-shadow: none; border: 0; }
 }
+
+/* Exercise results: learner's map next to the expert's */
+.compare-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.compare-grid figure { margin: 0; min-width: 0; }
+.compare-grid figcaption { font-weight: 700; margin-bottom: .4rem; }
+.compare-grid pre.mermaid { overflow-x: auto; background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: .5rem; }

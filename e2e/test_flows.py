@@ -113,6 +113,7 @@ def test_design_diagrams_render(page):
     project = page.url.rstrip("/").split("/")[-1]
     page.goto(f"/p/{project}/projekt-aplikacji?sekcja=classes")
     page.wait_for_selector("pre.mermaid svg")
+    assert page.locator("text=Syntax error").count() == 0
     page.goto(f"/p/{project}/specyfikacja")
     expect(page.locator("main")).to_contain_text("Gotowość")
     assert page.errors == []
@@ -126,6 +127,7 @@ def test_png_download_and_report_page(page):
     project = page.url.rstrip("/").split("/")[-1]
     page.goto(f"/p/{project}/raport")
     page.wait_for_selector("pre.mermaid svg")
+    assert page.locator("text=Syntax error").count() == 0  # Mermaid draws its errors as an SVG too
     page.emulate_media(media="print")
     assert not page.locator(".topbar").is_visible()
     assert page.errors == []
