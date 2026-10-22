@@ -402,3 +402,12 @@ kbd { font: inherit; font-size: .75rem; border: 1px solid var(--line); border-bo
 .replay-list li { padding: .35rem .5rem; border-radius: 8px; }
 .replay-list li.current { background: var(--surface-2); outline: 1px solid var(--line); }
 .replay-grid pre.mermaid { overflow-x: auto; background: transparent; border: 0; }
+
+/* Learning path on /cwiczenia */
+.program-path { list-style: none; padding: 0; margin: .8rem 0 0; display: grid; gap: .45rem; }
+.program-step { display: flex; gap: .7rem; align-items: center; }
+.program-dot { flex: none; width: 1.8rem; height: 1.8rem; border-radius: 50%; display: grid; place-items: center;
+  font-weight: 700; font-size: .85rem; border: 2px solid var(--line); color: var(--muted); }
+.program-step.done .program-dot { background: var(--ok); border-color: var(--ok); color: #fff; }
+.program-step.next .program-dot { border-color: var(--accent, var(--info)); color: var(--ink); }
+.program-step.later { opacity: .65; }

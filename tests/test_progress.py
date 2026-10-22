@@ -99,3 +99,19 @@ def test_progress_shows_only_own_data(auth_client, user, client):
     html = client.get("/postep").get_data(as_text=True)
     assert "88" not in html and "Zacznij od ćwiczenia podstawowego" in html
     assert Project.query.count() == 1
+
+
+def test_program_path_statuses():
+    from app.exercises import catalog
+    from app.exercises.progress import PASS, PROGRAM, program
+
+    exercises = {e.key: e for e in catalog.all_exercises()}
+    assert set(PROGRAM) == set(exercises)  # every exercise is on the path
+    steps = program(exercises, {"urlopy": 80, "onboarding": PASS - 1, "logistyka": 90})
+    assert [s["status"] for s in steps] == ["done", "next", "later", "done", "later", "later", "later"]
+    assert [s["status"] for s in program(exercises, {})][:2] == ["next", "later"]
+
+
+def test_program_on_exercise_catalogue(auth_client):
+    html = auth_client.get("/cwiczenia").get_data(as_text=True)
+    assert "Program: 0 z 7 zaliczone" in html and 'aria-current="step"' in html and "Wniosek urlopowy" in html

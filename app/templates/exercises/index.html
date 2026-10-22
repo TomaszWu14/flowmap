@@ -7,6 +7,28 @@
   <div class="row"><a class="btn" href="{{ url_for('exercises.progress_page') }}">Postęp</a>
     <a class="btn" href="{{ url_for('projects.index') }}">← Projekty</a></div>
 </div>
+<section class="card program" aria-labelledby="program-h">
+  <div class="row" style="justify-content:space-between">
+    <h2 id="program-h">Program: {{ done }} z {{ path|length }} zaliczone</h2>
+    <span class="muted">Zaliczenie: najlepszy wynik od {{ passing }}/100</span>
+  </div>
+  <div class="bar" aria-hidden="true"><span style="width: {{ (100 * done / path|length)|round|int if path else 0 }}%" class="ok"></span></div>
+  <ol class="program-path">
+    {% for s in path %}
+    <li class="program-step {{ s.status }}"{% if s.status == 'next' %} aria-current="step"{% endif %}>
+      <span class="program-dot" aria-hidden="true">{{ '✓' if s.status == 'done' else loop.index }}</span>
+      <span><strong>{{ s.ex.title }}</strong> <span class="muted">· {{ levels[s.ex.level] }}{% if s.score is not none %} · {{ s.score }}/100{% endif %}</span>
+        {% if s.status == 'next' %}<form method="post" action="{{ url_for('exercises.start', key=s.ex.key) }}" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn primary small" type="submit">{{ 'Popraw wynik' if s.score is not none else 'Zacznij' }}</button></form>{% endif %}
+      </span>
+    </li>
+    {% endfor %}
+  </ol>
+  {% if done == path|length and path %}<p class="ok">Cały program zaliczony — sprawdź się w trybie rekrutacyjnym.</p>{% endif %}
+</section>
+
+<h2 style="margin-top:1.4rem">Wszystkie ćwiczenia</h2>
 <div class="grid-cards">
   {% for ex in exercises %}
   <article class="card project-card">
