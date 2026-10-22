@@ -26,7 +26,10 @@ def index():
     best = dict(db.session.query(Project.exercise_key, func.max(ExerciseAttempt.score))
                 .join(Project, ExerciseAttempt.project_id == Project.id)
                 .filter(ExerciseAttempt.user_id == current_user.id).group_by(Project.exercise_key).all())
-    return render_template("exercises/index.html", exercises=catalog.all_exercises(), best=best,
+    exercises = catalog.all_exercises()
+    path = progress.program({e.key: e for e in exercises}, best)
+    return render_template("exercises/index.html", exercises=exercises, best=best, path=path,
+                           done=sum(s["status"] == "done" for s in path), passing=progress.PASS,
                            levels=catalog.LEVELS, ai=ai_enabled(), recruit_minutes=RECRUIT_MINUTES)
 
 

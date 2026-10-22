@@ -88,3 +88,28 @@ def recommend(exercises: list[Exercise], score: dict[str, int], weak_topics: lis
         return undone[0], "Tego zadania jeszcze nie oddano."
     pick = min(exercises, key=lambda e: score[e.key])
     return pick, f"Tu masz najniższy wynik ({score[pick.key]}/100) — spróbuj poprawić."
+
+
+# Learning path: easiest first (one actor flow → parallel work → legal deadline → warehouse → finance → IT SLA).
+PROGRAM = ("urlopy", "onboarding", "reklamacje", "logistyka", "p2p", "o2c", "incydenty-it")
+PASS = 60  # best score that counts an exercise as passed on the path
+
+
+def program(exercises: dict[str, Exercise], best: dict[str, int]) -> list[dict]:
+    """Path steps with status: done (best ≥ PASS), next (the first not passed), later (after it).
+
+    ponytail: "later" is advice, not a lock — every exercise stays startable from the catalogue.
+    """
+    steps, found_next = [], False
+    for key in PROGRAM:
+        if key not in exercises:
+            continue
+        score = best.get(key)
+        if score is not None and score >= PASS:
+            status = "done"
+        elif not found_next:
+            status, found_next = "next", True
+        else:
+            status = "later"
+        steps.append({"ex": exercises[key], "score": score, "status": status})
+    return steps
