@@ -65,3 +65,28 @@ def test_project_delete_removes_comments(team):  # noqa: F811
     add(team["owner"], p, p.nodes[0].key)
     team["owner"].post(f"/p/{p.id}/usun")
     assert Project.query.get(p.id) is None and Comment.query.count() == 0
+
+
+def test_mentions_mail_only_project_people(team, app, monkeypatch):  # noqa: F811
+    from app.comments import routes as comments
+
+    sent = []
+    monkeypatch.setattr(comments, "send_mail", lambda to, subject, body: sent.append((to, subject, body)))
+    p = team["project"]
+    key = p.nodes[0].key
+    html = add(team["viewer"], p, key, "@ed@example.com sprawdź to").get_data(as_text=True)
+    assert "e-mail jest wyłączony" in html and sent == []  # no MAIL_SERVER configured
+    app.config["MAIL_SERVER"] = "smtp.example.com"
+    html = add(team["viewer"], p, key, "Pytanie do @ed@example.com i @obcy@example.com.").get_data(as_text=True)
+    assert "Powiadomiono e-mailem: ed@example.com" in html
+    assert [to for to, _s, _b in sent] == ["ed@example.com"]  # the outsider is not a project member
+    assert "vi@example.com wspomina" in sent[0][1] and f"/p/{p.id}#krok-{key}" in sent[0][2]
+    html = add(team["viewer"], p, key, "tylko @obcy@example.com").get_data(as_text=True)
+    assert "tylko osoby z tego projektu" in html and len(sent) == 1
+
+    def broken(*_a):
+        raise OSError("smtp down")
+
+    monkeypatch.setattr(comments, "send_mail", broken)
+    html = add(team["viewer"], p, key, "@ed@example.com znowu").get_data(as_text=True)
+    assert "Nie udało się wysłać" in html and Comment.query.filter_by(body="@ed@example.com znowu").count() == 1
