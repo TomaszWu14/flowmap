@@ -41,7 +41,7 @@ def _mm(text: str) -> str:
 MERMAID_SHAPES = {
     "start": ('(["', '"])'), "end": ('(["', '"])'), "decision": ('{"', '"}'),
     "screen": ('["', '"]'), "user_action": ('("', '")'), "automation": ('[["', '"]]'),
-    "integration": ('[/"', '"/]'), "wait": ('(("', '"))'),
+    "integration": ('[/"', '"/]'), "wait": ('(("', '"))'), "parallel": ('{{"', '"}}'),
 }
 
 
@@ -56,13 +56,14 @@ def to_mermaid(graph: dict) -> str:
         if e["source"] in ids and e["target"] in ids:
             arrow = f'-->|"{_mm(e["label"])}"|' if e.get("label") else "-->"
             lines.append(f"    {ids[e['source']]} {arrow} {ids[e['target']]}")
-    for t in NODE_TYPES:
+    for t in NODE_TYPES:  # "t_" prefix: "end" is a reserved word in Mermaid, "class n1 end" is a syntax error
         members = [ids[n["key"]] for n in graph["nodes"] if n["type"] == t]
         if members:
-            lines.append(f"    class {','.join(members)} {t}")
+            lines.append(f"    class {','.join(members)} t_{t}")
     lines += [
-        "    classDef start fill:#d3f9d8,stroke:#2b8a3e", "    classDef end fill:#ffe3e3,stroke:#c92a2a",
-        "    classDef decision fill:#fff3bf,stroke:#e67700", "    classDef screen fill:#e7f5ff,stroke:#1971c2",
+        "    classDef t_start fill:#d3f9d8,stroke:#2b8a3e", "    classDef t_end fill:#ffe3e3,stroke:#c92a2a",
+        "    classDef t_decision fill:#fff3bf,stroke:#e67700", "    classDef t_screen fill:#e7f5ff,stroke:#1971c2",
+        "    classDef t_parallel fill:#f3f0ff,stroke:#6741d9",
     ]
     return "\n".join(lines) + "\n"
 

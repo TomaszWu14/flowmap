@@ -60,5 +60,23 @@
       "text": "Wizja określa cel aplikacji i mierzalną korzyść (np. czas akceptacji, brak zgubionych wniosków).",
       "topic": "wizja"
     }
+  ],
+  "solution": [
+    "s|start|Pracownik chce wziąć urlop|Pracownik|a",
+    "a|screen|Podgląd salda i kalendarza zespołu|Pracownik|b",
+    "b|user_action|Złożenie wniosku z datami|Pracownik|c",
+    "c|decision|Czy saldo wystarcza?|System|d:tak;x1:nie",
+    "x1|automation|Odrzucenie: brak dni w saldzie|System|n2",
+    "d|decision|Czy obsada zespołu jest zachowana?|System|e:tak;w:nie",
+    "w|automation|Ostrzeżenie o kolizji dla kierownika|System|e",
+    "e|wait|Oczekiwanie na decyzję kierownika (2 dni)|Kierownik|f:decyzja;r:minął termin",
+    "r|automation|Przypomnienie i przekazanie zastępcy|System|f",
+    "f|decision|Czy kierownik akceptuje?|Kierownik|g:tak;x2:nie",
+    "x2|user_action|Odrzucenie z podaniem powodu|Kierownik|n2",
+    "g|automation|Aktualizacja salda urlopu|Kadry|n1",
+    "n1|automation|Powiadomienie pracownika o akceptacji|System|k1",
+    "n2|automation|Powiadomienie pracownika o odrzuceniu|System|k2",
+    "k1|end|Urlop zatwierdzony|System|",
+    "k2|end|Wniosek odrzucony|System|"
   ]
 }

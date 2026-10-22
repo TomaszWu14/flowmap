@@ -8,6 +8,7 @@ from sqlalchemy import func
 
 from .. import audit
 from ..ai.client import AIError, ai_enabled, spend_ai_request
+from ..export import builders
 from ..extensions import db
 from ..flow import graph as g
 from ..models import Evaluation, ExerciseAttempt, Project
@@ -68,8 +69,10 @@ def results(project_id):
         stages.append({"number": stage, "attempts": done, "latest": done[0] if done else None,
                        "best": max((a.score for a in done), default=None),
                        "open": stage <= project.exercise_stage})
+    solution = ex.solution_graph() if stages[0]["latest"] else None  # revealed after the first graded map
     return render_template("exercises/results.html", project=project, ex=ex, stages=stages, verdicts=VERDICTS,
-                           ai=ai_enabled())
+                           ai=ai_enabled(), solution=solution and builders.to_mermaid(solution),
+                           mine=solution and builders.to_mermaid(project.graph()))
 
 
 @bp.post("/p/<int:project_id>/cwiczenie/oddaj")

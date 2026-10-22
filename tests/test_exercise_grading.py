@@ -98,3 +98,25 @@ def test_permissions(team, app, monkeypatch):  # noqa: F811
     assert submit(team["outsider"], p).status_code == 404
     assert attempts(p) == []
     assert submit(team["editor"], p).status_code == 302 and len(attempts(p)) == 1
+
+
+def test_expert_map_revealed_after_first_graded_map(auth_client, app, monkeypatch):
+    _, p = start(auth_client)
+    before = auth_client.get(f"/p/{p.id}/cwiczenie").get_data(as_text=True)
+    assert "Mapa eksperta" not in before and "mermaid.min.js" not in before
+    fake(monkeypatch, app, graded())
+    submit(auth_client, p)
+    html = auth_client.get(f"/p/{p.id}/cwiczenie").get_data(as_text=True)
+    assert "Mapa eksperta" in html and "Twoja mapa" in html and "Czy saldo wystarcza?" in html
+
+
+def test_every_exercise_has_a_valid_expert_map():
+    import pytest
+
+    for ex in catalog.all_exercises():
+        graph = ex.solution_graph()
+        assert graph and any(n["type"] == "end" for n in graph["nodes"]), ex.key
+    with pytest.raises(ValueError, match="nieistniejące"):
+        catalog.solution_graph(["s|start|Start|Klient|x"])
+    with pytest.raises(ValueError, match="zły krok"):
+        catalog.solution_graph(["s|nieznany|Start|Klient|"])

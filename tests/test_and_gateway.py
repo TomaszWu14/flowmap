@@ -58,3 +58,17 @@ def test_and_gateway_from_other_opens_every_path(auth_client):
     assert gate.data["branches"] == ["pakowanie", "faktura"]
     html = auth_client.get(f"/p/{p.id}/guard").get_data(as_text=True)
     assert "pakowanie" in html and "faktura" in html  # both paths are open questions
+
+
+def test_export_pages_handle_parallel_gateway(auth_client):
+    # Regression: to_mermaid had no shape for "parallel", so export, report and spec ZIP crashed with 500.
+    from app.extensions import db
+    from app.flow import graph as g
+
+    p = new_project(auth_client)
+    g.load_graph(p, split_graph(joined=True))
+    db.session.commit()
+    for url in (f"/p/{p.id}/eksport", f"/p/{p.id}/raport", f"/p/{p.id}/eksport/diagram.mmd"):
+        r = auth_client.get(url)
+        assert r.status_code == 200, url
+    assert "{{" in auth_client.get(f"/p/{p.id}/eksport/diagram.mmd").get_data(as_text=True)  # hexagon = AND gateway
