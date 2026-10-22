@@ -34,5 +34,34 @@ services:
       timeout: 5s
       retries: 10
 
+  # Daily pg_dump (attachments live in the DB too), kept 14 days. Restore: see docs/kopie-zapasowe.md.
+  # ponytail: same server as the DB — survives a broken migration or a deleted project, not a lost disk;
+  # copy /backups off-site (Coolify S3 backup or rclone) when that risk matters.
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      PGHOST: db
+      PGUSER: flowmap
+      PGDATABASE: flowmap
+      PGPASSWORD: ${SERVICE_HEX_32_POSTGRES:?set DB password}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+      BACKUP_EVERY_SECONDS: ${BACKUP_EVERY_SECONDS:-86400}
+    volumes:
+      - flowmap-backups:/backups
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          f=/backups/flowmap-$$(date -u +%Y%m%d-%H%M).dump
+          if pg_dump -Fc -f "$$f.part" && mv "$$f.part" "$$f"; then echo "backup ok: $$f"; else echo "backup FAILED"; rm -f "$$f.part"; fi
+          find /backups -name 'flowmap-*.dump' -mtime +$$BACKUP_KEEP_DAYS -delete
+          sleep $$BACKUP_EVERY_SECONDS
+        done
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   flowmap-db:
+  flowmap-backups:

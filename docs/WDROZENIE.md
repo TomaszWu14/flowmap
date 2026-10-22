@@ -36,7 +36,7 @@ Coolify sam generuje zmienne z prefiksem `SERVICE_` użyte w `docker-compose.yml
 | `SERVICE_PASSWORD_64_SECRETKEY` | generuje Coolify | `SECRET_KEY` aplikacji |
 | `ALLOW_SIGNUP` | ręcznie, opcjonalnie | `false` = rejestracja wyłączona |
 | `ANTHROPIC_API_KEY` | ręcznie, opcjonalnie | bez klucza działa tryb reguł i szablonów |
-| `ANTHROPIC_MODEL` | ręcznie, opcjonalnie | domyślnie `claude-sonnet-5-5` (czat trenera: `ANTHROPIC_CHAT_MODEL`, też `claude-sonnet-5-5`) |
+| `ANTHROPIC_MODEL` | ręcznie, opcjonalnie | wartość początkowa, domyślnie `claude-sonnet-5-5` (czat: `ANTHROPIC_CHAT_MODEL`); właściwy wybór modeli i miesięczny budżet są w panelu admina |
 | `AI_DAILY_LIMIT` | ręcznie, opcjonalnie | domyślnie 100 zapytań/użytkownika/dzień (można zmienić w panelu admina) |
 | `MAIL_SERVER` i reszta `MAIL_*` | ręcznie, opcjonalnie | SMTP do linków „Nie pamiętam hasła”; bez tego admin generuje link w panelu |
 
@@ -70,11 +70,30 @@ flask create-user ty@example.com
 Uprawnień nie da się nadać przez zmienną środowiskową z adresem e-mail — przy otwartej rejestracji
 ktoś mógłby założyć konto na Twój adres przed Tobą.
 
-## 7. Aktualizacje i kopie
+## 7. Aktualizacje
 
-- Nowa wersja: push na `main` → **Redeploy** w Coolify (albo webhook / auto-deploy z GitHub App).
-- Dane są w wolumenie `flowmap-db`. Kopia: w Coolify *Backups* dla bazy albo
-  `docker exec <db> pg_dump -U flowmap flowmap > kopia.sql`.
+Po scaleniu PR na `main` i zielonym CI workflow `.github/workflows/deploy.yml` sam wywołuje
+`POST https://coolify.twapp.pl/api/v1/deploy` (sekret repo `COOLIFY_TOKEN` — token Coolify z uprawnieniem
+*deploy*) i czeka, aż `/healthz` odpowie. Ręcznie: **Redeploy** w Coolify albo *Actions → Deploy → Run workflow*.
+
+## 8. Kopie zapasowe
+
+Usługa `backup` z `docker-compose.yml` co 24 h robi `pg_dump -Fc` całej bazy (grafiki też są w bazie) do
+wolumenu `flowmap-backups` i trzyma 14 dni (`BACKUP_KEEP_DAYS`, `BACKUP_EVERY_SECONDS`). Pierwsza kopia
+powstaje zaraz po starcie. W logach usługi: `backup ok: /backups/flowmap-RRRRMMDD-GGMM.dump`.
+
+Kopie leżą na tym samym serwerze co baza: chronią przed złą migracją albo usuniętym projektem, nie przed
+utratą dysku. Dla kopii poza serwerem włącz w Coolify *S3 backup* albo kopiuj wolumen (rclone).
+
+Przywracanie (Coolify → **Terminal** usługi `backup`):
+
+```bash
+ls -lt /backups                          # wybierz kopię
+pg_restore --clean --if-exists --no-owner -d flowmap /backups/flowmap-20261022-1200.dump
+```
+
+Potem **Restart** usługi `app`. Kopię na żądanie zrobisz tym samym poleceniem co usługa:
+`pg_dump -Fc -f /backups/flowmap-reczna.dump`.
 
 ## Rozwiązywanie problemów
 
