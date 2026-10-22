@@ -116,3 +116,16 @@ def test_design_diagrams_render(page):
     page.goto(f"/p/{project}/specyfikacja")
     expect(page.locator("main")).to_contain_text("Gotowość")
     assert page.errors == []
+
+
+def test_png_download_and_report_page(page):
+    register_and_new_map(page)
+    with page.expect_download() as dl:
+        page.get_by_role("button", name="⇩ PNG").click()
+    assert dl.value.suggested_filename == "E2E rezerwacje.png"
+    project = page.url.rstrip("/").split("/")[-1]
+    page.goto(f"/p/{project}/raport")
+    page.wait_for_selector("pre.mermaid svg")
+    page.emulate_media(media="print")
+    assert not page.locator(".topbar").is_visible()
+    assert page.errors == []

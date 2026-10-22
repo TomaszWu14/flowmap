@@ -589,6 +589,19 @@
     });
   }
 
+  // Whole map as PNG (2x for print), on the current theme's background.
+  document.addEventListener("click", (ev) => {
+    const btn = ev.target.closest("[data-export-png]");
+    if (!btn) return;
+    const blob = cy.png({ output: "blob", full: true, scale: 2,
+      bg: getComputedStyle(document.body).backgroundColor });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = (btn.dataset.exportPng || "mapa").replace(/[\\/:*?"<>|]+/g, "-") + ".png";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+
   window.flowMap = { cy, data: () => lastData, minZoom: MIN_READABLE_ZOOM, icon: (k) => ICON_BODIES[k] || "" };  // player.js
   document.body.addEventListener("mapChanged", (ev) => load(ev.detail ? ev.detail.focus : undefined));
   load();

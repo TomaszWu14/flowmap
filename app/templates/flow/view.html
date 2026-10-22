@@ -56,6 +56,7 @@
         {% endif %}
         <a class="btn small" href="{{ url_for('flow.simulate', project_id=project.id) }}">▶ Przejdź proces</a>
         <a class="btn small" href="{{ url_for('export.index', project_id=project.id) }}">⇩ Eksport</a>
+        <button class="btn small" type="button" data-export-png="{{ project.name }}" title="Pobierz mapę jako obraz PNG">⇩ PNG</button>
         <a class="btn small" href="{{ url_for('media.materials', project_id=project.id) }}">Materiały</a>
         <a class="btn small" href="{{ url_for('projects.versions', project_id=project.id) }}">Wersje</a>
         {% if project.current_role == 'owner' %}
