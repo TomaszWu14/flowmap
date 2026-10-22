@@ -67,6 +67,27 @@ def download(project_id, kind):
     abort(404, "Nieznany format eksportu.")
 
 
+@bp.get("/p/<int:project_id>/raport")
+@login_required
+def report(project_id):
+    """One printable page for stakeholders without an account: map, steps, roles, guard notes, vision."""
+    from collections import Counter
+
+    from ..comments.routes import open_comment_counts
+    from ..flow import guard
+    from ..models import NODE_TYPE_LABELS
+
+    project = g.project_for(project_id, "view")
+    graph = project.graph()
+    spec = g.project_spec(project)
+    steps = [n for n in graph["nodes"] if n["type"] != "start"]
+    roles = Counter(n["actor"] for n in steps if n.get("actor"))
+    return render_template("export/report.html", project=project, graph=graph, steps=steps, roles=roles,
+                           mermaid=builders.to_mermaid(graph), labels=NODE_TYPE_LABELS,
+                           guard=guard.report(graph, open_comment_counts(project)),
+                           vision=spec.vision if spec else None)
+
+
 def _clean_data(data: dict) -> dict:
     out = {}
     if isinstance(data.get("branches"), list):

@@ -50,6 +50,7 @@
       panel.classList.toggle("collapsed");
       handle.setAttribute("aria-expanded", String(!panel.classList.contains("collapsed")));
     }
+    if (ev.target.closest("[data-print]")) window.print();
     const copyBtn = ev.target.closest("[data-copy]");
     if (copyBtn) {
       const src = document.getElementById(copyBtn.dataset.copy);

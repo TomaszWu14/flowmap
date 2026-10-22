@@ -154,3 +154,25 @@ def test_bpmn_task_types_follow_pictograms():
     tag = {el.get("id"): el.tag.split("}")[1] for el in proc if el.get("id", "").startswith("Node_")}
     assert tag == {"Node_s": "startEvent", "Node_m": "sendTask", "Node_k": "userTask", "Node_p": "manualTask",
                    "Node_g": "parallelGateway", "Node_e": "endEvent"}
+
+
+def test_printable_report(auth_client):
+    from tests.test_projects import new_project
+
+    p = new_project(auth_client)
+    html = auth_client.get(f"/p/{p.id}/raport").get_data(as_text=True)
+    assert "Raport procesu" in html and "data-print" in html and 'class="mermaid"' in html
+    assert "strażnik kompletności" in html and p.name in html
+    assert f"/p/{p.id}/raport" in auth_client.get(f"/p/{p.id}/eksport").get_data(as_text=True)
+    assert "data-export-png" in auth_client.get(f"/p/{p.id}").get_data(as_text=True)
+
+
+def test_report_needs_view_access(auth_client, client):
+    from tests.conftest import PASSWORD, make_user
+    from tests.test_projects import new_project
+
+    p = new_project(auth_client)
+    other = client.application.test_client()
+    make_user("obcy@example.com")
+    other.post("/login", data={"email": "obcy@example.com", "password": PASSWORD})
+    assert other.get(f"/p/{p.id}/raport").status_code == 404
