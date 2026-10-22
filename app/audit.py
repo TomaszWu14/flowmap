@@ -27,6 +27,7 @@ ACTIONS = {
     "member_removed": "Usunięcie współpracownika",
     "member_role_changed": "Zmiana roli współpracownika",
     "share_link_disabled": "Wyłączenie linku publicznego",
+    "ai_error": "Błąd AI",
 }
 
 

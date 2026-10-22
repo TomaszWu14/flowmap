@@ -52,8 +52,10 @@ def index():
         "signup": settings.signup_open(),
         "env": current_app.config["APP_ENV"],
     }
+    ai_error = AuditEvent.query.filter(AuditEvent.action == "ai_error", AuditEvent.created_at >= utcnow() - timedelta(
+        days=1)).order_by(AuditEvent.created_at.desc()).first()
     return render_template("admin/index.html", users=users, stats=stats, config_info=config,
-                           project_counts=project_counts, today=date.today())
+                           project_counts=project_counts, today=date.today(), ai_error=ai_error)
 
 
 def _cost_since(since):

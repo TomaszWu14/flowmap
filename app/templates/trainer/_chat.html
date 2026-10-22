@@ -21,7 +21,7 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label class="sr-only" for="trainer-text">Twoja wiadomość</label>
     <textarea id="trainer-text" name="text" rows="3" maxlength="2000" required placeholder="Napisz pytanie do trenera…">{{ draft }}</textarea>
-    <button class="btn primary" type="submit">Wyślij</button>
+    <button class="btn primary" type="submit" data-ai="Trener pisze…">Wyślij</button>
     <p class="field-help">Rozmowa jest prywatna i zużywa 1 zapytanie z dziennego limitu AI.</p>
   </form>
   {% endif %}

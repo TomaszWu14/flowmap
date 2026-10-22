@@ -6,9 +6,28 @@
     if (saved) root.dataset.theme = saved;
   } catch (e) { /* storage blocked */ }
 
+  // data-ai: buttons that call the model — 10–30 s of silence otherwise looks like a hang
+  function aiBusy(btn) {
+    if (!btn || btn.getAttribute("aria-busy") === "true") return;
+    btn.dataset.label = btn.textContent;
+    btn.textContent = btn.dataset.ai || "AI pracuje… (ok. 15–30 s)";
+    btn.setAttribute("aria-busy", "true");
+    setTimeout(() => { btn.disabled = true; }, 0);
+  }
+  function aiIdle(btn) {
+    if (!btn || !btn.isConnected || btn.getAttribute("aria-busy") !== "true") return;
+    btn.textContent = btn.dataset.label;
+    btn.removeAttribute("aria-busy");
+    btn.disabled = false;
+  }
+  const aiButton = (elt) => (elt.matches("[data-ai]") ? elt : elt.querySelector("button[data-ai]"));
+  document.body.addEventListener("htmx:beforeRequest", (ev) => aiBusy(aiButton(ev.detail.elt)));
+  document.body.addEventListener("htmx:afterRequest", (ev) => aiIdle(aiButton(ev.detail.elt)));
+
   document.addEventListener("submit", (ev) => {
     const msg = ev.target.dataset && ev.target.dataset.confirm;
     if (msg && !window.confirm(msg)) { ev.preventDefault(); return; }
+    if (ev.submitter && "ai" in ev.submitter.dataset && !ev.target.hasAttribute("hx-post")) aiBusy(ev.submitter);
     // data-once: forms that spend AI requests — a double click must not send (and pay) twice
     if (ev.target.dataset && "once" in ev.target.dataset) {
       setTimeout(() => ev.target.querySelectorAll("button[type=submit]").forEach((b) => { b.disabled = true; }), 0);

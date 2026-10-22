@@ -14,7 +14,7 @@
     </form>
     {% if ai and not (project.recruit and not project.recruit.ended) %}<form method="post" data-once action="{{ url_for('trainer.score_ai', project_id=project.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button class="btn" type="submit" title="Reguły + jakościowa ocena AI (30% wyniku); zużywa 1 zapytanie z dziennego limitu">Oceń z AI</button>
+      <button class="btn" type="submit" title="Reguły + jakościowa ocena AI (30% wyniku); zużywa 1 zapytanie z dziennego limitu" data-ai>Oceń z AI</button>
     </form>{% endif %}
   </div>
 </div>
