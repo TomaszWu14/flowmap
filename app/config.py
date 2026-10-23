@@ -26,6 +26,9 @@ class Config:
     ALLOW_SIGNUP = _bool("ALLOW_SIGNUP", True)
     # Visitor gate in front of the demo: on by default only in production (DEMO_VISITOR_GATE=false turns it off).
     DEMO_VISITOR_GATE = _bool("DEMO_VISITOR_GATE", APP_ENV == "production")
+    # Push notification (ntfy) on each new gate visitor; empty = off.
+    NTFY_URL = os.environ.get("NTFY_URL", "")
+    NTFY_TOKEN = os.environ.get("NTFY_TOKEN", "")
 
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
@@ -62,4 +65,6 @@ class TestConfig(Config):
     ANTHROPIC_API_KEY = ""
     ALLOW_SIGNUP = True
     DEMO_VISITOR_GATE = False
+    NTFY_URL = ""
+    NTFY_TOKEN = ""
     MAIL_SERVER = ""

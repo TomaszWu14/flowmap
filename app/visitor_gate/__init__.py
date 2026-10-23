@@ -18,6 +18,7 @@ from wtforms.validators import DataRequired, Length, ValidationError
 from ..admin.routes import admin_required
 from ..extensions import db
 from ..models import DemoVisitor, utcnow
+from .notify import notify_visitor
 
 bp = Blueprint("visitor_gate", __name__)
 
@@ -98,6 +99,7 @@ def gate():
         db.session.add(DemoVisitor(first_name=form.first_name.data, last_name=form.last_name.data,
                                    company=form.company.data))
         db.session.commit()
+        notify_visitor(form.first_name.data, form.last_name.data, form.company.data)
         session.permanent = True
         session[SESSION_KEY] = int(time.time())
         return redirect(target)

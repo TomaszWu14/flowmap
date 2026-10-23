@@ -36,6 +36,8 @@ Coolify sam generuje zmienne z prefiksem `SERVICE_` użyte w `docker-compose.yml
 | `SERVICE_PASSWORD_64_SECRETKEY` | generuje Coolify | `SECRET_KEY` aplikacji |
 | `ALLOW_SIGNUP` | ręcznie, opcjonalnie | `false` = rejestracja wyłączona |
 | `DEMO_VISITOR_GATE` | ręcznie, opcjonalnie | bramka „przedstaw się” przed demem; domyślnie włączona przy `APP_ENV=production`, `false` = wyłączona; lista: `/admin/odwiedzajacy` |
+| `NTFY_URL` | ręcznie, opcjonalnie | URL tematu ntfy (np. `https://ntfy.sh/<tajny-temat>`); push na telefon o każdym nowym gościu bramki; puste = wyłączone |
+| `NTFY_TOKEN` | ręcznie, opcjonalnie | token `Authorization: Bearer` dla własnego serwera ntfy z kontrolą dostępu |
 | `ANTHROPIC_API_KEY` | ręcznie, opcjonalnie | bez klucza działa tryb reguł i szablonów |
 | `ANTHROPIC_MODEL` | ręcznie, opcjonalnie | wartość początkowa, domyślnie `claude-sonnet-5-5` (czat: `ANTHROPIC_CHAT_MODEL`); właściwy wybór modeli i miesięczny budżet są w panelu admina |
 | `AI_DAILY_LIMIT` | ręcznie, opcjonalnie | domyślnie 100 zapytań/użytkownika/dzień (można zmienić w panelu admina) |
