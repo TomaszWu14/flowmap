@@ -38,6 +38,8 @@ Coolify sam generuje zmienne z prefiksem `SERVICE_` użyte w `docker-compose.yml
 | `DEMO_VISITOR_GATE` | ręcznie, opcjonalnie | bramka „przedstaw się” przed demem; domyślnie włączona przy `APP_ENV=production`, `false` = wyłączona; lista: `/admin/odwiedzajacy` |
 | `NTFY_URL` | ręcznie, opcjonalnie | URL tematu ntfy (np. `https://ntfy.sh/<tajny-temat>`); push na telefon o każdym nowym gościu bramki; puste = wyłączone |
 | `NTFY_TOKEN` | ręcznie, opcjonalnie | token `Authorization: Bearer` dla własnego serwera ntfy z kontrolą dostępu |
+| `NTFY_WATCH_COMPANIES` | ręcznie, opcjonalnie | frazy firm po przecinku (np. `firma-a, firma-b`; bez wielkości liter i polskich znaków, min. 2 znaki); gość z pasującą firmą = push `urgent` „UWAGA firma z listy”. Tylko w Coolify, nigdy w repo |
+| `NTFY_ENGAGED_VIEWS` | ręcznie, opcjonalnie | domyślnie `10`: jeden push „Gość ogląda demo”, gdy gość obejrzy tyle ekranów; `0` = wyłączone. Ekrany, czas i sekcje widać w `/admin/odwiedzajacy` |
 | `ANTHROPIC_API_KEY` | ręcznie, opcjonalnie | bez klucza działa tryb reguł i szablonów |
 | `ANTHROPIC_MODEL` | ręcznie, opcjonalnie | wartość początkowa, domyślnie `claude-sonnet-5-5` (czat: `ANTHROPIC_CHAT_MODEL`); właściwy wybór modeli i miesięczny budżet są w panelu admina |
 | `AI_DAILY_LIMIT` | ręcznie, opcjonalnie | domyślnie 100 zapytań/użytkownika/dzień (można zmienić w panelu admina) |

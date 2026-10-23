@@ -1,6 +1,7 @@
 """Visitor gate: a polite, mandatory self-introduction before the public demo (soft visit control).
 
-Stores only first name, last name and company (no IP, no user agent); records are deleted after 90 days.
+Stores only first name, last name and company (no IP, no user agent) plus which demo screens were viewed
+(see activity.py); records are deleted after 90 days.
 Switched on with DEMO_VISITOR_GATE (default: only when APP_ENV=production).
 """
 
@@ -18,6 +19,7 @@ from wtforms.validators import DataRequired, Length, ValidationError
 from ..admin.routes import admin_required
 from ..extensions import db
 from ..models import DemoVisitor, utcnow
+from .activity import VISITOR_ID_KEY, top_sections, track, visit_minutes
 from .notify import notify_visitor
 
 bp = Blueprint("visitor_gate", __name__)
@@ -85,6 +87,13 @@ def require_introduction():
     return redirect(url_for("visitor_gate.gate", next=request.full_path.rstrip("?")))
 
 
+@bp.after_app_request
+def count_view(response):
+    if current_app.config.get("DEMO_VISITOR_GATE") and VISITOR_ID_KEY in session and _passed():
+        track(session.get(VISITOR_ID_KEY), request.path, response)
+    return response
+
+
 @bp.route("/wejscie", methods=["GET", "POST"])
 def gate():
     target = _safe_next(request.values.get("next"))
@@ -96,12 +105,14 @@ def gate():
             abort(400)
         now = utcnow()
         DemoVisitor.query.filter(DemoVisitor.created_at < now - timedelta(days=RETENTION_DAYS)).delete()
-        db.session.add(DemoVisitor(first_name=form.first_name.data, last_name=form.last_name.data,
-                                   company=form.company.data))
+        visitor = DemoVisitor(first_name=form.first_name.data, last_name=form.last_name.data,
+                              company=form.company.data)
+        db.session.add(visitor)
         db.session.commit()
         notify_visitor(form.first_name.data, form.last_name.data, form.company.data)
         session.permanent = True
         session[SESSION_KEY] = int(time.time())
+        session[VISITOR_ID_KEY] = visitor.id  # signed session cookie: cannot be forged without SECRET_KEY
         return redirect(target)
     return render_template("visitor_gate/gate.html", form=form, next=target)
 
@@ -110,4 +121,5 @@ def gate():
 @admin_required
 def visitors():
     rows = DemoVisitor.query.order_by(DemoVisitor.created_at.desc(), DemoVisitor.id.desc()).all()
-    return render_template("visitor_gate/list.html", visitors=rows, days=RETENTION_DAYS)
+    return render_template("visitor_gate/list.html", visitors=rows, days=RETENTION_DAYS,
+                           top_sections=top_sections, visit_minutes=visit_minutes)

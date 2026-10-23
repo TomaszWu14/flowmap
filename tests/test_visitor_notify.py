@@ -99,7 +99,10 @@ def test_runs_in_daemon_thread(app, monkeypatch):
 def test_clause_mentions_ntfy(client, app):
     app.config["DEMO_VISITOR_GATE"] = True
     page = client.get("/wejscie").get_data(as_text=True)
-    assert "przez usługę powiadomień push ntfy; poza tym nikomu danych nie przekazuję." in page
+    assert ("przez usługę powiadomień push ntfy. Zapisuję też, ile i jakie ekrany wersji demonstracyjnej "
+            "obejrzałeś (bez adresu IP), żeby wiedzieć, co zainteresowało gości. "
+            "Poza tym nikomu danych nie przekazuję.") in page
+    assert "ntfy; poza tym" not in page
     assert "i nikomu ich nie przekazuję" not in page
 
 
@@ -112,3 +115,44 @@ def test_non_http_url_is_ignored(app, monkeypatch):
     with app.app_context():
         notify.notify_visitor("Jan", "Kowalski", "ACME")
     assert started == []
+
+
+def _headers(req):
+    return {k.lower(): v for k, v in req.header_items()}
+
+
+def test_watched_company_sends_urgent(client, app, sent):
+    app.config["NTFY_WATCH_COMPANIES"] = "firma-x, acme"
+    client.post("/wejscie", data={**DATA, "company": "ÄCME   Sp. z o.o."})
+    req = sent[0][0]
+    headers = _headers(req)
+    assert headers["priority"] == "urgent" and headers["tags"] == "rotating_light"
+    assert headers["title"] == "UWAGA firma z listy: FlowMap"
+    assert all(v.isascii() for v in headers.values())
+    assert req.data.decode("utf-8") == "⚠️ Jan Kowalski (ÄCME   Sp. z o.o.) wszedł do FlowMap"
+
+
+def test_polish_diacritics_and_case_match():
+    assert notify.is_watched("Łódzka Spółka Testowa", "lodzka spolka")
+    assert notify.is_watched("ZAŻÓŁĆ sa", "  zazolc ")
+    assert not notify.is_watched("ACME", "x, , globex")  # 1-char and empty phrases are ignored
+
+
+def test_unwatched_company_sends_normal(client, app, sent):
+    app.config["NTFY_WATCH_COMPANIES"] = "globex"
+    client.post("/wejscie", data=DATA)
+    headers = _headers(sent[0][0])
+    assert headers["priority"] == "high" and headers["tags"] == "bell"
+    assert sent[0][0].data.decode("utf-8") == "Jan Kowalski (ACME) wszedł do FlowMap"
+
+
+def test_empty_watch_list_sends_normal(client, app, sent):
+    app.config["NTFY_WATCH_COMPANIES"] = ""
+    client.post("/wejscie", data=DATA)
+    assert _headers(sent[0][0])["title"] == "Nowy gosc: FlowMap"
+
+
+def test_watched_without_url_sends_nothing(client, app, sent):
+    app.config.update(NTFY_URL="", NTFY_WATCH_COMPANIES="acme")
+    client.post("/wejscie", data=DATA)
+    assert sent == []
