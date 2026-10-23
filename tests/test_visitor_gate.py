@@ -24,6 +24,8 @@ def test_redirects_to_gate_without_data(client):
     page = client.get("/wejscie?next=/przyklad").get_data(as_text=True)
     assert "Zanim wejdziesz do wersji demonstracyjnej, przedstaw się, proszę." in page
     assert "art. 6 ust. 1 lit. f RODO" in page
+    assert "tomasz.wierzbowski [at] op.pl" in page
+    assert "tomasz.wierzbowski@op.pl" not in page
     assert client.get("/register").status_code == 302
 
 
