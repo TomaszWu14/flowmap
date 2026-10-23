@@ -101,3 +101,14 @@ def test_clause_mentions_ntfy(client, app):
     page = client.get("/wejscie").get_data(as_text=True)
     assert "przez usługę powiadomień push ntfy; poza tym nikomu danych nie przekazuję." in page
     assert "i nikomu ich nie przekazuję" not in page
+
+
+def test_non_http_url_is_ignored(app, monkeypatch):
+    from app.visitor_gate import notify
+
+    started = []
+    monkeypatch.setattr(notify, "_start", lambda req: started.append(req))
+    app.config["NTFY_URL"] = "file:///etc/passwd"
+    with app.app_context():
+        notify.notify_visitor("Jan", "Kowalski", "ACME")
+    assert started == []

@@ -32,7 +32,8 @@ def build_request(url: str, token: str, first_name: str, last_name: str, company
 
 def _send(req: urllib.request.Request) -> None:
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS):  # noqa: S310 - URL comes from operator config
+        # Scheme limited to http(s) in notify_visitor; URL comes from operator config.
+        with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS):  # noqa: S310  # nosec B310
             pass
     except Exception as exc:  # never surface to the visitor
         log.warning("ntfy visitor notification failed: %s", exc)
@@ -47,6 +48,9 @@ def notify_visitor(first_name: str, last_name: str, company: str) -> None:
     try:
         url = current_app.config.get("NTFY_URL") or ""
         if not url:
+            return
+        if not url.lower().startswith(("https://", "http://")):
+            log.warning("NTFY_URL ignored: only http(s) URLs are allowed")
             return
         req = build_request(url, current_app.config.get("NTFY_TOKEN") or "", first_name, last_name, company)
         _start(req)
