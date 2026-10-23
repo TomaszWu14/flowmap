@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Odwiedzający{% endblock %}
+{% block content %}
+<h1>Odwiedzający wersję demonstracyjną</h1>
+<p class="muted">Najnowsi na górze. Wpisy są usuwane po {{ days }} dniach.</p>
+{% if visitors %}
+<table>
+  <thead><tr><th>Data</th><th>Imię</th><th>Nazwisko</th><th>Firma</th></tr></thead>
+  <tbody>
+  {% for v in visitors %}
+    <tr><td>{{ v.created_at|local }}</td><td>{{ v.first_name }}</td><td>{{ v.last_name }}</td><td>{{ v.company }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}<p>Nikt jeszcze się nie przedstawił.</p>{% endif %}
+{% endblock %}

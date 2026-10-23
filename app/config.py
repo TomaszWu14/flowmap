@@ -24,6 +24,8 @@ class Config:
     SQLALCHEMY_DATABASE_URI = _database_url()
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
     ALLOW_SIGNUP = _bool("ALLOW_SIGNUP", True)
+    # Visitor gate in front of the demo: on by default only in production (DEMO_VISITOR_GATE=false turns it off).
+    DEMO_VISITOR_GATE = _bool("DEMO_VISITOR_GATE", APP_ENV == "production")
 
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
@@ -59,4 +61,5 @@ class TestConfig(Config):
     REMEMBER_COOKIE_SECURE = False
     ANTHROPIC_API_KEY = ""
     ALLOW_SIGNUP = True
+    DEMO_VISITOR_GATE = False
     MAIL_SERVER = ""
