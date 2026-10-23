@@ -354,3 +354,13 @@ class Version(db.Model):
     description = db.Column(db.String(300), nullable=False)
     snapshot = db.Column(db.JSON, nullable=False)
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+
+
+class DemoVisitor(db.Model):
+    """Who looked at the demo (visitor gate). Name, surname and company only: no IP, no user agent."""
+
+    id = db.Column(db.Integer, primary_key=True)
+    first_name = db.Column(db.String(100), nullable=False)
+    last_name = db.Column(db.String(100), nullable=False)
+    company = db.Column(db.String(100), nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False, index=True)

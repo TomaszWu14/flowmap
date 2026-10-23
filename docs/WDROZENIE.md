@@ -35,6 +35,7 @@ Coolify sam generuje zmienne z prefiksem `SERVICE_` użyte w `docker-compose.yml
 | `SERVICE_HEX_32_POSTGRES` | generuje Coolify | hasło bazy w hex (znaki `/ + @` psują `DATABASE_URL`) |
 | `SERVICE_PASSWORD_64_SECRETKEY` | generuje Coolify | `SECRET_KEY` aplikacji |
 | `ALLOW_SIGNUP` | ręcznie, opcjonalnie | `false` = rejestracja wyłączona |
+| `DEMO_VISITOR_GATE` | ręcznie, opcjonalnie | bramka „przedstaw się” przed demem; domyślnie włączona przy `APP_ENV=production`, `false` = wyłączona; lista: `/admin/odwiedzajacy` |
 | `ANTHROPIC_API_KEY` | ręcznie, opcjonalnie | bez klucza działa tryb reguł i szablonów |
 | `ANTHROPIC_MODEL` | ręcznie, opcjonalnie | wartość początkowa, domyślnie `claude-sonnet-5-5` (czat: `ANTHROPIC_CHAT_MODEL`); właściwy wybór modeli i miesięczny budżet są w panelu admina |
 | `AI_DAILY_LIMIT` | ręcznie, opcjonalnie | domyślnie 100 zapytań/użytkownika/dzień (można zmienić w panelu admina) |
