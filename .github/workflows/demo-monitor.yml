@@ -1,0 +1,81 @@
+name: Monitor demo
+
+# Co 6 godzin sprawdza publiczne demo (https://flowmap.twapp.pl): strona główna i /healthz
+# (aplikacja + połączenie z bazą). Awaria → issue „Demo nie odpowiada” z etykietą `demo`
+# (jedno, kolejne awarie dopisują komentarz); po udanym sprawdzeniu issue jest zamykane.
+on:
+  schedule:
+    - cron: "17 */6 * * *"   # co 6 h, poza pełną godziną (mniej opóźnień w GitHub)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: demo-monitor
+  cancel-in-progress: false
+
+env:
+  DEMO_URL: https://flowmap.twapp.pl
+  LABEL: demo
+
+jobs:
+  check:
+    name: Demo odpowiada
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Sprawdź demo
+        id: check
+        shell: bash
+        run: |
+          set -uo pipefail
+          problems=()
+          get() { curl -sS --max-time 30 --retry 3 --retry-delay 20 --retry-all-errors "$@"; }
+
+          home=$(get -L -o /dev/null -w '%{http_code}' "$DEMO_URL/") || home="${home:-brak odpowiedzi}"
+          [ "$home" = 200 ] || problems+=("Strona główna $DEMO_URL/ zwraca: $home")
+
+          health=$(get "$DEMO_URL/healthz") || health=''
+          [ "$(jq -r '.status // empty' <<<"$health" 2>/dev/null)" = ok ] \
+            || problems+=("/healthz nie zwraca {\"status\": \"ok\"}: ${health:0:200}")
+
+          if [ ${#problems[@]} -eq 0 ]; then
+            echo "Demo działa." | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            {
+              echo "Demo $DEMO_URL — problemy ($(date -u '+%Y-%m-%d %H:%M UTC')):"
+              for p in "${problems[@]}"; do echo "- $p"; done
+              echo
+              echo "Przebieg: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            } > report.md
+            tee -a "$GITHUB_STEP_SUMMARY" < report.md
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Zgłoś awarię (issue)
+        if: steps.check.outputs.ok == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh label create "$LABEL" --color B60205 --description "Automatyczny monitor demo" 2>/dev/null || true
+          open=$(gh issue list --label "$LABEL" --state open --json number --jq '.[0].number')
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --body-file report.md
+          else
+            gh issue create --title "Demo nie odpowiada" --label "$LABEL" --body-file report.md
+          fi
+          exit 1   # czerwony przebieg = mail z GitHub do właściciela repozytorium
+
+      - name: Zamknij zgłoszenie po naprawie
+        if: steps.check.outputs.ok == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          for n in $(gh issue list --label "$LABEL" --state open --json number --jq '.[].number'); do
+            gh issue close "$n" --reason completed --comment "Demo znów działa ($(date -u '+%Y-%m-%d %H:%M UTC'))."
+          done
