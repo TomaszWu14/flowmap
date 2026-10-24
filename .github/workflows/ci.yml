@@ -5,12 +5,18 @@ on:
   push:
     branches: [main]
 
+# Nowy push do PR-a anuluje starszy przebieg (main zawsze do końca — od niego zależy deploy).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     # 3.14 jest tylko sygnałem: deploy.yml rusza po całym CI, więc jego porażka nie może blokować wdrożenia.
     continue-on-error: ${{ matrix.python-version == '3.14' }}
     strategy:
@@ -31,6 +37,7 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
