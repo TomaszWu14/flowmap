@@ -40,7 +40,8 @@
   <p class="muted">{{ 'Oddana przed czasem.' if session.finished_at and session.finished_at < session.deadline else 'Czas minął.' }}
     Mapa jest zablokowana — możesz ją oglądać, ale nie zmieniać.
     {% if session.grade %}Ocena mapy według oczekiwań eksperta: <strong>{{ session.grade.score }}/100</strong>
-    (<a href="{{ url_for('exercises.results', project_id=project.id) }}">szczegóły</a>).{% endif %}</p>
+    (<a href="{{ url_for('exercises.results', project_id=project.id) }}">szczegóły</a>).{% endif %}
+    <a href="{{ url_for('recruit.replay', project_id=project.id) }}">Zobacz przebieg budowania mapy →</a></p>
   {% if session.questions is none %}
     {% if can_answer %}
     <form method="post" data-once action="{{ url_for('recruit.start_interview', project_id=project.id) }}" class="stack">

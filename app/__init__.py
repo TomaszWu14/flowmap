@@ -5,6 +5,7 @@ from flask_wtf.csrf import CSRFError
 from .config import Config
 from .extensions import csrf, db, login_manager, migrate
 from .flow.pictograms import GROUPS, PICTOGRAMS, icon_for, pictogram_svg
+from .flow.timing import duration_label
 from .text import local_time, plural, plural_word, steps_label
 
 ERROR_MESSAGES = {
@@ -49,12 +50,15 @@ def create_app(config_class: type = Config) -> Flask:
     from .share.routes import bp as share_bp
     from .spec.routes import bp as spec_bp
     from .trainer.routes import bp as trainer_bp
+    from .visitor_gate import bp as visitor_gate_bp
 
     app.jinja_env.globals["type_labels"] = NODE_TYPE_LABELS
     app.jinja_env.globals["signup_open"] = signup_open
-    app.jinja_env.filters.update(kroki=steps_label, local=local_time, plural=plural, plural_word=plural_word)
+    app.jinja_env.filters.update(kroki=steps_label, local=local_time, czas=duration_label, plural=plural,
+                                 plural_word=plural_word)
     app.jinja_env.globals.update(pictograms=PICTOGRAMS, picto_groups=GROUPS, pictogram_svg=pictogram_svg,
                                  node_icon=icon_for, type_help=NODE_TYPE_HELP)
+    app.register_blueprint(visitor_gate_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(projects_bp)

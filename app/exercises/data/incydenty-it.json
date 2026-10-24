@@ -64,5 +64,24 @@
       "text": "Wizja określa cel i mierzalną korzyść (np. odsetek incydentów rozwiązanych w SLA, średni czas rozwiązania).",
       "topic": "wizja"
     }
+  ],
+  "solution": [
+    "s|start|Użytkownik zgłasza awarię systemu|Zgłaszający|a",
+    "a|screen|Portal zgłoszeń|Zgłaszający|b",
+    "b|user_action|Rejestracja, kategoria, priorytet (wpływ × pilność)|Pierwsza linia|c",
+    "c|decision|Czy incydent jest krytyczny?|Pierwsza linia|m:tak;d:nie",
+    "m|automation|Powiadomienie kierownika dyżuru i oddziałów|System|d",
+    "d|user_action|Diagnoza w pierwszej linii|Pierwsza linia|e",
+    "e|decision|Czy pierwsza linia rozwiązuje?|Pierwsza linia|h:tak;f:nie",
+    "f|user_action|Przekazanie do drugiej linii|Druga linia|g",
+    "g|decision|Czy potrzebny dostawca?|Druga linia|v:tak;h:nie",
+    "v|integration|Zgłoszenie do dostawcy zewnętrznego|Druga linia|h",
+    "t|wait|W tle: pilnowanie SLA reakcji i rozwiązania|System|t2:przekroczone",
+    "t2|automation|Eskalacja do kierownika dyżuru|System|f",
+    "h|user_action|Rozwiązanie i opis przyczyny|Druga linia|i",
+    "i|decision|Czy zgłaszający potwierdza?|Zgłaszający|j:tak;d:nie, otwórz ponownie",
+    "j|decision|Czy incydent się powtarza?|Kierownik dyżuru|p:tak;k1:nie",
+    "p|user_action|Powiązanie z problemem i analiza przyczyny|Druga linia|k1",
+    "k1|end|Incydent zamknięty|System|"
   ]
 }

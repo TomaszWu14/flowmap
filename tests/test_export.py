@@ -28,23 +28,44 @@ def test_mermaid_shapes_labels_and_escaping():
 
 def test_bpmn_is_valid_xml_with_mapped_types():
     xml = builders.to_bpmn(full_graph("booking"), "Salon & <SPA>")
+    graph = full_graph("booking")
     root = ET.fromstring(xml.split("\n", 1)[1])
-    proc = root.find("b:process", BPMN_NS)
-    assert proc.get("name") == "Salon & <SPA>"
-    assert len(proc.findall("b:startEvent", BPMN_NS)) == 1
-    assert len(proc.findall("b:endEvent", BPMN_NS)) == 1
-    assert len(proc.findall("b:exclusiveGateway", BPMN_NS)) == 2
-    assert proc.find("b:intermediateCatchEvent/b:timerEventDefinition", BPMN_NS) is not None
-    flows = proc.findall("b:sequenceFlow", BPMN_NS)
-    assert len(flows) == len(full_graph("booking")["edges"])
-    ids = {el.get("id") for el in proc}
-    assert all(f.get("sourceRef") in ids and f.get("targetRef") in ids for f in flows)
-    lanes = proc.findall("b:laneSet/b:lane", BPMN_NS)
+    procs = root.findall("b:process", BPMN_NS)
+    main = procs[0]
+    assert main.get("name") == "Salon & <SPA>" and [p.get("name") for p in procs[1:]] == ["Klient"]  # own pool
+
+    def all_(tag):
+        return [el for p in procs for el in p.findall(tag, BPMN_NS)]
+
+    assert len(all_("b:startEvent")) == 1 and len(all_("b:endEvent")) == 1
+    assert len(all_("b:exclusiveGateway")) == 2
+    assert main.find("b:intermediateCatchEvent/b:timerEventDefinition", BPMN_NS) is not None
+    flows = all_("b:sequenceFlow")
+    messages = root.findall("b:collaboration/b:messageFlow", BPMN_NS)
+    assert messages and len(flows) + len(messages) == len(graph["edges"])  # crossing a pool = message flow
+    for p in procs:  # sequence flows never leave their pool
+        ids = {el.get("id") for el in p}
+        seq = p.findall("b:sequenceFlow", BPMN_NS)
+        assert all(f.get("sourceRef") in ids and f.get("targetRef") in ids for f in seq)
+    node_ids = {el.get("id") for p in procs for el in p if el.get("id", "").startswith("Node_")}
+    assert len(node_ids) == len(graph["nodes"])
+    assert all(m.get("sourceRef") in node_ids and m.get("targetRef") in node_ids for m in messages)
+    lanes = main.findall("b:laneSet/b:lane", BPMN_NS)
     refs = [r.text for lane in lanes for r in lane.findall("b:flowNodeRef", BPMN_NS)]
-    assert len(lanes) >= 2 and sorted(refs) == sorted(ids - {proc.get("id")}) or set(refs) <= ids
-    assert len(refs) == len(full_graph("booking")["nodes"]) and len(set(refs)) == len(refs)  # each step in one lane
-    assert root.find("b:collaboration/b:participant", BPMN_NS).get("processRef") == proc.get("id")
-    assert len(root.findall(".//di:BPMNShape", BPMN_NS)) == len(full_graph("booking")["nodes"]) + len(lanes) + 1
+    assert "Klient" not in [lane.get("name") for lane in lanes] and len(set(refs)) == len(refs)
+    participants = root.findall("b:collaboration/b:participant", BPMN_NS)
+    assert [x.get("processRef") for x in participants] == [p.get("id") for p in procs]
+    assert len(root.findall(".//di:BPMNShape", BPMN_NS)) == len(graph["nodes"]) + len(lanes) + len(participants)
+    assert len(root.findall(".//di:BPMNEdge", BPMN_NS)) == len(graph["edges"])
+
+
+def test_bpmn_without_external_roles_is_one_pool():
+    graph = {"nodes": [{"key": "s", "type": "start", "title": "Start", "actor": "Biuro", "data": {}},
+                       {"key": "e", "type": "end", "title": "Koniec", "actor": "Magazyn", "data": {}}],
+             "edges": [{"source": "s", "target": "e", "label": "", "condition": ""}]}
+    root = ET.fromstring(builders.to_bpmn(graph, "T").split("\n", 1)[1])
+    assert len(root.findall("b:process", BPMN_NS)) == 1 and not root.findall(".//b:messageFlow", BPMN_NS)
+    assert builders.is_external("Klient") and builders.is_external("Dostawca") and not builders.is_external("Kadry")
 
 
 def test_markdown_has_all_sections():
@@ -150,7 +171,29 @@ def test_bpmn_task_types_follow_pictograms():
         {"key": "e", "type": "end", "title": "Koniec", "actor": "", "data": {}}],
         "edges": [{"source": a, "target": b, "label": "", "condition": ""}
                   for a, b in (("s", "m"), ("m", "k"), ("k", "g"), ("g", "p"), ("p", "e"))]}
-    proc = ET.fromstring(builders.to_bpmn(graph, "T")).find("b:process", BPMN_NS)
-    tag = {el.get("id"): el.tag.split("}")[1] for el in proc if el.get("id", "").startswith("Node_")}
+    procs = ET.fromstring(builders.to_bpmn(graph, "T")).findall("b:process", BPMN_NS)
+    tag = {el.get("id"): el.tag.split("}")[1] for p in procs for el in p if el.get("id", "").startswith("Node_")}
     assert tag == {"Node_s": "startEvent", "Node_m": "sendTask", "Node_k": "userTask", "Node_p": "manualTask",
                    "Node_g": "parallelGateway", "Node_e": "endEvent"}
+
+
+def test_printable_report(auth_client):
+    from tests.test_projects import new_project
+
+    p = new_project(auth_client)
+    html = auth_client.get(f"/p/{p.id}/raport").get_data(as_text=True)
+    assert "Raport procesu" in html and "data-print" in html and 'class="mermaid"' in html
+    assert "strażnik kompletności" in html and p.name in html
+    assert f"/p/{p.id}/raport" in auth_client.get(f"/p/{p.id}/eksport").get_data(as_text=True)
+    assert "data-export-png" in auth_client.get(f"/p/{p.id}").get_data(as_text=True)
+
+
+def test_report_needs_view_access(auth_client, client):
+    from tests.conftest import PASSWORD, make_user
+    from tests.test_projects import new_project
+
+    p = new_project(auth_client)
+    other = client.application.test_client()
+    make_user("obcy@example.com")
+    other.post("/login", data={"email": "obcy@example.com", "password": PASSWORD})
+    assert other.get(f"/p/{p.id}/raport").status_code == 404

@@ -63,6 +63,7 @@
     <div class="row">
       <a class="btn" href="{{ url_for('export.download', project_id=project.id, kind='proces.bpmn') }}">BPMN 2.0 (.bpmn)</a>
       <a class="btn" href="{{ url_for('export.download', project_id=project.id, kind='projekt.json') }}">Projekt (JSON)</a>
+      <a class="btn" href="{{ url_for('export.report', project_id=project.id) }}">Raport do druku / PDF</a>
     </div>
     <p class="muted" style="margin-top:.6rem">BPMN otworzysz w Camunda Modeler lub bpmn.io. JSON zaimportujesz z powrotem w FlowMap.</p>
   </section>

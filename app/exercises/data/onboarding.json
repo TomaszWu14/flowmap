@@ -56,5 +56,25 @@
       "text": "Wizja określa cel i mierzalną korzyść (np. odsetek osób z kompletem sprzętu i dostępów w pierwszym dniu).",
       "topic": "wizja"
     }
+  ],
+  "solution": [
+    "s|start|Kandydat podpisuje umowę o pracę|Kadry|a",
+    "a|automation|Utworzenie zadań wdrożenia z terminem przed 1. dniem|System|p",
+    "p|parallel|Przygotowanie równoległe|System|b;c;d;e",
+    "b|user_action|Dokumenty kadrowe i BHP|Kadry|j",
+    "c|user_action|Sprzęt i konta według stanowiska|IT|j",
+    "d|user_action|Karta wejściowa i miejsce pracy|Administracja|j",
+    "e|user_action|Wyznaczenie opiekuna i plan wdrożenia|Przełożony|j",
+    "j|parallel|Wszystko gotowe|System|f",
+    "f|wait|3 dni przed pierwszym dniem: kontrola gotowości|System|g:gotowe;x1:opóźnienie",
+    "x1|automation|Eskalacja do kierownika działu|System|f",
+    "g|decision|Czy kandydat potwierdza rozpoczęcie?|Kadry|h:tak;x2:rezygnuje",
+    "x2|automation|Odwołanie zadań i dostępów|System|k2",
+    "h|user_action|Pierwszy dzień: sprzęt, BHP, opiekun|Przełożony|i",
+    "i|wait|Okres wdrożenia (3 miesiące)|Przełożony|l",
+    "l|decision|Czy ocena na koniec okresu próbnego jest pozytywna?|Przełożony|k1:tak;k3:nie",
+    "k1|end|Wdrożenie zakończone|System|",
+    "k2|end|Zatrudnienie odwołane|System|",
+    "k3|end|Umowa nieprzedłużona|System|"
   ]
 }

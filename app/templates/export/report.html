@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Raport — {{ project.name }}{% endblock %}
+{% block content %}
+<article class="report">
+  <div class="page-head no-print">
+    <div><h1>Raport procesu</h1><p class="muted">Jedna strona dla osób bez konta: wydrukuj albo zapisz jako PDF.</p></div>
+    <div class="row"><button class="btn primary" type="button" data-print>Drukuj / zapisz PDF</button>
+      <a class="btn" href="{{ url_for('export.index', project_id=project.id) }}">← Eksport</a></div>
+  </div>
+
+  <header class="report-head">
+    <h1>{{ project.name }}</h1>
+    <p>{{ project.start_sentence }}</p>
+    <p class="muted">Stan na {{ project.updated_at|local }} · {{ steps|length|kroki }} · strażnik kompletności {{ guard.score }}/100</p>
+  </header>
+
+  {% if vision and (vision.problem or vision.goals) %}
+  <section>
+    <h2>Problem i cele</h2>
+    {% if vision.problem %}<p>{{ vision.problem }}</p>{% endif %}
+    {% if vision.goals %}<ul>{% for x in vision.goals %}<li>{{ x }}</li>{% endfor %}</ul>{% endif %}
+    {% if vision.metrics %}<p><strong>Mierniki sukcesu:</strong> {{ vision.metrics|join('; ') }}</p>{% endif %}
+  </section>
+  {% endif %}
+
+  <section>
+    <h2>Mapa procesu</h2>
+    <pre class="mermaid" data-source="{{ mermaid }}">{{ mermaid }}</pre>
+  </section>
+
+  <section>
+    <h2>Kroki</h2>
+    <div class="table-wrap"><table class="versions">
+      <tr><th>#</th><th>Krok</th><th>Typ</th><th>Kto</th><th>Opis</th></tr>
+      {% for n in steps %}
+      <tr><td>{{ loop.index }}</td><td>{{ n.title }}</td><td>{{ labels.get(n.type, n.type) }}</td>
+        <td>{{ n.actor or '—' }}</td><td>{{ n.description or '' }}</td></tr>
+      {% endfor %}
+    </table></div>
+  </section>
+
+  {% include "flow/_timing.html" %}
+
+  {% if roles %}
+  <section>
+    <h2>Role</h2>
+    <ul>{% for role, count in roles.most_common() %}<li>{{ role }} — {{ count|kroki }}</li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+
+  <section>
+    <h2>Do wyjaśnienia ({{ guard.issues|length }})</h2>
+    {% if guard.issues %}<ul>{% for i in guard.issues %}<li>{{ i.message }}</li>{% endfor %}</ul>
+    {% else %}<p>Strażnik nie ma uwag — mapa jest kompletna.</p>{% endif %}
+  </section>
+</article>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/mermaid.min.js') }}"></script> {# nosemgrep: var-in-script-tag — src from url_for(); CSP script-src 'self' blocks inline scripts #}
+<script src="{{ url_for('static', filename='design.js') }}"></script> {# nosemgrep: var-in-script-tag — src from url_for(); CSP script-src 'self' blocks inline scripts #}
+{% endblock %}

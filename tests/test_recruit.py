@@ -138,3 +138,28 @@ def test_progress_never_continues_into_a_locked_recruitment_project(auth_client,
     auth_client.post(f"/p/{p.id}/rekrutacja/oddaj")
     html = auth_client.get("/postep").get_data(as_text=True)
     assert f'href="/p/{p.id}"' not in html
+
+
+def test_replay_timeline_after_the_session(auth_client, app):
+    from app.models import Version
+
+    enable_ai(app)
+    _, p = start_recruit(auth_client)
+    t0 = p.recruit.started_at
+    graph = p.graph()
+    for minutes, text in ((1, "Dodano krok A"), (2, "Dodano krok B"), (9, "Dodano decyzję")):
+        db.session.add(Version(project_id=p.id, description=text, snapshot=graph,
+                               created_at=t0 + timedelta(minutes=minutes)))
+    db.session.add(Version(project_id=p.id, description="przed startem", snapshot=graph,
+                           created_at=t0 - timedelta(minutes=1)))
+    db.session.commit()
+    assert auth_client.get(f"/p/{p.id}/rekrutacja/przebieg").status_code == 403  # no peeking mid-case
+    p.recruit.finished_at = t0 + timedelta(minutes=10)
+    db.session.commit()
+    html = auth_client.get(f"/p/{p.id}/rekrutacja/przebieg").get_data(as_text=True)
+    assert "1:00" in html and "9:00" in html and "Dodano decyzję" in html and "przed startem" not in html
+    assert html.count(">przerwa<") == 1 and 'class="mermaid"' in html  # 2:00 → 9:00 is a pause
+    first = Version.query.filter_by(description="Dodano krok A").one()
+    html = auth_client.get(f"/p/{p.id}/rekrutacja/przebieg?v={first.id}").get_data(as_text=True)
+    assert "Mapa o 1:00" in html
+    assert "/rekrutacja/przebieg" in auth_client.get(f"/p/{p.id}/rekrutacja").get_data(as_text=True)

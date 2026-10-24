@@ -375,3 +375,40 @@ kbd { font: inherit; font-size: .75rem; border: 1px solid var(--line); border-bo
 .player-img { display: block; width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px; margin: .3rem 0; }
 .screen-shot { display: block; width: 100%; border-radius: 8px; margin: .5rem 0; border: 1px solid var(--line); }
 .type-help { font-size: .8rem; margin: .3rem 0 0; }
+
+/* Printable report (/p/<id>/raport) and printing in general: content only, black on white. */
+.report section { margin-top: 1.4rem; }
+.report-head h1 { margin-bottom: .2rem; }
+.report pre.mermaid { background: transparent; border: 0; overflow-x: auto; }
+@media print {
+  .topbar, .no-print, .flashes, .toasts, nav { display: none !important; }
+  body { background: #fff; color: #000; }
+  .report pre.mermaid svg { max-width: 100% !important; height: auto; }
+  .report table { font-size: 10pt; }
+  .report tr, .report li { break-inside: avoid; }
+  .card { box-shadow: none; border: 0; }
+}
+
+/* Exercise results: learner's map next to the expert's */
+.compare-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.compare-grid figure { margin: 0; min-width: 0; }
+.compare-grid figcaption { font-weight: 700; margin-bottom: .4rem; }
+.compare-grid pre.mermaid { overflow-x: auto; background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: .5rem; }
+
+/* Recruitment replay: timeline next to the map at the chosen moment */
+.replay-grid { display: grid; gap: 1rem; grid-template-columns: minmax(260px, 1fr) 2fr; align-items: start; }
+@media (max-width: 800px) { .replay-grid { grid-template-columns: 1fr; } }
+.replay-list { list-style: none; padding: 0; margin: 0; max-height: 70vh; overflow-y: auto; }
+.replay-list li { padding: .35rem .5rem; border-radius: 8px; }
+.replay-list li.current { background: var(--surface-2); outline: 1px solid var(--line); }
+.replay-grid pre.mermaid { overflow-x: auto; background: transparent; border: 0; }
+
+/* Learning path on /cwiczenia */
+.program-path { list-style: none; padding: 0; margin: .8rem 0 0; display: grid; gap: .45rem; }
+.program-step { display: flex; gap: .7rem; align-items: center; }
+.program-dot { flex: none; width: 1.8rem; height: 1.8rem; border-radius: 50%; display: grid; place-items: center;
+  font-weight: 700; font-size: .85rem; border: 2px solid var(--line); color: var(--muted); }
+.program-step.done .program-dot { background: var(--ok); border-color: var(--ok); color: #fff; }
+.program-step.next .program-dot { border-color: var(--accent, var(--info)); color: var(--ink); }
+.program-step.later { opacity: .65; }
+.worse { color: var(--danger); } .better { color: var(--ok); }

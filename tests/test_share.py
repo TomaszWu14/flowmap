@@ -54,3 +54,39 @@ def test_only_owner_manages_sharing(auth_client, db):
 
 def test_unknown_token(client, db):
     assert client.get("/s/nie-ma-takiego").status_code == 404
+
+
+def test_client_accepts_or_asks_for_changes_without_account(auth_client, client, app, monkeypatch):
+    from app.models import AuditEvent, ClientReview
+
+    p = new_project(auth_client)
+    token = enable_link(auth_client, p)
+    anon = client.application.test_client()
+    assert "Twoja decyzja" in anon.get(f"/s/{token}").get_data(as_text=True)
+    r = anon.post(f"/s/{token}/opinia", data={"name": "Jan z ACME", "decision": "changes"}, follow_redirects=True)
+    assert "Napisz, co zmienić" in r.get_data(as_text=True) and ClientReview.query.count() == 0
+    mails = []
+    app.config["MAIL_SERVER"] = "smtp.example.com"
+    monkeypatch.setattr("app.mail.send_mail", lambda to, subject, body: mails.append((to, subject)))
+    r = anon.post(f"/s/{token}/opinia", data={"name": "Jan z ACME", "decision": "accept"}, follow_redirects=True)
+    assert "decyzja zapisana" in r.get_data(as_text=True) and "Jan z ACME" in r.get_data(as_text=True)
+    review = ClientReview.query.one()
+    assert review.version_id == Project.query.get(p.id).version_cursor_id and review.version_label
+    assert mails and mails[0][0] == p.owner.email and "akceptuje" in mails[0][1]
+    assert AuditEvent.query.filter_by(action="client_review").count() == 1
+    html = auth_client.get(f"/p/{p.id}/wersje").get_data(as_text=True)
+    assert "✓ Jan z ACME: akceptuje" in html
+    assert anon.post("/s/zly-token/opinia", data={"name": "X", "decision": "accept"}).status_code == 404
+
+
+def test_client_reviews_are_rate_limited(auth_client, client, monkeypatch):
+    from app.models import ClientReview
+    from app.share import routes as share
+
+    monkeypatch.setattr(share, "REVIEWS_PER_DAY", 2)
+    p = new_project(auth_client)
+    token = enable_link(auth_client, p)
+    anon = client.application.test_client()
+    for _ in range(3):
+        r = anon.post(f"/s/{token}/opinia", data={"name": "Bot", "decision": "accept"}, follow_redirects=True)
+    assert "spróbuj jutro" in r.get_data(as_text=True) and ClientReview.query.count() == 2

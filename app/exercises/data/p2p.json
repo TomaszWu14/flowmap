@@ -64,5 +64,28 @@
       "text": "Wizja określa cel i mierzalną korzyść (np. odsetek faktur bez rozbieżności, czas od zapotrzebowania do zamówienia).",
       "topic": "wizja"
     }
+  ],
+  "solution": [
+    "s|start|Pracownik zgłasza zapotrzebowanie na zakup|Zgłaszający|a",
+    "a|screen|Formularz: opis, ilość, koszt, MPK|Zgłaszający|b",
+    "b|decision|Jaki próg kwoty?|System|c1:do 5 tys.;c2:do 50 tys.;c3:powyżej 50 tys.",
+    "c1|user_action|Akceptacja przełożonego|Przełożony|d",
+    "c2|user_action|Akceptacja dyrektora|Dyrektor|d",
+    "c3|user_action|Akceptacja zarządu|Zarząd|d",
+    "d|decision|Czy zaakceptowano?|System|e:tak;x1:nie",
+    "x1|automation|Powiadomienie o odrzuceniu|System|k2",
+    "e|decision|Czy dostawca jest na liście zatwierdzonych?|Zakupy|g:tak;f:nie",
+    "f|user_action|Zapytanie ofertowe i wybór dostawcy|Zakupy|g",
+    "g|integration|Wysłanie zamówienia do dostawcy|Zakupy|h",
+    "h|user_action|Przyjęcie towaru lub usługi|Odbiorca|i",
+    "i|decision|Czy dostawa jest zgodna?|Odbiorca|j:tak;x2:nie",
+    "x2|user_action|Protokół rozbieżności do dostawcy|Zakupy|h",
+    "j|integration|Rejestracja faktury od dostawcy|Księgowość|l",
+    "l|decision|Czy faktura = zamówienie = przyjęcie?|Księgowość|m:tak;x3:nie",
+    "x3|user_action|Wyjaśnienie rozbieżności z dostawcą|Księgowość|j",
+    "m|automation|Zaksięgowanie faktury|Księgowość|p",
+    "p|integration|Płatność w terminie z faktury|Księgowość|k1",
+    "k1|end|Dostawca opłacony|System|",
+    "k2|end|Zapotrzebowanie odrzucone|System|"
   ]
 }

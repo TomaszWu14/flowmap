@@ -53,4 +53,19 @@
   </section>
   {% endfor %}
 </div>
+{% if solution %}
+<section class="card" style="margin-top:1rem" aria-labelledby="solution-h">
+  <h2 id="solution-h">Mapa eksperta</h2>
+  <p class="muted">Jedno z dobrych rozwiązań — porównaj z własną mapą: czego brakuje, co nazwałeś inaczej, gdzie są wyjątki.
+    Twoja mapa może być lepsza; ocenę dają oczekiwania eksperta powyżej, nie zgodność z tym rysunkiem.</p>
+  <div class="compare-grid">
+    <figure><figcaption>Twoja mapa</figcaption><pre class="mermaid" data-source="{{ mine }}">{{ mine }}</pre></figure>
+    <figure><figcaption>Mapa eksperta</figcaption><pre class="mermaid" data-source="{{ solution }}">{{ solution }}</pre></figure>
+  </div>
+</section>
+{% endif %}
 {% endblock %}
+{% block scripts %}{% if solution %}
+<script src="{{ url_for('static', filename='vendor/mermaid.min.js') }}"></script> {# nosemgrep: var-in-script-tag — src from url_for(); CSP script-src 'self' blocks inline scripts #}
+<script src="{{ url_for('static', filename='design.js') }}"></script> {# nosemgrep: var-in-script-tag — src from url_for(); CSP script-src 'self' blocks inline scripts #}
+{% endif %}{% endblock %}
