@@ -11,6 +11,8 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # 3.14 jest tylko sygnałem: deploy.yml rusza po całym CI, więc jego porażka nie może blokować wdrożenia.
+    continue-on-error: ${{ matrix.python-version == '3.14' }}
     strategy:
       fail-fast: false
       matrix:
