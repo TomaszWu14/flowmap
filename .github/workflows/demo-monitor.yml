@@ -60,13 +60,20 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          NTFY_URL: ${{ secrets.NTFY_URL }}
         run: |
+          # push ntfy (opcjonalny: bez sekretu NTFY_URL pomijamy; nigdy nie psuje przebiegu)
+          ntfy() {
+            case "${NTFY_URL:-}" in https://*) ;; *) echo "NTFY_URL nie ustawiony lub nie https — pomijam push"; return 0;; esac
+            curl -fsS --max-time 10 -H "Title: $1" -H "Priority: $2" -H "Tags: $3" -d "$4" "$NTFY_URL" || true
+          }
           gh label create "$LABEL" --color B60205 --description "Automatyczny monitor demo" 2>/dev/null || true
           open=$(gh issue list --label "$LABEL" --state open --json number --jq '.[0].number')
           if [ -n "$open" ]; then
             gh issue comment "$open" --body-file report.md
           else
             gh issue create --title "Demo nie odpowiada" --label "$LABEL" --body-file report.md
+            ntfy "Demo nie odpowiada: flowmap" high warning "Demo przestało odpowiadać. Szczegóły: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           fi
           exit 1   # czerwony przebieg = mail z GitHub do właściciela repozytorium
 
@@ -75,7 +82,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          NTFY_URL: ${{ secrets.NTFY_URL }}
         run: |
+          # push ntfy (opcjonalny: bez sekretu NTFY_URL pomijamy; nigdy nie psuje przebiegu)
+          ntfy() {
+            case "${NTFY_URL:-}" in https://*) ;; *) echo "NTFY_URL nie ustawiony lub nie https — pomijam push"; return 0;; esac
+            curl -fsS --max-time 10 -H "Title: $1" -H "Priority: $2" -H "Tags: $3" -d "$4" "$NTFY_URL" || true
+          }
           for n in $(gh issue list --label "$LABEL" --state open --json number --jq '.[].number'); do
             gh issue close "$n" --reason completed --comment "Demo znów działa ($(date -u '+%Y-%m-%d %H:%M UTC'))."
+            recovered=1
           done
+          if [ -n "${recovered:-}" ]; then
+            ntfy "Demo znowu odpowiada: flowmap" low white_check_mark "Demo znowu odpowiada. Przebieg: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
