@@ -4,7 +4,7 @@
 [![Security](https://github.com/TomaszWu14/flowmap/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/TomaszWu14/flowmap/actions/workflows/security.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**Demo: https://flowmap.twapp.pl**
+**▶ Zobacz demo: https://flowmap.twapp.pl** (przy wejściu demo poprosi o imię, nazwisko i firmę)
 
 ![Mapa procesu z prowadzeniem pytaniami](docs/zrzuty/mapa-procesu.png)
 
@@ -20,7 +20,7 @@
 > Works without an API key (rules + templates); with one it uses Claude via the `anthropic` SDK.
 > Stack: Python 3.12, Flask, SQLAlchemy/Alembic, HTMX, PostgreSQL, pytest (380+ tests), ruff,
 > security scans in CI (gitleaks, Bandit, Semgrep, pip-audit, Trivy). The UI is in Polish.
-> Live demo: https://flowmap.twapp.pl · Screenshots: see [Zrzuty ekranu](#zrzuty-ekranu) (process map
+> Live demo: https://flowmap.twapp.pl (on entry the demo asks for your first name, last name and company) · Screenshots: see [Zrzuty ekranu](#zrzuty-ekranu) (process map
 > with guided questions, completeness guard, UML class diagram, exercise catalogue).
 
 Aplikacja webowa do projektowania nowych aplikacji przez **interaktywną mapę procesu**.
