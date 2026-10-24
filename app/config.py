@@ -24,6 +24,15 @@ class Config:
     SQLALCHEMY_DATABASE_URI = _database_url()
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
     ALLOW_SIGNUP = _bool("ALLOW_SIGNUP", True)
+    # Visitor gate in front of the demo: on by default only in production (DEMO_VISITOR_GATE=false turns it off).
+    DEMO_VISITOR_GATE = _bool("DEMO_VISITOR_GATE", APP_ENV == "production")
+    # Push notification (ntfy) on each new gate visitor; empty = off.
+    NTFY_URL = os.environ.get("NTFY_URL", "")
+    NTFY_TOKEN = os.environ.get("NTFY_TOKEN", "")
+    # Comma-separated company phrases (env only, never in the repo): a match makes the push urgent.
+    NTFY_WATCH_COMPANIES = os.environ.get("NTFY_WATCH_COMPANIES", "")
+    # One push when a visitor reaches this many demo screens; 0 = off.
+    NTFY_ENGAGED_VIEWS = int(os.environ.get("NTFY_ENGAGED_VIEWS") or "10")
 
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
@@ -59,4 +68,9 @@ class TestConfig(Config):
     REMEMBER_COOKIE_SECURE = False
     ANTHROPIC_API_KEY = ""
     ALLOW_SIGNUP = True
+    DEMO_VISITOR_GATE = False
+    NTFY_URL = ""
+    NTFY_TOKEN = ""
+    NTFY_WATCH_COMPANIES = ""
+    NTFY_ENGAGED_VIEWS = 10
     MAIL_SERVER = ""

@@ -1,0 +1,38 @@
+name: Deploy
+
+# After CI passes on main, ask Coolify to redeploy and wait for the app to answer.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Coolify deploy
+        env:
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+        run: |
+          test -n "$COOLIFY_TOKEN" || { echo "::error::Brak sekretu COOLIFY_TOKEN"; exit 1; }
+          curl -fsS -X POST https://coolify.twapp.pl/api/v1/deploy \
+            -H "Authorization: Bearer $COOLIFY_TOKEN" -H "Content-Type: application/json" \
+            -d '{"uuid":"zxxygxuuxtyvkypz8al9dupo"}'
+      - name: Wait for the new version
+        run: |
+          sleep 60  # build starts; the old container keeps serving until the new one is healthy
+          for i in $(seq 1 40); do
+            if curl -fsS https://flowmap.twapp.pl/healthz | grep -q '"ok"'; then echo "healthz ok"; exit 0; fi
+            sleep 15
+          done
+          echo "::error::/healthz nie odpowiada po wdrożeniu"; exit 1

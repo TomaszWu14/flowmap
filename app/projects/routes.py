@@ -171,8 +171,13 @@ def copy(project_id):
 @bp.get("/p/<int:project_id>/wersje")
 @login_required
 def versions(project_id):
+    from ..models import ClientReview
+
     project = g.project_for(project_id, "view")
-    return render_template("projects/versions.html", project=project,
+    reviews: dict[int, list] = {}
+    for r in ClientReview.query.filter_by(project_id=project.id).order_by(ClientReview.id):
+        reviews.setdefault(r.version_id, []).append(r)
+    return render_template("projects/versions.html", project=project, reviews=reviews,
                            versions=sorted(project.versions, key=lambda v: v.id, reverse=True))
 
 
@@ -198,6 +203,43 @@ def compare(project_id):
         old, new = new, old
     return render_template("projects/diff.html", project=project, versions=versions, old=old, new=new,
                            diff=diff_graphs(old.snapshot, new.snapshot))
+
+
+@bp.post("/p/<int:project_id>/wersje/<int:version_id>/as-is")
+@login_required
+def mark_as_is(project_id, version_id):
+    """Pin a version as the current state ("jak jest"); the live map is then the target ("jak ma być")."""
+    project = g.project_for(project_id, "edit")
+    version = _version(project, version_id)
+    project.display = dict(project.display or {}) | {"as_is": version.id}
+    db.session.commit()
+    flash(f"Wersja „{version.description}” jest teraz stanem obecnym (AS-IS).", "success")
+    return redirect(url_for("projects.as_is_to_be", project_id=project.id))
+
+
+@bp.get("/p/<int:project_id>/as-is-to-be")
+@login_required
+def as_is_to_be(project_id):
+    """AS-IS (pinned version) next to TO-BE (the live map): diagrams, step changes, time, cost and hand-offs."""
+    from ..export.builders import to_mermaid
+    from ..flow import timing
+    from ..flow.lanes import lanes_info
+
+    project = g.project_for(project_id, "view")
+    pinned = db.session.get(Version, (project.display or {}).get("as_is") or 0)
+    if pinned is None or pinned.project_id != project.id:
+        return render_template("projects/as_is_to_be.html", project=project, pinned=None)
+    old, new = pinned.snapshot, project.graph()
+
+    def measures(graph):
+        t = timing.analyze(graph) or {}
+        return {"steps": sum(1 for n in graph["nodes"] if n["type"] not in ("start", "end")),
+                "handoffs": lanes_info(graph, project.display)["handoffs"], "minutes": t.get("minutes"),
+                "cost": t.get("cost")}
+
+    return render_template("projects/as_is_to_be.html", project=project, pinned=pinned,
+                           diff=diff_graphs(old, new), before=measures(old), after=measures(new),
+                           mermaid_old=to_mermaid(old), mermaid_new=to_mermaid(new))
 
 
 @bp.get("/p/<int:project_id>/wersje/<int:version_id>/graph.json")

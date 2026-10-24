@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "_form.html" import field %}
+{% block title %}Przedstaw się{% endblock %}
+{% block content %}
+<div class="card" style="max-width:520px;margin:2rem auto">
+  <h1>Witaj w FlowMap</h1>
+  <p>Zanim wejdziesz do wersji demonstracyjnej, przedstaw się, proszę.</p>
+  <form method="post" action="{{ url_for('visitor_gate.gate') }}" class="stack" novalidate>
+    {{ form.hidden_tag() }}
+    <input type="hidden" name="next" value="{{ next }}">
+    {{ field(form.first_name, autocomplete="given-name", autofocus=true, required=true, maxlength=100) }}
+    {{ field(form.last_name, autocomplete="family-name", required=true, maxlength=100) }}
+    {{ field(form.company, autocomplete="organization", required=true, maxlength=100) }}
+    <div aria-hidden="true" style="position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden">
+      <label>Nie wypełniaj tego pola <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+    </div>
+    <label class="checkbox">{{ form.consent(required=true) }} {{ form.consent.label.text }}</label>
+    {% for e in form.consent.errors %}<span class="field-error">{{ e }}</span>{% endfor %}
+    <button class="btn primary" type="submit">Wchodzę</button>
+  </form>
+  <p class="muted" style="margin-top:1rem;font-size:.85rem">Administratorem danych jest Tomasz Wierzbowski (kontakt: tomasz.wierzbowski [at] op.pl). Imię, nazwisko i nazwę firmy przetwarzam wyłącznie w celu kontroli dostępu do wersji demonstracyjnej i statystyki odwiedzin portfolio, na podstawie prawnie uzasadnionego interesu (art. 6 ust. 1 lit. f RODO). Dane przechowuję 90 dni, potem są automatycznie usuwane. O każdej wizycie (imię, nazwisko, firma) dostaję powiadomienie na telefon przez usługę powiadomień push ntfy. Zapisuję też, ile i jakie ekrany wersji demonstracyjnej obejrzałeś (bez adresu IP), żeby wiedzieć, co zainteresowało gości. Poza tym nikomu danych nie przekazuję. Masz prawo dostępu do danych, ich sprostowania, usunięcia, ograniczenia przetwarzania i sprzeciwu – napisz na adres powyżej. Przysługuje Ci skarga do Prezesa UODO.</p>
+</div>
+{% endblock %}

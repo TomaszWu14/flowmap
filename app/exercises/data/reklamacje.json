@@ -60,5 +60,27 @@
       "text": "Wizja określa cel aplikacji i mierzalną korzyść (np. odsetek reklamacji rozpatrzonych w terminie).",
       "topic": "wizja"
     }
+  ],
+  "solution": [
+    "s|start|Klient zgłasza reklamację produktu|Klient|a",
+    "a|screen|Formularz reklamacji (zamówienie, wada, kontakt)|Klient|b",
+    "b|automation|Rejestracja zgłoszenia z numerem i terminem 14 dni|System|c",
+    "c|decision|Czy zgłoszenie jest kompletne?|Konsultant|e:tak;d:nie",
+    "d|user_action|Dopytanie klienta o brakujące dane|Konsultant|c",
+    "e|user_action|Zamówienie kuriera po produkt|Konsultant|f",
+    "f|wait|Oczekiwanie na produkt (7 dni)|Magazyn|g:dotarł;x0:nie dotarł",
+    "x0|automation|Przypomnienie klientowi o odesłaniu|System|f",
+    "g|user_action|Ocena zasadności przez serwis|Serwis|h",
+    "h|decision|Czy reklamacja jest uznana?|Serwis|i:tak;n2:nie",
+    "i|decision|Sposób załatwienia|Konsultant|r1:naprawa;r2:wymiana;r3:zwrot pieniędzy",
+    "r1|user_action|Naprawa produktu|Serwis|n1",
+    "r2|user_action|Wysyłka nowego produktu|Magazyn|n1",
+    "r3|integration|Zwrot pieniędzy na konto|System|n1",
+    "t|wait|W tle: pilnowanie terminu 14 dni|System|e2:zbliża się termin",
+    "e2|automation|Alert do kierownika obsługi|System|g",
+    "n1|automation|Decyzja z uzasadnieniem do klienta|System|k1",
+    "n2|automation|Odmowa z uzasadnieniem do klienta|System|k2",
+    "k1|end|Reklamacja zamknięta — uznana|System|",
+    "k2|end|Reklamacja zamknięta — odrzucona|System|"
   ]
 }

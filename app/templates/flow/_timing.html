@@ -1,0 +1,20 @@
+{# Time and cost of one case on the happy path (app/flow/timing.py); included by the guard panel and the report. #}
+{% if timing %}
+<section class="timing" style="margin-top:1rem" aria-labelledby="timing-h">
+  <h3 id="timing-h">Czas i koszt sprawy</h3>
+  <p>Ścieżka główna: <strong>{{ timing.minutes|czas }}</strong>{% if timing.cost %} · <strong>{{ '%.2f'|format(timing.cost)|replace('.', ',') }} zł</strong>{% endif %}
+    {% if timing.waiting_pct %} · czekanie {{ timing.waiting_pct }}% czasu{% endif %}</p>
+  {% if timing.slowest %}
+  <p class="muted" style="margin:.2rem 0">Wąskie gardła:</p>
+  <ol class="timing-list">
+    {% for s in timing.slowest %}<li>{{ s.title }} — {{ s.minutes|czas }} ({{ s.pct }}%)</li>{% endfor %}
+  </ol>
+  {% endif %}
+  {% if timing.roles|length > 1 %}
+  <p class="muted" style="margin:.2rem 0">Czas według ról: {% for role, m in timing.roles %}{{ role }} {{ m|czas }}{{ ', ' if not loop.last }}{% endfor %}</p>
+  {% endif %}
+  {% if timing.missing %}
+  <p class="field-help">Bez czasu: {{ timing.missing|join(', ') }} — uzupełnij w „Edytuj krok”, żeby wynik był pełny.</p>
+  {% endif %}
+</section>
+{% endif %}

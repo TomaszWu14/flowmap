@@ -5,6 +5,7 @@
   <div><h1>Historia wersji</h1><p class="muted">{{ project.name }}</p></div>
   <div class="row">
     {% if versions|length > 1 %}<a class="btn" href="{{ url_for('projects.compare', project_id=project.id) }}">Porównaj wersje</a>{% endif %}
+    <a class="btn" href="{{ url_for('projects.as_is_to_be', project_id=project.id) }}">AS-IS / TO-BE</a>
     <a class="btn" href="{{ url_for('flow.view', project_id=project.id) }}">← Wróć do mapy</a>
   </div>
 </div>
@@ -14,11 +15,20 @@
     <tbody>
     {% for v in versions %}
       <tr class="{{ 'current-row' if v.id == project.version_cursor_id }}">
-        <td>{{ v.description }}{% if v.id == project.version_cursor_id %} <span class="badge ok">bieżąca</span>{% endif %}</td>
+        <td>{{ v.description }}{% if v.id == project.version_cursor_id %} <span class="badge ok">bieżąca</span>{% endif %}
+          {% if v.id == (project.display or {}).get('as_is') %} <span class="badge">AS-IS</span>{% endif %}
+          {% for r in reviews.get(v.id, []) %}<br><span class="{{ 'better' if r.decision == 'accept' else 'worse' }}" title="{{ r.comment }}">
+            {{ '✓' if r.decision == 'accept' else '✎' }} {{ r.name }}: {{ 'akceptuje' if r.decision == 'accept' else 'prosi o zmiany' }}{% if r.comment %} — „{{ r.comment|truncate(80) }}”{% endif %}</span>{% endfor %}</td>
         <td>{{ v.snapshot.nodes|length }}</td>
         <td class="muted">{{ v.created_at|local('%d.%m %H:%M:%S') }}</td>
         <td class="row">
           {% if not loop.last %}<a class="btn small" href="{{ url_for('projects.compare', project_id=project.id, do=v.id) }}">Zmiany</a>{% endif %}
+          {% if project.can_edit and v.id != (project.display or {}).get('as_is') %}
+          <form method="post" action="{{ url_for('projects.mark_as_is', project_id=project.id, version_id=v.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn small" type="submit" title="Ta wersja to stan obecny procesu; bieżąca mapa — stan docelowy">Ustaw jako AS-IS</button>
+          </form>
+          {% endif %}
           {% if v.id != project.version_cursor_id and project.can_edit %}
           <form method="post" action="{{ url_for('projects.restore', project_id=project.id, version_id=v.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

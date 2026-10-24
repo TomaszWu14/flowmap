@@ -298,6 +298,19 @@ class Comment(db.Model):
     author = db.relationship("User")
 
 
+class ClientReview(db.Model):
+    """A client's verdict on the shared map (/s/<token>), without an account: accept or ask for changes."""
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False, index=True)
+    version_id = db.Column(db.Integer)  # no FK: versions may be dropped by undo; the label below survives
+    version_label = db.Column(db.String(300), default="")
+    name = db.Column(db.String(100), nullable=False)
+    decision = db.Column(db.String(10), nullable=False)  # accept | changes
+    comment = db.Column(db.Text, default="")
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+
+
 class QuestionLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.Integer, db.ForeignKey("project.id"), nullable=False, index=True)
@@ -341,3 +354,17 @@ class Version(db.Model):
     description = db.Column(db.String(300), nullable=False)
     snapshot = db.Column(db.JSON, nullable=False)
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+
+
+class DemoVisitor(db.Model):
+    """Who looked at the demo (visitor gate). Name, surname, company and screens viewed: no IP, no user agent."""
+
+    id = db.Column(db.Integer, primary_key=True)
+    first_name = db.Column(db.String(100), nullable=False)
+    last_name = db.Column(db.String(100), nullable=False)
+    company = db.Column(db.String(100), nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False, index=True)
+    # Demo activity (visitor_gate/activity.py): screens viewed, last view, {section: views} (max 20 keys).
+    page_views = db.Column(db.Integer, default=0, nullable=False, server_default="0")
+    last_seen_at = db.Column(db.DateTime)
+    sections = db.Column(db.JSON)

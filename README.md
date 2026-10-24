@@ -121,6 +121,10 @@ docker compose exec app flask create-user ty@example.com
 | `AI_DAILY_LIMIT` | `100` | limit zapytań AI na użytkownika na dzień (nadpisywany w panelu admina) |
 | `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM`, `MAIL_USE_TLS` | — | SMTP; włącza „Nie pamiętam hasła” |
 | `RESET_TOKEN_HOURS` | `1` | ważność linku resetu wysyłanego e-mailem |
+| `NTFY_URL` | — | pełny URL tematu ntfy (np. `https://ntfy.sh/<tajny-temat>`); powiadomienie push o każdym nowym gościu bramki |
+| `NTFY_TOKEN` | — | opcjonalny token (`Authorization: Bearer`) dla serwera ntfy z kontrolą dostępu |
+| `NTFY_WATCH_COMPANIES` | — | frazy firm po przecinku (bez wielkości liter i polskich znaków); gość z taką firmą = push `urgent` „UWAGA firma z listy”. Ustawiaj tylko w środowisku |
+| `NTFY_ENGAGED_VIEWS` | `10` | jeden push „Gość ogląda demo”, gdy gość obejrzy tyle ekranów; `0` = wyłączone |
 
 W `docker-compose.yml` hasło bazy i `SECRET_KEY` pochodzą ze zmiennych `SERVICE_HEX_32_POSTGRES`
 i `SERVICE_PASSWORD_64_SECRETKEY` — Coolify generuje je sam. Hasło bazy jest w hex, bo znaki `/ + @`

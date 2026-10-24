@@ -64,5 +64,23 @@
       "text": "Wizja określa cel i mierzalną korzyść (np. DSO, odsetek zamówień zrealizowanych w całości).",
       "topic": "wizja"
     }
+  ],
+  "solution": [
+    "s|start|Klient składa zamówienie na towar|Klient|a",
+    "a|user_action|Wprowadzenie zamówienia|Handlowiec|b",
+    "b|decision|Czy klient mieści się w limicie i nie ma zaległości?|System|c:tak;x1:nie",
+    "x1|user_action|Blokada i decyzja kierownika sprzedaży|Kierownik sprzedaży|c:odblokuj;k3:odrzuć",
+    "c|decision|Czy towar jest dostępny?|System|d:tak;x2:nie",
+    "x2|user_action|Uzgodnienie z klientem: częściowa, zamiennik, później|Handlowiec|d",
+    "d|automation|Potwierdzenie zamówienia z terminem dostawy|System|e",
+    "e|user_action|Kompletacja i wydanie towaru (WZ)|Magazyn|f",
+    "f|automation|Faktura na podstawie wydania|System|g",
+    "g|wait|Oczekiwanie na zapłatę (termin z faktury)|System|k1:zapłacono;h:minął termin",
+    "h|automation|Przypomnienie i wezwanie do zapłaty|System|i",
+    "i|automation|Wstrzymanie kolejnych zamówień|System|g",
+    "z|user_action|W tle: zwrot lub reklamacja towaru|Klient|z2",
+    "z2|automation|Korekta faktury|System|g",
+    "k1|end|Należność rozliczona|System|",
+    "k3|end|Zamówienie odrzucone|System|"
   ]
 }
