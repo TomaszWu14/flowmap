@@ -4,6 +4,10 @@
 [![Security](https://github.com/TomaszWu14/flowmap/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/TomaszWu14/flowmap/actions/workflows/security.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
+**▶ Zobacz demo: https://flowmap.twapp.pl** (przy wejściu demo poprosi o imię, nazwisko i firmę)
+
+![Mapa procesu z prowadzeniem pytaniami](docs/zrzuty/mapa-procesu.png)
+
 > **English summary.** FlowMap is a Flask web app for designing new applications through an
 > **interactive process map**. You type one sentence ("A customer wants to book a salon visit"),
 > the app keeps asking "what happens next?" with 3–5 suggested answers, and the map (Cytoscape.js)
@@ -16,6 +20,8 @@
 > Works without an API key (rules + templates); with one it uses Claude via the `anthropic` SDK.
 > Stack: Python 3.12, Flask, SQLAlchemy/Alembic, HTMX, PostgreSQL, pytest (380+ tests), ruff,
 > security scans in CI (gitleaks, Bandit, Semgrep, pip-audit, Trivy). The UI is in Polish.
+> Live demo: https://flowmap.twapp.pl (on entry the demo asks for your first name, last name and company) · Screenshots: see [Zrzuty ekranu](#zrzuty-ekranu) (process map
+> with guided questions, completeness guard, UML class diagram, exercise catalogue).
 
 Aplikacja webowa do projektowania nowych aplikacji przez **interaktywną mapę procesu**.
 
@@ -68,6 +74,20 @@ i gotowe polecenie dla generatora kodu (Claude Code, Lovable, Bolt).
   lista kont z blokowaniem, nadawaniem uprawnień i linkiem do ustawienia hasła; dziennik zdarzeń
   (`/admin/zdarzenia`). Treści cudzych projektów nie widać. Uprawnienia nadaje tylko `flask set-admin`
   (albo `flask create-user --admin`).
+
+## Zrzuty ekranu
+
+**Strażnik kompletności** — wynik 0–100, problemy podświetlone na mapie i szybkie poprawki:
+
+![Strażnik kompletności](docs/zrzuty/straznik-kompletnosci.png)
+
+**Projekt aplikacji** — widoki UML wyprowadzone ze specyfikacji (tu diagram klas):
+
+![Projekt aplikacji — diagram klas UML](docs/zrzuty/projekt-aplikacji-uml.png)
+
+**Ćwiczenia** — katalog zadań w trybie nauki i tryb rekrutacyjny:
+
+![Katalog ćwiczeń](docs/zrzuty/cwiczenia.png)
 
 ## Stos
 
